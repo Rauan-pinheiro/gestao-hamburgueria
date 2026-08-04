@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}{% if object %}Editar{% else %}Nova{% endif %} Precificação{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-1"><i class="bi bi-tags me-2"></i>{% if object %}Editar{% else %}Nova{% endif %} Precificação</h4>
+    <small class="text-muted">Escolha como quer definir o preço — o sistema mostra o resultado antes de você salvar.</small>
+  </div>
+  <a href="{% url 'precificacao:formacaopreco_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+</div>
+
+{% if not custo_por_porcao %}
+<div class="alert alert-warning d-flex gap-2">
+  <i class="bi bi-exclamation-triangle fs-5"></i>
+  <div>Este item ainda não tem <strong>ficha técnica</strong> (ou o custo dela é zero). O cálculo de preço parte do custo
+  da receita — cadastre a ficha técnica primeiro para ter uma sugestão de preço confiável.</div>
+</div>
+{% endif %}
+
+<form method="post" id="form-precificacao">
+  {% csrf_token %}
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card mb-3">
+        <div class="card-body">
+          {{ form.item_cardapio|as_crispy_field }}
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-header"><strong>Como definir o preço?</strong></div>
+        <div class="card-body">
+          <ul class="nav nav-pills mb-3" id="modo-precificacao">
+            <li class="nav-item"><button type="button" class="nav-link active" data-modo="margem"><i class="bi bi-percent me-1"></i>Por margem</button></li>
+            <li class="nav-item"><button type="button" class="nav-link" data-modo="markup"><i class="bi bi-graph-up me-1"></i>Por markup</button></li>
+            <li class="nav-item"><button type="button" class="nav-link" data-modo="manual"><i class="bi bi-pencil me-1"></i>Manual</button></li>
+          </ul>
+
+          <div data-modo-painel="margem">
+            <p class="text-muted small">Você define a margem de lucro desejada (% sobre o preço de venda) e o sistema calcula o preço.</p>
+            {{ form.margem_lucro_desejada_percentual|as_crispy_field }}
+            {{ form.margem_premium_extra_percentual|as_crispy_field }}
+          </div>
+
+          <div data-modo-painel="markup" class="d-none">
+            <p class="text-muted small">Você define quanto quer multiplicar sobre o custo (markup sobre custo). Ex: markup de 100% dobra o custo.</p>
+            <div class="mb-3">
+              <label class="form-label">Markup desejado (%)</label>
+              <input type="number" id="input-markup" class="form-control" value="100" min="0" step="0.1">
+            </div>
+          </div>
+
+          <div data-modo-painel="manual" class="d-none">
+            <p class="text-muted small">Digite o preço de venda diretamente. O sistema ainda mostra se ele cobre o custo.</p>
+          </div>
+
+          {{ form.forma_pagamento_referencia|as_crispy_field }}
+          <div id="preco-praticado-wrapper">
+            {{ form.preco_praticado|as_crispy_field }}
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar precificação</button>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card position-sticky" style="top:1rem;">
+        <div class="card-header"><strong><i class="bi bi-calculator me-1"></i>Prévia do resultado</strong></div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Custo por porção</span><strong id="prev-custo">R$ 0,00</strong></div>
+          <hr>
+          <div class="d-flex justify-content-between"><span class="text-muted">Preço mínimo</span><span id="prev-minimo">R$ 0,00</span></div>
+          <div class="d-flex justify-content-between"><span class="text-muted">Preço ideal</span><span id="prev-ideal">R$ 0,00</span></div>
+          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Preço premium</span><span id="prev-premium">R$ 0,00</span></div>
+          <hr>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold">Preço final (praticado)</span>
+            <span class="fs-4 fw-bold" id="prev-final">R$ 0,00</span>
+          </div>
+          <div class="mb-2"><span id="prev-status-badge" class="badge badge-verde">Preço saudável</span></div>
+          <hr>
+          <div class="d-flex justify-content-between"><span class="text-muted">Lucro bruto</span><span id="prev-lucro-bruto">R$ 0,00</span></div>
+          <div class="d-flex justify-content-between"><span class="text-muted">Lucro líquido</span><span id="prev-lucro-liquido">R$ 0,00</span></div>
+          <div class="d-flex justify-content-between"><span class="text-muted">Margem líquida</span><span id="prev-margem">0%</span></div>
+          <div class="d-flex justify-content-between"><span class="text-muted">Markup</span><span id="prev-markup">0%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const custoInicial = parseFloat('{{ custo_por_porcao|stringformat:"f" }}'.replace(',', '.')) || 0;
+  const impostoPct = parseFloat('{{ percentual_imposto_padrao|stringformat:"f" }}'.replace(',', '.')) || 0;
+  const taxasPorForma = {{ formas_pagamento_taxas_json|safe }};
+
+  const itemSelect = document.getElementById('id_item_cardapio');
+  const margemInput = document.getElementById('id_margem_lucro_desejada_percentual');
+  const margemPremiumInput = document.getElementById('id_margem_premium_extra_percentual');
+  const formaPagamentoSelect = document.getElementById('id_forma_pagamento_referencia');
+  const markupInput = document.getElementById('input-markup');
+  const precoPraticadoInput = document.getElementById('id_preco_praticado');
+  const precoPraticadoWrapper = document.getElementById('preco-praticado-wrapper');
+
+  let custoAtual = custoInicial;
+  let modoAtual = 'margem';
+
+  function formatarMoeda(v) {
+    return 'R$ ' + (isFinite(v) ? v : 0).toFixed(2).replace('.', ',');
+  }
+
+  function taxaAtual() {
+    const fpId = formaPagamentoSelect ? formaPagamentoSelect.value : '';
+    return fpId && taxasPorForma[fpId] ? parseFloat(taxasPorForma[fpId]) : 0;
+  }
+
+  function precoParaMargem(custo, margemPct, impostoPctLocal, taxaPct) {
+    const divisor = 1 - (margemPct / 100) - (impostoPctLocal / 100) - (taxaPct / 100);
+    if (divisor <= 0 || custo <= 0) return 0;
+    return custo / divisor;
+  }
+
+  function recalcularPreview() {
+    const i = impostoPct;
+    const t = taxaAtual();
+    const m = parseFloat(margemInput ? margemInput.value : 0) || 0;
+    const mp = m + (parseFloat(margemPremiumInput ? margemPremiumInput.value : 0) || 0);
+
+    const minimo = precoParaMargem(custoAtual, 0, i, t);
+    const ideal = precoParaMargem(custoAtual, m, i, t);
+    const premium = precoParaMargem(custoAtual, mp, i, t);
+
+    let precoFinal;
+    if (modoAtual === 'margem') {
+      precoFinal = ideal;
+    } else if (modoAtual === 'markup') {
+      const markupPct = parseFloat(markupInput ? markupInput.value : 0) || 0;
+      precoFinal = custoAtual * (1 + markupPct / 100);
+    } else {
+      precoFinal = parseFloat(precoPraticadoInput.value) || 0;
+    }
+
+    if (modoAtual !== 'manual' && precoPraticadoInput) {
+      precoPraticadoInput.value = precoFinal.toFixed(2);
+    }
+
+    const lucroBruto = precoFinal - custoAtual;
+    const lucroLiquido = precoFinal - custoAtual - (precoFinal * i / 100) - (precoFinal * t / 100);
+    const margemLiquida = precoFinal ? (lucroLiquido / precoFinal) * 100 : 0;
+    const markupCalc = custoAtual ? ((precoFinal - custoAtual) / custoAtual) * 100 : 0;
+
+    document.getElementById('prev-custo').textContent = formatarMoeda(custoAtual);
+    document.getElementById('prev-minimo').textContent = formatarMoeda(minimo);
+    document.getElementById('prev-ideal').textContent = formatarMoeda(ideal);
+    document.getElementById('prev-premium').textContent = formatarMoeda(premium);
+    document.getElementById('prev-final').textContent = formatarMoeda(precoFinal);
+    document.getElementById('prev-lucro-bruto').textContent = formatarMoeda(lucroBruto);
+    document.getElementById('prev-lucro-liquido').textContent = formatarMoeda(lucroLiquido);
+    document.getElementById('prev-margem').textContent = margemLiquida.toFixed(1) + '%';
+    document.getElementById('prev-markup').textContent = markupCalc.toFixed(1) + '%';
+
+    const badge = document.getElementById('prev-status-badge');
+    if (precoFinal < minimo || custoAtual <= 0) {
+      badge.className = 'badge badge-vermelho';
+      badge.textContent = 'Abaixo do custo';
+    } else if (precoFinal < ideal) {
+      badge.className = 'badge badge-amarelo';
+      badge.textContent = 'Margem baixa';
+    } else {
+      badge.className = 'badge badge-verde';
+      badge.textContent = 'Preço saudável';
+    }
+  }
+
+  document.querySelectorAll('#modo-precificacao [data-modo]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      modoAtual = btn.dataset.modo;
+      document.querySelectorAll('#modo-precificacao .nav-link').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('[data-modo-painel]').forEach(function (painel) {
+        painel.classList.toggle('d-none', painel.dataset.modoPainel !== modoAtual);
+      });
+      precoPraticadoWrapper.classList.toggle('d-none', modoAtual !== 'manual');
+      if (precoPraticadoInput) precoPraticadoInput.readOnly = modoAtual !== 'manual';
+      recalcularPreview();
+    });
+  });
+
+  [margemInput, margemPremiumInput, formaPagamentoSelect, markupInput, precoPraticadoInput].forEach(function (el) {
+    if (el) el.addEventListener('input', recalcularPreview);
+  });
+
+  if (itemSelect) {
+    itemSelect.addEventListener('change', function () {
+      const itemId = itemSelect.value;
+      if (!itemId) { custoAtual = 0; recalcularPreview(); return; }
+      fetch('/precificacao/api/custo-item/' + itemId + '/')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok) {
+            custoAtual = parseFloat(data.custo_por_porcao) || 0;
+          } else {
+            custoAtual = 0;
+          }
+          recalcularPreview();
+        });
+    });
+  }
+
+  // Inicializa modo "manual" pré-selecionado se já existir um preço praticado salvo (edição).
+  if (precoPraticadoInput && precoPraticadoInput.value && precoPraticadoInput.value !== '0' && precoPraticadoInput.value !== '0.00') {
+    document.querySelector('#modo-precificacao [data-modo="manual"]').click();
+  } else {
+    precoPraticadoWrapper.classList.add('d-none');
+    if (precoPraticadoInput) precoPraticadoInput.readOnly = true;
+  }
+
+  recalcularPreview();
+})();
+</script>
+{% endblock %}

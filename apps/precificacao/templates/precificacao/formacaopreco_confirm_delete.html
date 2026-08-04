@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Excluir Precificação{% endblock %}
+{% block content %}
+<h4 class="mb-3">Excluir Precificação</h4>
+<div class="card"><div class="card-body">
+  <p>Tem certeza que deseja excluir a precificação de <strong>{{ object.item_cardapio }}</strong>?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Confirmar exclusão</button>
+    <a href="{% url 'precificacao:formacaopreco_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+  </form>
+</div></div>
+{% endblock %}

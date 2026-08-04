@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Excluir Ingrediente{% endblock %}
+{% block content %}
+<h4 class="mb-3">Excluir Ingrediente</h4>
+<div class="card"><div class="card-body">
+  <p>Tem certeza que deseja excluir <strong>{{ object }}</strong>?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Confirmar exclusão</button>
+    <a href="{% url 'estoque:ingrediente_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+  </form>
+  {% include 'partials/_excluir_cascata.html' %}
+</div></div>
+{% endblock %}

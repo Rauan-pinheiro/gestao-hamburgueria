@@ -1,0 +1,8 @@
+from django.apps import AppConfig
+
+
+class ConfiguracoesConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.configuracoes'
+    label = 'configuracoes'
+    verbose_name = 'Configurações'

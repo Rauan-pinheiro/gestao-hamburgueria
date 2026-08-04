@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}{{ item }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-1"><i class="bi bi-menu-button-wide me-2"></i>{{ item }}</h4>
+    <small class="text-muted">Este é o painel completo do item: dados básicos, ficha técnica (custo) e preço de venda.</small>
+  </div>
+  <div>
+    <a href="{% url 'cardapio:itemcardapio_update' item.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Editar</a>
+    <form method="post" action="{% url 'cardapio:itemcardapio_toggle_ativo' item.pk %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-secondary" title="Item inativo não aparece na tela de vendas, mas mantém o histórico.">
+        <i class="bi bi-{% if item.ativo %}toggle-on{% else %}toggle-off{% endif %} me-1"></i>{% if item.ativo %}Inativar{% else %}Ativar{% endif %}
+      </button>
+    </form>
+    <a href="{% url 'cardapio:itemcardapio_delete' item.pk %}" class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i>Excluir</a>
+    <a href="{% url 'cardapio:itemcardapio_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+  </div>
+</div>
+
+{% if not item.ativo %}
+<div class="alert alert-secondary d-flex gap-2">
+  <i class="bi bi-eye-slash fs-5"></i>
+  <div>Este item está <strong>inativo</strong> e não aparece na tela de "Nova Venda". Clique em "Ativar" acima quando quiser voltar a vendê-lo.</div>
+</div>
+{% endif %}
+
+{% with receita=item.receita formacao=item.formacao_preco %}
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="d-flex align-items-center gap-4 flex-wrap">
+      <div class="d-flex align-items-center gap-2">
+        {% if receita %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-circle text-muted"></i>{% endif %}
+        <span class="{% if not receita %}text-muted{% endif %}">1. Ficha técnica</span>
+      </div>
+      <i class="bi bi-arrow-right text-muted"></i>
+      <div class="d-flex align-items-center gap-2">
+        {% if formacao %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-circle text-muted"></i>{% endif %}
+        <span class="{% if not formacao %}text-muted{% endif %}">2. Preço de venda</span>
+      </div>
+      <i class="bi bi-arrow-right text-muted"></i>
+      <div class="d-flex align-items-center gap-2">
+        {% if item.ativo and receita and formacao %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-circle text-muted"></i>{% endif %}
+        <span class="{% if not item.ativo or not receita or not formacao %}text-muted{% endif %}">3. Pronto para vender</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    {% if item.foto %}<img src="{{ item.foto.url }}" class="img-fluid rounded mb-3" style="max-height:220px; object-fit:cover; width:100%;">{% endif %}
+    <div class="card"><div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-6">Categoria</dt><dd class="col-6">{{ item.categoria|default:'Sem categoria' }}</dd>
+        <dt class="col-6">Tipo</dt><dd class="col-6">{{ item.get_tipo_display }}</dd>
+        <dt class="col-6">Tempo de preparo</dt><dd class="col-6">{{ item.tempo_preparo_minutos }} min</dd>
+        <dt class="col-6">Status</dt><dd class="col-6">{% if item.ativo %}<span class="badge badge-verde">Ativo</span>{% else %}<span class="badge bg-secondary">Inativo</span>{% endif %}</dd>
+      </dl>
+      {% if item.descricao %}<hr><p class="mb-0">{{ item.descricao }}</p>{% endif %}
+    </div></div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card h-100"><div class="card-body">
+      <h6 class="text-muted mb-1"><i class="bi bi-journal-text me-1"></i>Ficha Técnica</h6>
+      <p class="small text-muted">Quais ingredientes (e quanto de cada) compõem este item. É a partir daqui que o custo é calculado.</p>
+      {% if receita %}
+        <p class="mb-1">Custo por porção: <strong>R$ {{ receita.custo_por_porcao|floatformat:2 }}</strong></p>
+        <a href="{% url 'receitas:receita_detail' receita.pk %}" class="btn btn-sm btn-outline-secondary">Ver/editar ficha técnica</a>
+      {% else %}
+        <p class="text-muted"><i class="bi bi-exclamation-circle me-1"></i>Ainda sem ficha técnica — sem ela, o preço não pode ser sugerido automaticamente.</p>
+        <a href="{% url 'receitas:receita_create' %}?item_cardapio={{ item.pk }}" class="btn btn-sm btn-primary">Criar ficha técnica</a>
+      {% endif %}
+    </div></div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card h-100"><div class="card-body">
+      <h6 class="text-muted mb-1"><i class="bi bi-tags me-1"></i>Preço de Venda</h6>
+      <p class="small text-muted">O preço que aparece na tela de vendas. Calculado a partir do custo + margem, ou definido manualmente.</p>
+      {% if formacao %}
+        <p class="mb-1">Preço praticado: <strong>R$ {{ formacao.preco_praticado }}</strong></p>
+        <span class="badge badge-{{ formacao.status_margem }}">{{ formacao.status_margem_label }}</span>
+        <div class="mt-2"><a href="{% url 'precificacao:formacaopreco_update' formacao.pk %}" class="btn btn-sm btn-outline-secondary">Ver/editar preço</a></div>
+      {% else %}
+        <p class="text-muted"><i class="bi bi-exclamation-circle me-1"></i>Ainda sem preço definido — o item aparece como R$ 0,00 na tela de vendas.</p>
+        <a href="{% url 'precificacao:formacaopreco_create' %}?item_cardapio={{ item.pk }}" class="btn btn-sm btn-primary">Definir preço</a>
+      {% endif %}
+    </div></div>
+  </div>
+</div>
+{% endwith %}
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Configurações{% endblock %}
+{% block content %}
+<h4 class="mb-1"><i class="bi bi-gear me-2"></i>Configurações</h4>
+<p class="text-muted mb-4">Ajuste aqui os parâmetros que o sistema usa em todos os cálculos de custo, preço e relatórios.</p>
+
+{% if not setup.completo %}
+<div class="card mb-4 border-primary">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <strong><i class="bi bi-flag me-1"></i>Primeiros passos ({{ setup.concluidas }}/{{ setup.total }})</strong>
+      <span class="text-muted small">{{ setup.percentual }}% concluído</span>
+    </div>
+    <div class="progress mb-3" style="height:8px;">
+      <div class="progress-bar bg-primary" style="width: {{ setup.percentual }}%;"></div>
+    </div>
+    {% if setup.proxima_etapa %}
+    <p class="mb-2">Próximo passo recomendado: <strong>{{ setup.proxima_etapa.titulo }}</strong> — {{ setup.proxima_etapa.descricao }}</p>
+    <a href="{% url setup.proxima_etapa.url %}" class="btn btn-primary btn-sm"><i class="bi bi-arrow-right-circle me-1"></i>Ir agora</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <i class="bi bi-sliders fs-3 text-primary"></i>
+        <h6 class="mt-2">Parâmetros Gerais</h6>
+        <p class="text-muted small">Custos indiretos (embalagem, gás, energia, mão de obra), impostos, margens padrão e metas de faturamento.</p>
+        <a href="{% url 'configuracoes:parametros_gerais' %}" class="btn btn-outline-primary btn-sm">Configurar</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <i class="bi bi-credit-card fs-3 text-primary"></i>
+        <h6 class="mt-2">Formas de Pagamento</h6>
+        <p class="text-muted small">Dinheiro, Pix, cartões, iFood... cada uma com sua taxa/comissão, usada no cálculo de lucro.</p>
+        <p class="mb-2"><span class="badge badge-verde">{{ qtd_formas_pagamento }} ativa(s)</span></p>
+        <a href="{% url 'configuracoes:forma_pagamento_list' %}" class="btn btn-outline-primary btn-sm">Gerenciar</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <i class="bi bi-tags fs-3 text-primary"></i>
+        <h6 class="mt-2">Categorias de Ingredientes</h6>
+        <p class="text-muted small">Organize os ingredientes por tipo (carnes, pães, molhos, bebidas...).</p>
+        <p class="mb-2"><span class="badge badge-verde">{{ qtd_categorias_ingrediente }} ativa(s)</span></p>
+        <a href="{% url 'estoque:categoria_list' %}" class="btn btn-outline-primary btn-sm">Gerenciar</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <i class="bi bi-menu-button-wide fs-3 text-primary"></i>
+        <h6 class="mt-2">Categorias do Cardápio</h6>
+        <p class="text-muted small">Como os itens aparecem organizados (Hambúrgueres, Bebidas, Sobremesas...).</p>
+        <p class="mb-2"><span class="badge badge-verde">{{ qtd_categorias_cardapio }} ativa(s)</span></p>
+        <a href="{% url 'cardapio:categoria_list' %}" class="btn btn-outline-primary btn-sm">Gerenciar</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <i class="bi bi-person-gear fs-3 text-primary"></i>
+        <h6 class="mt-2">Usuários e Acessos</h6>
+        <p class="text-muted small">Cadastro de usuários do sistema (via painel administrativo do Django).</p>
+        <a href="/admin/usuarios/usuario/" class="btn btn-outline-primary btn-sm">Gerenciar</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <i class="bi bi-journal-text fs-3 text-primary"></i>
+        <h6 class="mt-2">Logs de Auditoria</h6>
+        <p class="text-muted small">Histórico de quem criou, editou ou excluiu cada registro do sistema.</p>
+        <a href="/admin/core/auditlog/" class="btn btn-outline-primary btn-sm">Ver logs</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

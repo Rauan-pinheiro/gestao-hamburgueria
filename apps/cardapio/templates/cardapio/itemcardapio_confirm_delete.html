@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Excluir Item{% endblock %}
+{% block content %}
+<h4 class="mb-3">Excluir Item do Cardápio</h4>
+<div class="card"><div class="card-body">
+  <p>Tem certeza que deseja excluir <strong>{{ object }}</strong>?</p>
+  <p class="text-muted small">A precificação vinculada a este item será excluída junto. Se o item tiver vendas <strong>concluídas</strong> (não canceladas), a exclusão será bloqueada — cancele essas vendas primeiro ou use "Inativar" para removê-lo das listas sem perder o histórico. Itens com apenas vendas <strong>canceladas</strong> podem ser excluídos normalmente: o histórico financeiro dessas vendas é preservado, apenas o nome do produto fica congelado no registro da venda.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Confirmar exclusão</button>
+    <a href="{% url 'cardapio:itemcardapio_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+  </form>
+  {% include 'partials/_excluir_cascata.html' %}
+</div></div>
+{% endblock %}

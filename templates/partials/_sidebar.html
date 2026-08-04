@@ -1,0 +1,37 @@
+{% with app=request.resolver_match.app_name %}
+<a class="nav-link {% if app == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:index' %}">
+  <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+</a>
+<a class="nav-link {% if app == 'configuracoes' %}active{% endif %}" href="{% url 'configuracoes:home' %}">
+  <i class="bi bi-gear"></i><span>Configurações</span>
+</a>
+
+<div class="sidebar-section-title">1. Suprimentos</div>
+<a class="nav-link {% if app == 'fornecedores' %}active{% endif %}" href="{% url 'fornecedores:fornecedor_list' %}">
+  <i class="bi bi-truck"></i><span>Fornecedores</span>
+</a>
+<a class="nav-link {% if app == 'estoque' %}active{% endif %}" href="{% url 'estoque:ingrediente_list' %}">
+  <i class="bi bi-box-seam"></i><span>Estoque</span>
+</a>
+
+<div class="sidebar-section-title">2. Cardápio</div>
+<a class="nav-link {% if app == 'cardapio' %}active{% endif %}" href="{% url 'cardapio:itemcardapio_list' %}">
+  <i class="bi bi-menu-button-wide"></i><span>Itens do Cardápio</span>
+</a>
+<a class="nav-link {% if app == 'receitas' %}active{% endif %}" href="{% url 'receitas:receita_list' %}">
+  <i class="bi bi-journal-text"></i><span>Fichas Técnicas</span>
+</a>
+<a class="nav-link {% if app == 'precificacao' %}active{% endif %}" href="{% url 'precificacao:formacaopreco_list' %}">
+  <i class="bi bi-tags"></i><span>Precificação</span>
+</a>
+
+<div class="sidebar-section-title">3. Operação</div>
+<a class="nav-link {% if app == 'vendas' %}active{% endif %}" href="{% url 'vendas:venda_list' %}">
+  <i class="bi bi-cart-check"></i><span>Vendas</span>
+</a>
+
+<div class="sidebar-section-title">Ajuda</div>
+<a class="nav-link {% if app == 'ajuda' %}active{% endif %}" href="{% url 'ajuda:leiame' %}">
+  <i class="bi bi-book"></i><span>📖 Leia-me</span>
+</a>
+{% endwith %}

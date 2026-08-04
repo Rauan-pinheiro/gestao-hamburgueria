@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Precificação — {{ formacao.item_cardapio }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-1"><i class="bi bi-tags me-2"></i>Precificação — {{ formacao.item_cardapio }}</h4>
+    <small class="text-muted">Este é o preço que aparece na tela de vendas para este item.</small>
+  </div>
+  <div>
+    <form method="post" action="{% url 'precificacao:recalcular_preco' formacao.pk %}" class="d-inline" title="Recalcula preço mínimo/ideal/premium usando o custo atual da ficha técnica e a margem configurada.">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat me-1"></i>Recalcular</button>
+    </form>
+    <a href="{% url 'precificacao:formacaopreco_update' formacao.pk %}" class="btn btn-outline-secondary" title="Mudar o preço praticado ou a margem"><i class="bi bi-pencil me-1"></i>Editar</a>
+    <a href="{% url 'precificacao:formacaopreco_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+  </div>
+</div>
+
+{% if formacao.status_margem == 'vermelho' %}
+<div class="alert alert-danger d-flex gap-2">
+  <i class="bi bi-exclamation-octagon fs-5"></i>
+  <div><strong>Atenção:</strong> o preço praticado está abaixo do preço mínimo — cada venda deste item pode estar dando prejuízo. Considere ajustar o preço em "Editar".</div>
+</div>
+{% elif formacao.status_margem == 'amarelo' %}
+<div class="alert alert-warning d-flex gap-2">
+  <i class="bi bi-exclamation-triangle fs-5"></i>
+  <div>O preço cobre o custo, mas está abaixo do preço ideal — a margem de lucro está menor que o planejado.</div>
+</div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div>
+      <div class="text-muted small">Preço praticado</div>
+      <div style="font-size:2rem; font-weight:700;">R$ {{ formacao.preco_praticado }}</div>
+    </div>
+    <span class="badge badge-{{ formacao.status_margem }} fs-6 px-3 py-2">{{ formacao.status_margem_label }}</span>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Preço mínimo</div><div class="stat-value">R$ {{ formacao.preco_minimo }}</div></div></div>
+  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Preço ideal</div><div class="stat-value">R$ {{ formacao.preco_ideal }}</div></div></div>
+  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Preço premium</div><div class="stat-value">R$ {{ formacao.preco_premium }}</div></div></div>
+  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Custo por porção</div><div class="stat-value">R$ {{ formacao.custo_por_porcao|floatformat:2 }}</div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Lucro bruto unit.</div><div class="stat-value">R$ {{ formacao.lucro_bruto_unitario|floatformat:2 }}</div></div></div>
+  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Lucro líquido unit.</div><div class="stat-value">R$ {{ formacao.lucro_liquido_unitario|floatformat:2 }}</div></div></div>
+  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Margem líquida</div><div class="stat-value">{{ formacao.margem_liquida_percentual|floatformat:1 }}%</div></div></div>
+  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Markup</div><div class="stat-value">{{ formacao.markup_percentual|floatformat:1 }}%</div></div></div>
+</div>
+{% endblock %}

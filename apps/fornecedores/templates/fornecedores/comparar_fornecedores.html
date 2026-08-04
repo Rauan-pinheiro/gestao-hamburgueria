@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Comparar Fornecedores — {{ ingrediente }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-bar-chart-line me-2"></i>Comparação de Fornecedores — {{ ingrediente }}</h4>
+  <a href="{% url 'estoque:ingrediente_detail' ingrediente.pk %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar ao ingrediente</a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Fornecedor</th><th>Produto</th><th>Embalagem</th><th>Preço</th><th>Frete</th>
+          <th>Preço/un. (sem frete)</th><th>Preço/un. (com frete)</th><th>Diferença p/ próximo</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for linha in comparacao %}
+        <tr class="{% if linha.e_melhor %}table-success{% endif %}">
+          <td>{{ linha.oferta.fornecedor }}{% if linha.e_melhor %} <span class="badge badge-verde ms-1">Melhor preço</span>{% endif %}</td>
+          <td>{{ linha.oferta.nome_produto }}</td>
+          <td>{{ linha.oferta.quantidade_embalagem }} {{ linha.oferta.get_unidade_embalagem_display }}</td>
+          <td>R$ {{ linha.oferta.preco_embalagem }}</td>
+          <td>R$ {{ linha.oferta.frete }}</td>
+          <td>R$ {{ linha.oferta.preco_por_unidade_sem_frete }}</td>
+          <td><strong>R$ {{ linha.oferta.preco_por_unidade_base }}</strong></td>
+          <td>{% if linha.diferenca_pct_para_proximo %}+{{ linha.diferenca_pct_para_proximo|floatformat:1 }}%{% else %}—{% endif %}</td>
+          <td><a href="{% url 'fornecedores:produtofornecedor_update' linha.oferta.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" class="text-center text-muted py-4">Nenhuma oferta ativa cadastrada para este ingrediente.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

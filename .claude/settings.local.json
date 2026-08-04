@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -f \"/c/Users/JALES_~1/AppData/Local/Temp/claude/c--Users-Jales-Ramon-Desktop-gestao-hamburgueria/bf8d725a-73c7-473b-af4b-5d55bb1eb877/scratchpad/fresh_db.sqlite3\" *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\JALES_~1\\AppData\\Local\\Temp\\claude\\c--Users-Jales-Ramon-Desktop-gestao-hamburgueria\\bf8d725a-73c7-473b-af4b-5d55bb1eb877\\scratchpad"
+    ]
+  }
+}

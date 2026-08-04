@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Estoque{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-1"><i class="bi bi-box-seam me-2"></i>Estoque de Ingredientes</h4>
+    <small class="text-muted">O que você compra dos fornecedores e usa nas receitas (pão, carne, queijo...). Controle de entrada/saída fica na página de cada ingrediente.</small>
+  </div>
+  <div>
+    <a href="{% url 'estoque:categoria_list' %}" class="btn btn-outline-secondary"><i class="bi bi-tags me-1"></i>Categorias</a>
+    <a href="{% url 'estoque:ingrediente_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Novo Ingrediente</a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2">
+      <div class="col-md-5">
+        <input type="text" name="q" class="form-control" placeholder="Buscar ingrediente..." value="{{ request.GET.q }}">
+      </div>
+      <div class="col-md-3">
+        <select name="categoria" class="form-select">
+          <option value="">Todas as categorias</option>
+          {% for c in categorias %}
+          <option value="{{ c.pk }}" {% if request.GET.categoria == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 form-check mt-2">
+        <input type="checkbox" class="form-check-input" name="abaixo_minimo" value="1" id="abaixoMin" {% if request.GET.abaixo_minimo == '1' %}checked{% endif %}>
+        <label class="form-check-label" for="abaixoMin">Abaixo do mínimo</label>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-search me-1"></i>Filtrar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Ingrediente</th><th>Categoria</th><th>Estoque</th><th>Mínimo</th><th>Custo unit.</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for ing in ingredientes %}
+        <tr>
+          <td><a href="{% url 'estoque:ingrediente_detail' ing.pk %}">{{ ing.nome }}</a></td>
+          <td>{{ ing.categoria|default:'—' }}</td>
+          <td>{{ ing.estoque_atual }} {{ ing.get_unidade_medida_display }}</td>
+          <td>{{ ing.estoque_minimo }} {{ ing.get_unidade_medida_display }}</td>
+          <td>R$ {{ ing.custo_unitario_atual }}</td>
+          <td>
+            {% if ing.esta_abaixo_do_minimo %}
+              <span class="badge badge-vermelho"><i class="bi bi-exclamation-triangle me-1"></i>Baixo</span>
+            {% else %}
+              <span class="badge badge-verde">OK</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{% url 'estoque:ingrediente_update' ing.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+            <a href="{% url 'estoque:ingrediente_delete' ing.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center py-5">
+          <i class="bi bi-box-seam fs-1 text-muted d-block mb-2"></i>
+          <p class="text-muted mb-2">Nenhum ingrediente cadastrado ainda.<br>Ingredientes são a base das suas fichas técnicas — comece cadastrando os mais usados.</p>
+          <a href="{% url 'estoque:ingrediente_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Cadastrar primeiro ingrediente</a>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include 'partials/_pagination.html' %}
+{% endblock %}

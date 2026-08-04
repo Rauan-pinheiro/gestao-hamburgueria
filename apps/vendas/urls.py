@@ -1,0 +1,12 @@
+from django.urls import path
+
+from . import views
+
+app_name = 'vendas'
+
+urlpatterns = [
+    path('', views.VendaListView.as_view(), name='venda_list'),
+    path('nova/', views.nova_venda, name='nova_venda'),
+    path('<int:pk>/', views.VendaDetailView.as_view(), name='venda_detail'),
+    path('<int:pk>/cancelar/', views.venda_cancelar, name='venda_cancelar'),
+]

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Formas de Pagamento{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-1"><i class="bi bi-credit-card me-2"></i>Formas de Pagamento</h4>
+    <small class="text-muted">Usadas na tela de vendas e no cálculo de comissão/taxa sobre cada venda.</small>
+  </div>
+  <div>
+    <a href="{% url 'configuracoes:home' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+    <a href="{% url 'configuracoes:forma_pagamento_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Nova Forma de Pagamento</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Nome</th><th>Taxa/comissão</th><th>Prazo de recebimento</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for fp in formas_pagamento %}
+        <tr>
+          <td>{{ fp.nome }}</td>
+          <td>{{ fp.taxa_percentual }}%</td>
+          <td>{{ fp.prazo_recebimento_dias }} dias</td>
+          <td>{% if fp.ativo %}<span class="badge badge-verde">Ativa</span>{% else %}<span class="badge bg-secondary">Inativa</span>{% endif %}</td>
+          <td class="text-end">
+            <a href="{% url 'configuracoes:forma_pagamento_update' fp.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+            <form method="post" action="{% url 'configuracoes:forma_pagamento_toggle_ativo' fp.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-secondary" title="{% if fp.ativo %}Inativar{% else %}Ativar{% endif %}">
+                <i class="bi bi-{% if fp.ativo %}toggle-on{% else %}toggle-off{% endif %}"></i>
+              </button>
+            </form>
+            <a href="{% url 'configuracoes:forma_pagamento_delete' fp.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">
+          Nenhuma forma de pagamento cadastrada. <a href="{% url 'configuracoes:forma_pagamento_create' %}">Cadastrar agora</a> — sem isso não é possível finalizar vendas.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

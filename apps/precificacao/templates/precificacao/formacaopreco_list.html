@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Precificação{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-1"><i class="bi bi-tags me-2"></i>Formação de Preços</h4>
+    <small class="text-muted">Aqui você define o preço de venda de cada item. Verde = preço saudável, amarelo = margem baixa, vermelho = abaixo do custo.</small>
+  </div>
+  <a href="{% url 'precificacao:formacaopreco_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Nova Precificação</a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Item</th><th>Custo/porção</th><th>Mínimo</th><th>Ideal</th><th>Premium</th><th>Praticado</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for f in formacoes %}
+        <tr>
+          <td><a href="{% url 'precificacao:formacaopreco_detail' f.pk %}">{{ f.item_cardapio }}</a></td>
+          <td>R$ {{ f.custo_por_porcao|floatformat:2 }}</td>
+          <td>R$ {{ f.preco_minimo }}</td>
+          <td>R$ {{ f.preco_ideal }}</td>
+          <td>R$ {{ f.preco_premium }}</td>
+          <td><strong>R$ {{ f.preco_praticado }}</strong></td>
+          <td><span class="badge badge-{{ f.status_margem }}">{{ f.status_margem_label }}</span></td>
+          <td class="text-end">
+            <a href="{% url 'precificacao:formacaopreco_update' f.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center py-5">
+          <i class="bi bi-tags fs-1 text-muted d-block mb-2"></i>
+          <p class="text-muted mb-2">Nenhuma precificação cadastrada ainda.<br>Depois de ter uma ficha técnica, defina aqui o preço de venda do item.</p>
+          <a href="{% url 'precificacao:formacaopreco_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Definir primeiro preço</a>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% include 'partials/_pagination.html' %}
+{% endblock %}
