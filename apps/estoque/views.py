@@ -3,6 +3,7 @@ import logging
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -59,8 +60,19 @@ class IngredienteCreateView(LoginRequiredMixin, CreateView):
     template_name = 'estoque/ingrediente_form.html'
 
     def form_valid(self, form):
+        estoque_inicial = form.cleaned_data.get('estoque_inicial')
+        with transaction.atomic():
+            response = super().form_valid(form)
+            if estoque_inicial:
+                MovimentacaoEstoque.objects.create(
+                    ingrediente=self.object,
+                    tipo='ENTRADA',
+                    quantidade=estoque_inicial,
+                    motivo='Estoque inicial de cadastro',
+                    usuario=self.request.user if self.request.user.is_authenticated else None,
+                )
         messages.success(self.request, 'Ingrediente cadastrado com sucesso.')
-        return super().form_valid(form)
+        return response
 
     def get_success_url(self):
         return reverse_lazy('estoque:ingrediente_detail', args=[self.object.pk])
