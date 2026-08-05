@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Relatórios de Despesas{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h4 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Relatórios de Despesas</h4>
+  <a href="{% url 'despesas:despesa_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><strong>Gastos por categoria (despesas pagas)</strong></div>
+      <div class="card-body"><canvas id="chart-gastos-categoria"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><strong>Lucro operacional × Despesas — últimos 6 meses</strong></div>
+      <div class="card-body"><canvas id="chart-comparativo" height="220"></canvas></div>
+      <div class="card-footer small text-muted">
+        Lucro operacional = faturamento das vendas já descontando custo de ingredientes e taxas de pagamento.
+        Lucro real = lucro operacional − despesas pagas no mês (aluguel, salários, contas fixas...).
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><strong>Gastos por categoria — detalhamento</strong></div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Categoria</th><th class="text-end">Total pago</th></tr></thead>
+      <tbody>
+        {% for item in gastos_por_categoria %}
+        <tr><td>{{ item.categoria }}</td><td class="text-end">R$ {{ item.total|floatformat:2 }}</td></tr>
+        {% empty %}
+        <tr><td colspan="2" class="text-center text-muted py-4">Nenhuma despesa paga registrada ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+    (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+  const textColor = isDark ? '#9aa0ae' : '#6b7280';
+  Chart.defaults.color = textColor;
+  Chart.defaults.borderColor = gridColor;
+
+  fetch("{% url 'despesas:api_gastos_categoria' %}").then(r => r.json()).then(data => {
+    new Chart(document.getElementById('chart-gastos-categoria'), {
+      type: 'doughnut',
+      data: {
+        labels: data.labels,
+        datasets: [{ data: data.valores, backgroundColor: ['#d9480f', '#2f9e44', '#f08c00', '#0d6efd', '#e03131', '#7048e8', '#12b886', '#ae3ec9', '#1098ad', '#495057'] }],
+      },
+      options: { responsive: true },
+    });
+  });
+
+  fetch("{% url 'despesas:api_comparativo_mensal' %}").then(r => r.json()).then(data => {
+    new Chart(document.getElementById('chart-comparativo'), {
+      type: 'bar',
+      data: {
+        labels: data.labels,
+        datasets: [
+          { label: 'Lucro operacional', data: data.lucro_operacional, backgroundColor: '#2f9e44' },
+          { label: 'Despesas pagas', data: data.despesas, backgroundColor: '#e03131' },
+          { label: 'Lucro real', data: data.lucro_real, type: 'line', borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,.15)', tension: .3, fill: true },
+        ],
+      },
+      options: { responsive: true, scales: { y: { beginAtZero: true } } },
+    });
+  });
+})();
+</script>
+{% endblock %}

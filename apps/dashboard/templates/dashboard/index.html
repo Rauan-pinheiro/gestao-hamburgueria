@@ -82,6 +82,20 @@
       <div class="stat-value">R$ {{ ticket_medio_mes|floatformat:2 }}</div>
     </div>
   </div>
+  <div class="col-md-4 col-lg-2">
+    <div class="card stat-card h-100">
+      <div class="stat-icon mb-2" style="background:rgba(224,49,49,.12); color:var(--danger);"><i class="bi bi-wallet2"></i></div>
+      <div class="stat-label">Despesas pagas (mês)</div>
+      <div class="stat-value">R$ {{ despesas_pagas_mes|floatformat:2 }}</div>
+    </div>
+  </div>
+  <div class="col-md-4 col-lg-2">
+    <div class="card stat-card h-100">
+      <div class="stat-icon mb-2" style="background:rgba(47,158,68,.12); color:var(--success);"><i class="bi bi-piggy-bank"></i></div>
+      <div class="stat-label">Lucro real (mês)</div>
+      <div class="stat-value">R$ {{ lucro_real_mes|floatformat:2 }}</div>
+    </div>
+  </div>
 </div>
 
 <div class="row g-3 mb-3">
@@ -136,6 +150,41 @@
         <li class="list-group-item text-muted">Nenhum alerta de preço.</li>
         {% endfor %}
       </ul>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><strong><i class="bi bi-exclamation-triangle text-danger me-1"></i>Despesas em atraso</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for d in despesas_atrasadas %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <a href="{% url 'despesas:despesa_update' d.pk %}">{{ d.descricao }}</a>
+          <span class="badge badge-vermelho">venceu em {{ d.data_vencimento|date:'d/m/Y' }} · R$ {{ d.valor|floatformat:2 }}</span>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted">Nenhuma despesa em atraso.</li>
+        {% endfor %}
+      </ul>
+      {% if despesas_atrasadas %}<div class="card-footer text-end"><a href="{% url 'despesas:despesa_list' %}?status=ATRASADO" class="small">Ver todas →</a></div>{% endif %}
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><strong><i class="bi bi-bell text-warning me-1"></i>Despesas a vencer (7 dias)</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for d in despesas_a_vencer %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <a href="{% url 'despesas:despesa_update' d.pk %}">{{ d.descricao }}</a>
+          <span class="badge badge-amarelo">vence em {{ d.data_vencimento|date:'d/m/Y' }} · R$ {{ d.valor|floatformat:2 }}</span>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted">Nenhuma despesa a vencer nos próximos 7 dias.</li>
+        {% endfor %}
+      </ul>
+      {% if despesas_a_vencer %}<div class="card-footer text-end"><a href="{% url 'despesas:despesa_list' %}" class="small">Ver todas →</a></div>{% endif %}
     </div>
   </div>
 </div>

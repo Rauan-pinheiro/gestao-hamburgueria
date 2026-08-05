@@ -15,6 +15,7 @@ urlpatterns = [
     path('cardapio/', include('apps.cardapio.urls')),
     path('precificacao/', include('apps.precificacao.urls')),
     path('vendas/', include('apps.vendas.urls')),
+    path('despesas/', include('apps.despesas.urls')),
     path('configuracoes/', include('apps.configuracoes.urls')),
     path('ajuda/', include('apps.ajuda.urls')),
 ]

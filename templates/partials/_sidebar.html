@@ -30,6 +30,11 @@
   <i class="bi bi-cart-check"></i><span>Vendas</span>
 </a>
 
+<div class="sidebar-section-title">4. Financeiro</div>
+<a class="nav-link {% if app == 'despesas' %}active{% endif %}" href="{% url 'despesas:despesa_list' %}">
+  <i class="bi bi-wallet2"></i><span>Despesas</span>
+</a>
+
 <div class="sidebar-section-title">Ajuda</div>
 <a class="nav-link {% if app == 'ajuda' %}active{% endif %}" href="{% url 'ajuda:leiame' %}">
   <i class="bi bi-book"></i><span>📖 Leia-me</span>

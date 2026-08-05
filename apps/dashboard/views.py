@@ -8,6 +8,7 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from apps.core.onboarding import get_setup_status
+from apps.despesas.models import Despesa
 from apps.estoque.models import Ingrediente
 from apps.fornecedores.models import HistoricoPreco
 from apps.vendas.models import ItemVenda, Venda
@@ -57,6 +58,14 @@ def index(request):
         .order_by('-data_registro')[:5]
     )
 
+    despesas_pagas_mes = (
+        Despesa.objects.filter(status='PAGO', data_pagamento__gte=inicio_mes, data_pagamento__lte=hoje)
+        .aggregate(total=Coalesce(Sum('valor'), _zero()))['total']
+    )
+    lucro_real_mes = lucro_mes - despesas_pagas_mes
+    despesas_atrasadas = Despesa.objects.atrasadas().order_by('data_vencimento')[:5]
+    despesas_a_vencer = Despesa.objects.vencendo_em(7).order_by('data_vencimento')[:5]
+
     context = {
         'setup': get_setup_status(),
         'faturamento_dia': faturamento_dia,
@@ -70,6 +79,10 @@ def index(request):
         'ingrediente_menor_estoque': ingrediente_menor_estoque,
         'ingredientes_baixo_estoque': ingredientes_baixo_estoque,
         'alertas_preco': alertas_preco,
+        'despesas_pagas_mes': despesas_pagas_mes,
+        'lucro_real_mes': lucro_real_mes,
+        'despesas_atrasadas': despesas_atrasadas,
+        'despesas_a_vencer': despesas_a_vencer,
     }
     return render(request, 'dashboard/index.html', context)
 

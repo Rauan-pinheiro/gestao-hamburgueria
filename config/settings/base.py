@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'apps.precificacao',
     'apps.cardapio',
     'apps.vendas',
+    'apps.despesas',
     'apps.configuracoes',
     'apps.ajuda',
 ]
