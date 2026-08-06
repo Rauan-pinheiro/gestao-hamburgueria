@@ -11,21 +11,33 @@
   </div></div>
 
   <div class="card mb-3">
-    <div class="card-header"><strong>Ingredientes</strong></div>
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>Ingredientes</strong>
+      <span class="text-muted small">
+        Custo estimado dos ingredientes: <strong id="custo-ingredientes-estimado">R$ 0,00</strong>
+      </span>
+    </div>
     <div class="card-body">
       {{ formset.management_form }}
       {% if formset.non_form_errors %}
         <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
       {% endif %}
+      <div class="alert alert-warning py-2 px-3 small d-none" id="aviso-custo-zerado">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        Algum ingrediente selecionado está com custo R$ 0,00 — provavelmente não tem nenhuma
+        <a href="{% url 'fornecedores:fornecedor_list' %}" class="alert-link">oferta de fornecedor vinculada</a>.
+        O custo da ficha técnica fica subestimado até isso ser corrigido.
+      </div>
       <div class="table-responsive">
         <table class="table" id="itens-formset-table">
-          <thead><tr><th>Ingrediente</th><th>Quantidade</th><th>Observação</th><th>Remover</th></tr></thead>
+          <thead><tr><th>Ingrediente</th><th>Quantidade</th><th>Custo estimado</th><th>Observação</th><th>Remover</th></tr></thead>
           <tbody>
             {% for item_form in formset %}
             <tr class="formset-row">
               {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
               <td>{{ item_form.ingrediente }}{{ item_form.ingrediente.errors }}</td>
               <td>{{ item_form.quantidade }}{{ item_form.quantidade.errors }}</td>
+              <td class="custo-linha text-muted">—</td>
               <td>{{ item_form.observacao }}</td>
               <td class="text-center">
                 {% if item_form.instance.pk %}
@@ -43,6 +55,19 @@
     </div>
   </div>
 
+  <template id="template-linha-ingrediente">
+    <tr class="formset-row">
+      {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+      <td>{{ formset.empty_form.ingrediente }}{{ formset.empty_form.ingrediente.errors }}</td>
+      <td>{{ formset.empty_form.quantidade }}{{ formset.empty_form.quantidade.errors }}</td>
+      <td class="custo-linha text-muted">—</td>
+      <td>{{ formset.empty_form.observacao }}</td>
+      <td class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-x-lg"></i></button>
+      </td>
+    </tr>
+  </template>
+
   <div class="d-flex gap-2">
     <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar</button>
     <a href="{% url 'receitas:receita_list' %}" class="btn btn-outline-secondary">Cancelar</a>
@@ -56,20 +81,64 @@ document.addEventListener('DOMContentLoaded', function () {
   const totalForms = document.getElementById('id_itens-TOTAL_FORMS');
   const tbody = document.querySelector('#itens-formset-table tbody');
   const addBtn = document.getElementById('add-ingrediente');
+  const template = document.getElementById('template-linha-ingrediente');
+
+  function formatarMoeda(valor) {
+    return 'R$ ' + valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // Cálculo ao vivo do custo da ficha técnica, enquanto o usuário escolhe ingrediente e
+  // quantidade — sem precisar salvar antes para ver o total. O custo unitário de cada
+  // ingrediente vem do atributo data-custo de cada <option> (ver SelectComCustoIngrediente
+  // em apps/receitas/forms.py), que é o mesmo `custo_unitario_atual` usado no back-end
+  // por ItemReceita.custo_total(). Um ingrediente sem oferta de fornecedor vinculada tem
+  // custo 0 aqui pelo mesmo motivo que teria 0 depois de salvo — isso é sinalizado, não
+  // escondido.
+  function calcularCustoFicha() {
+    let total = 0;
+    let temCustoZerado = false;
+
+    tbody.querySelectorAll('.formset-row').forEach(function (row) {
+      const linhaCustoEl = row.querySelector('.custo-linha');
+      const deleteCheckbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+      const select = row.querySelector('select[name$="-ingrediente"]');
+      const qtdInput = row.querySelector('input[name$="-quantidade"]');
+
+      if ((deleteCheckbox && deleteCheckbox.checked) || !select || !select.value || !qtdInput) {
+        if (linhaCustoEl) linhaCustoEl.textContent = '—';
+        return;
+      }
+
+      const opcaoSelecionada = select.options[select.selectedIndex];
+      const custoUnitario = opcaoSelecionada ? parseFloat(opcaoSelecionada.dataset.custo || '0') : 0;
+      const quantidade = parseFloat(qtdInput.value || '0') || 0;
+      const custoLinha = custoUnitario * quantidade;
+
+      total += custoLinha;
+      if (custoUnitario === 0) temCustoZerado = true;
+      if (linhaCustoEl) linhaCustoEl.textContent = formatarMoeda(custoLinha);
+    });
+
+    const totalEl = document.getElementById('custo-ingredientes-estimado');
+    if (totalEl) totalEl.textContent = formatarMoeda(total);
+
+    const avisoEl = document.getElementById('aviso-custo-zerado');
+    if (avisoEl) avisoEl.classList.toggle('d-none', !temCustoZerado);
+  }
 
   addBtn.addEventListener('click', function () {
+    // A nova linha vem do formset.empty_form (prefixo "__prefix__"), não de clonar a
+    // última linha visível — isso evita clonar o widget de busca (Tom Select) já
+    // inicializado, o que geraria um <select> "duplicado" e quebrado na tela.
     const idx = parseInt(totalForms.value, 10);
-    const lastRow = tbody.querySelector('.formset-row:last-child');
-    const newRow = lastRow.cloneNode(true);
-    newRow.querySelectorAll('input, select').forEach(function (el) {
-      el.name = el.name.replace(/itens-\d+-/, 'itens-' + idx + '-');
-      el.id = el.id.replace(/itens-\d+-/, 'itens-' + idx + '-');
-      if (el.type === 'checkbox') { el.checked = false; }
-      else if (el.tagName === 'SELECT') { el.selectedIndex = 0; }
-      else { el.value = ''; }
-    });
+    const html = template.innerHTML.replace(/__prefix__/g, idx);
+    const linhaTemp = document.createElement('tbody');
+    linhaTemp.innerHTML = html.trim();
+    const newRow = linhaTemp.firstElementChild;
     tbody.appendChild(newRow);
     totalForms.value = idx + 1;
+    if (window.initSelectBusca) window.initSelectBusca(newRow);
+    calcularCustoFicha();
   });
 
   tbody.addEventListener('click', function (e) {
@@ -79,7 +148,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (tbody.querySelectorAll('.formset-row').length > 1) {
       row.remove();
     }
+    calcularCustoFicha();
   });
+
+  tbody.addEventListener('change', calcularCustoFicha);
+  tbody.addEventListener('input', calcularCustoFicha);
+  calcularCustoFicha();
 });
 </script>
 {% endblock %}

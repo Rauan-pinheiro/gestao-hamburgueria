@@ -191,6 +191,28 @@ body.sidebar-collapsed .main-wrapper { margin-left: var(--sidebar-width-collapse
 .btn-primary { background-color: var(--primary); border-color: var(--primary); }
 .btn-primary:hover { background-color: var(--primary-hover); border-color: var(--primary-hover); }
 
+/* ---------- Select com busca (Tom Select) ---------- */
+.ts-wrapper.form-select.single .ts-control,
+.ts-wrapper .ts-control {
+  background-color: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+.ts-wrapper.focus .ts-control { border-color: var(--primary); box-shadow: 0 0 0 .2rem rgba(217, 72, 15, .15); }
+.ts-dropdown {
+  background-color: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.ts-dropdown .ts-dropdown-content .option,
+.ts-dropdown .no-results { color: var(--text); }
+.ts-dropdown .active { background-color: var(--surface-alt); color: var(--text); }
+.ts-dropdown [data-selectable].option:active,
+.ts-dropdown .ts-dropdown-content .option.selected { background-color: var(--primary); color: #fff; }
+.ts-wrapper .ts-control input { color: var(--text); }
+.ts-wrapper.disabled .ts-control { background-color: var(--surface-alt); }
+
 @media (max-width: 991.98px) {
   .sidebar { width: var(--sidebar-width-collapsed); }
   .main-wrapper { margin-left: var(--sidebar-width-collapsed); }

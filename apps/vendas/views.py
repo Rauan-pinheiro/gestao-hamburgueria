@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import DetailView, ListView
 
-from apps.cardapio.models import ItemCardapio
+from apps.cardapio.models import CategoriaCardapio, ItemCardapio
 from apps.core.models import FormaPagamento
 
 from .models import Venda
@@ -52,6 +52,7 @@ def nova_venda(request):
 
     itens_cardapio = ItemCardapio.objects.ativos().select_related('categoria', 'formacao_preco', 'receita')
     formas_pagamento = FormaPagamento.objects.filter(ativo=True)
+    categorias = CategoriaCardapio.objects.filter(ativo=True)
     itens_sem_preco = sum(
         1 for item in itens_cardapio
         if not getattr(item, 'formacao_preco', None) or not item.formacao_preco.preco_praticado
@@ -59,6 +60,7 @@ def nova_venda(request):
     return render(request, 'vendas/nova_venda.html', {
         'itens_cardapio': itens_cardapio,
         'formas_pagamento': formas_pagamento,
+        'categorias': categorias,
         'tem_itens': itens_cardapio.exists(),
         'tem_forma_pagamento': formas_pagamento.exists(),
         'itens_sem_preco': itens_sem_preco,

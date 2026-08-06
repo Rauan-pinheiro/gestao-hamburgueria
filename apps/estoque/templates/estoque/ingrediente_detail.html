@@ -35,7 +35,11 @@
     <div class="card stat-card h-100">
       <div class="stat-label">Custo unitário atual</div>
       <div class="stat-value">R$ {{ ingrediente.custo_unitario_atual }}</div>
-      <small class="text-muted">por {{ ingrediente.get_unidade_medida_display }}</small>
+      {% if ingrediente.custo_unitario_atual %}
+        <small class="text-muted">por {{ ingrediente.get_unidade_medida_display }}</small>
+      {% else %}
+        <small class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Sem oferta de fornecedor vinculada</small>
+      {% endif %}
     </div>
   </div>
   <div class="col-md-3">

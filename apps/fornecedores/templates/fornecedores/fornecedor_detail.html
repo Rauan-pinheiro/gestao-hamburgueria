@@ -52,7 +52,13 @@
         {% for produto in produtos %}
         <tr>
           <td>{{ produto.nome_produto }}</td>
-          <td>{{ produto.ingrediente|default:'—' }}</td>
+          <td>
+            {% if produto.ingrediente %}
+              {{ produto.ingrediente }}
+            {% else %}
+              <a href="{% url 'fornecedores:produtofornecedor_update' produto.pk %}" class="badge badge-vermelho text-decoration-none" title="Sem ingrediente vinculado — este preço não entra no custo de nenhuma ficha técnica">Não vinculado</a>
+            {% endif %}
+          </td>
           <td>{{ produto.quantidade_embalagem }} {{ produto.get_unidade_embalagem_display }}</td>
           <td>R$ {{ produto.preco_embalagem }}</td>
           <td>R$ {{ produto.frete }}</td>

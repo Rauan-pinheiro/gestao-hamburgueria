@@ -1,5 +1,7 @@
 from django import forms
 
+from apps.core.forms import ativar_busca
+
 from .models import Fornecedor, ProdutoFornecedor
 
 
@@ -28,3 +30,7 @@ class ProdutoFornecedorForm(forms.ModelForm):
         widgets = {
             'data_cotacao': forms.DateInput(attrs={'type': 'date'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        ativar_busca(self, 'fornecedor', 'ingrediente')

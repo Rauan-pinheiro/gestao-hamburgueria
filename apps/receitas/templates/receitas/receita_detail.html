@@ -16,6 +16,18 @@
   <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Custo por porção</div><div class="stat-value">R$ {{ custo_por_porcao|floatformat:2 }}</div></div></div>
 </div>
 
+{% if ingredientes_sem_custo %}
+<div class="alert alert-warning py-2 px-3 small d-flex align-items-start gap-2 mb-3">
+  <i class="bi bi-exclamation-triangle fs-6"></i>
+  <div>
+    {{ ingredientes_sem_custo|length }} ingrediente(s) desta ficha estão com custo R$ 0,00 porque não têm
+    nenhuma <a href="{% url 'fornecedores:fornecedor_list' %}" class="alert-link">oferta de fornecedor vinculada</a>
+    no estoque: {% for i in ingredientes_sem_custo %}<a href="{% url 'estoque:ingrediente_detail' i.pk %}">{{ i.nome }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.
+    Os custos acima estão subestimados até isso ser corrigido.
+  </div>
+</div>
+{% endif %}
+
 <div class="row g-3">
   <div class="col-lg-7">
     <div class="card">
@@ -28,7 +40,12 @@
             <tr>
               <td>{{ item.ingrediente.nome }}</td>
               <td>{{ item.quantidade }} {{ item.ingrediente.get_unidade_medida_display }}</td>
-              <td>R$ {{ item.ingrediente.custo_unitario_atual }}</td>
+              <td>
+                R$ {{ item.ingrediente.custo_unitario_atual }}
+                {% if not item.ingrediente.custo_unitario_atual %}
+                <a href="{% url 'estoque:ingrediente_detail' item.ingrediente.pk %}" class="badge badge-vermelho text-decoration-none" title="Sem oferta de fornecedor vinculada — custo não calculado">Sem custo</a>
+                {% endif %}
+              </td>
               <td>R$ {{ item.custo_total|floatformat:2 }}</td>
             </tr>
             {% empty %}

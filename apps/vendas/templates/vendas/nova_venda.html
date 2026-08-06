@@ -42,13 +42,25 @@
   <div class="col-lg-8">
     <div class="card mb-3">
       <div class="card-body">
-        <input type="text" id="busca-item" class="form-control" placeholder="Buscar item do cardápio..." {% if not tem_itens %}disabled{% endif %}>
+        <div class="row g-2">
+          <div class="col-md-8">
+            <input type="text" id="busca-item" class="form-control" placeholder="Buscar item do cardápio..." {% if not tem_itens %}disabled{% endif %}>
+          </div>
+          <div class="col-md-4">
+            <select id="filtro-categoria" class="form-select" {% if not tem_itens %}disabled{% endif %}>
+              <option value="">Todas as categorias</option>
+              {% for categoria in categorias %}
+              <option value="{{ categoria.pk }}">{{ categoria.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
       </div>
     </div>
     <div class="row g-3" id="catalogo">
       {% for item in itens_cardapio %}
       {% with preco=item.formacao_preco.preco_praticado|default:'0' %}
-      <div class="col-md-4 col-lg-3 item-catalogo" data-nome="{{ item.nome|lower }}">
+      <div class="col-md-4 col-lg-3 item-catalogo" data-nome="{{ item.nome|lower }}" data-categoria-id="{{ item.categoria_id|default:'' }}">
         <div class="card h-100 {% if preco == '0' %}border-warning{% endif %}">
           <div class="card-body d-flex flex-column">
             <h6 class="card-title mb-1">{{ item.nome }}</h6>
@@ -83,6 +95,10 @@
         </div>
       </div>
       {% endfor %}
+    </div>
+    <div class="alert alert-light border text-center py-4 d-none" id="catalogo-sem-resultado">
+      <i class="bi bi-search fs-3 text-muted d-block mb-2"></i>
+      Nenhum item encontrado para o filtro selecionado.
     </div>
   </div>
 
@@ -227,14 +243,25 @@
   if (descontoInput) descontoInput.addEventListener('input', renderCarrinho);
 
   const buscaInput = document.getElementById('busca-item');
-  if (buscaInput) {
-    buscaInput.addEventListener('input', function (e) {
-      const termo = e.target.value.toLowerCase();
-      document.querySelectorAll('.item-catalogo').forEach(function (card) {
-        card.style.display = card.dataset.nome.includes(termo) ? '' : 'none';
-      });
+  const filtroCategoria = document.getElementById('filtro-categoria');
+  const semResultado = document.getElementById('catalogo-sem-resultado');
+
+  function aplicarFiltros() {
+    const termo = buscaInput ? buscaInput.value.toLowerCase() : '';
+    const categoriaId = filtroCategoria ? filtroCategoria.value : '';
+    let visiveis = 0;
+    document.querySelectorAll('.item-catalogo').forEach(function (card) {
+      const nomeOk = card.dataset.nome.includes(termo);
+      const categoriaOk = !categoriaId || card.dataset.categoriaId === categoriaId;
+      const mostrar = nomeOk && categoriaOk;
+      card.style.display = mostrar ? '' : 'none';
+      if (mostrar) visiveis += 1;
     });
+    if (semResultado) semResultado.classList.toggle('d-none', visiveis !== 0);
   }
+
+  if (buscaInput) buscaInput.addEventListener('input', aplicarFiltros);
+  if (filtroCategoria) filtroCategoria.addEventListener('change', aplicarFiltros);
 
   const finalizarBtn = document.getElementById('finalizar-venda');
   if (finalizarBtn) {

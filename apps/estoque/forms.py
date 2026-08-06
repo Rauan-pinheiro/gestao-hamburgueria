@@ -1,5 +1,7 @@
 from django import forms
 
+from apps.core.forms import ativar_busca
+
 from .models import CategoriaIngrediente, Ingrediente, MovimentacaoEstoque
 
 
@@ -25,6 +27,7 @@ class IngredienteForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        ativar_busca(self, 'categoria', 'fornecedor_preferencial')
         if self.instance.pk:
             # Edição: o estoque já existe e só pode ser alterado via movimentação
             # auditada (tela de detalhe do ingrediente), nunca sobrescrito aqui.

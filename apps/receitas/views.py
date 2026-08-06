@@ -35,13 +35,19 @@ class ReceitaDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        itens = list(self.object.itens.all())
+        itens = list(self.object.itens.select_related('ingrediente').all())
         ctx['itens'] = itens
         ctx['custo_ingredientes'] = self.object.custo_ingredientes()
         ctx['custo_embalagem'] = self.object.custo_embalagem()
         ctx['custo_indiretos'] = self.object.custo_indiretos()
         ctx['custo_total'] = self.object.custo_total()
         ctx['custo_por_porcao'] = self.object.custo_por_porcao()
+        # Ingredientes com custo_unitario_atual=0 quase sempre significam "sem oferta de
+        # fornecedor vinculada" (ver apps/fornecedores/models.py ProdutoFornecedor.ingrediente)
+        # — sinalizamos aqui para não deixar o custo total parecer certo quando está subestimado.
+        ctx['ingredientes_sem_custo'] = [
+            item.ingrediente for item in itens if not item.ingrediente.custo_unitario_atual
+        ]
         return ctx
 
 
