@@ -1,0 +1,20 @@
+{% load crispy_forms_tags %}
+{% load ds_icons %}
+{% comment %}
+Corpo comum das telas de criar/editar um cadastro simples: card com o
+formulário renderizado pelo pack crispy "hamburgueria" + ações de
+salvar/cancelar. Passe multipart=True no {% include %} with quando o
+formulário tiver upload de arquivo.
+{% endcomment %}
+<div class="card max-w-lg">
+  <div class="card__body">
+    <form method="post"{% if multipart %} enctype="multipart/form-data"{% endif %}>
+      {% csrf_token %}
+      {{ form|crispy }}
+      <div class="btn-group mt-4">
+        <button type="submit" class="btn btn--primary">{% icon "check" class="icon-sm" %}Salvar</button>
+        <a href="{{ cancel_url }}" class="btn btn--outline">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>

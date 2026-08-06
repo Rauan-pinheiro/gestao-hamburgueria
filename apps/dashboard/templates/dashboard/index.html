@@ -1,41 +1,43 @@
 {% extends 'base.html' %}
+{% load static %}
+{% load ds_icons %}
 {% block title %}Dashboard{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/dashboard.css' %}">
+{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-4">
-  <div>
-    <h4 class="display-title mb-1"><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h4>
-    <p class="text-muted mb-0 small">Visão geral do negócio hoje, {% now "d/m/Y" %}.</p>
+<div class="page-header">
+  <div class="page-header__title">
+    {% icon "speedometer2" %}
+    <div>
+      <h1 class="mb-1" style="font-size: var(--text-xl);">Dashboard</h1>
+      <p class="text-muted text-sm">Visão geral do negócio hoje, {% now "d/m/Y" %}.</p>
+    </div>
   </div>
 </div>
 
 {% if not setup.completo %}
-<div class="card mb-4 border-primary">
-  <div class="card-body">
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+<div class="card card--accent-primary mb-5">
+  <div class="card__body">
+    <div class="flex justify-between items-start flex-wrap gap-2 mb-3">
       <div>
-        <strong><i class="bi bi-flag me-1"></i>Vamos configurar seu sistema</strong>
-        <p class="text-muted small mb-0">Siga esta ordem para começar a usar o ERP. Você já concluiu {{ setup.concluidas }} de {{ setup.total }} passos.</p>
+        <strong class="flex items-center gap-2">{% icon "flag" %}Vamos configurar seu sistema</strong>
+        <p class="text-muted text-sm mt-1">Siga esta ordem para começar a usar o ERP. Você já concluiu {{ setup.concluidas }} de {{ setup.total }} passos.</p>
       </div>
-      <span class="badge badge-verde fs-6">{{ setup.percentual }}%</span>
+      <span class="badge badge--success text-lg">{{ setup.percentual }}%</span>
     </div>
-    <div class="progress mb-3" style="height:8px; border-radius: var(--radius-full);">
-      <div class="progress-bar bg-primary" style="width: {{ setup.percentual }}%;"></div>
-    </div>
-    <div class="row g-2">
+    <div class="progress-track mb-4"><div class="progress-track__bar" style="width: {{ setup.percentual }}%;"></div></div>
+    <div class="dashboard-onboarding__grid">
       {% for etapa in setup.etapas %}
-      <div class="col-md-6 col-lg-3">
-        <div class="d-flex align-items-start gap-2 p-2 rounded {% if not etapa.feito and etapa == setup.proxima_etapa %}bg-body-secondary{% endif %}">
-          {% if etapa.feito %}
-            <i class="bi bi-check-circle-fill text-success fs-5"></i>
-          {% else %}
-            <i class="bi bi-circle text-muted fs-5"></i>
-          {% endif %}
-          <div>
-            <div class="small {% if etapa.feito %}text-decoration-line-through text-muted{% endif %}">{{ etapa.titulo }}</div>
-            {% if not etapa.feito %}
-              <a href="{% url etapa.url %}" class="small">Fazer agora →</a>
-            {% endif %}
-          </div>
+      <div class="dashboard-onboarding__step{% if not etapa.feito and etapa == setup.proxima_etapa %} dashboard-onboarding__step--next{% endif %}">
+        {% if etapa.feito %}
+          {% icon "check-circle" class="text-success" %}
+        {% else %}
+          {% icon "circle" class="text-muted" %}
+        {% endif %}
+        <div>
+          <div class="text-sm{% if etapa.feito %} text-muted line-through{% endif %}">{{ etapa.titulo }}</div>
+          {% if not etapa.feito %}<a href="{% url etapa.url %}" class="text-sm">Fazer agora →</a>{% endif %}
         </div>
       </div>
       {% endfor %}
@@ -44,168 +46,146 @@
 </div>
 {% endif %}
 
-<div class="stat-grid mb-3">
+<div class="stat-grid mb-5">
   <div class="card stat-card">
-    <div class="stat-icon tone-primary mb-2"><i class="bi bi-cash-coin"></i></div>
-    <div class="stat-label">Faturamento hoje</div>
-    <div class="stat-value">R$ {{ faturamento_dia|floatformat:2 }}</div>
+    <div class="stat-card__icon tone-primary">{% icon "cash-coin" %}</div>
+    <div class="stat-card__label">Faturamento hoje</div>
+    <div class="stat-card__value">R$ {{ faturamento_dia|floatformat:2 }}</div>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon tone-success mb-2"><i class="bi bi-calendar-week"></i></div>
-    <div class="stat-label">Faturamento semana</div>
-    <div class="stat-value">R$ {{ faturamento_semana|floatformat:2 }}</div>
+    <div class="stat-card__icon tone-success">{% icon "calendar-week" %}</div>
+    <div class="stat-card__label">Faturamento semana</div>
+    <div class="stat-card__value">R$ {{ faturamento_semana|floatformat:2 }}</div>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon tone-success mb-2"><i class="bi bi-calendar-month"></i></div>
-    <div class="stat-label">Faturamento mês</div>
-    <div class="stat-value">R$ {{ faturamento_mes|floatformat:2 }}</div>
+    <div class="stat-card__icon tone-success">{% icon "calendar-month" %}</div>
+    <div class="stat-card__label">Faturamento mês</div>
+    <div class="stat-card__value">R$ {{ faturamento_mes|floatformat:2 }}</div>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon tone-warning mb-2"><i class="bi bi-graph-up-arrow"></i></div>
-    <div class="stat-label">Lucro hoje</div>
-    <div class="stat-value">R$ {{ lucro_dia|floatformat:2 }}</div>
+    <div class="stat-card__icon tone-warning">{% icon "graph-up-arrow" %}</div>
+    <div class="stat-card__label">Lucro hoje</div>
+    <div class="stat-card__value">R$ {{ lucro_dia|floatformat:2 }}</div>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon tone-warning mb-2"><i class="bi bi-graph-up"></i></div>
-    <div class="stat-label">Lucro mensal</div>
-    <div class="stat-value">R$ {{ lucro_mes|floatformat:2 }}</div>
+    <div class="stat-card__icon tone-warning">{% icon "graph-up" %}</div>
+    <div class="stat-card__label">Lucro mensal</div>
+    <div class="stat-card__value">R$ {{ lucro_mes|floatformat:2 }}</div>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon tone-info mb-2"><i class="bi bi-receipt"></i></div>
-    <div class="stat-label">Ticket médio (mês)</div>
-    <div class="stat-value">R$ {{ ticket_medio_mes|floatformat:2 }}</div>
+    <div class="stat-card__icon tone-info">{% icon "receipt" %}</div>
+    <div class="stat-card__label">Ticket médio (mês)</div>
+    <div class="stat-card__value">R$ {{ ticket_medio_mes|floatformat:2 }}</div>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon tone-danger mb-2"><i class="bi bi-wallet2"></i></div>
-    <div class="stat-label">Despesas pagas (mês)</div>
-    <div class="stat-value">R$ {{ despesas_pagas_mes|floatformat:2 }}</div>
+    <div class="stat-card__icon tone-danger">{% icon "wallet2" %}</div>
+    <div class="stat-card__label">Despesas pagas (mês)</div>
+    <div class="stat-card__value">R$ {{ despesas_pagas_mes|floatformat:2 }}</div>
   </div>
   <div class="card stat-card">
-    <div class="stat-icon tone-success mb-2"><i class="bi bi-piggy-bank"></i></div>
-    <div class="stat-label">Lucro real (mês)</div>
-    <div class="stat-value">R$ {{ lucro_real_mes|floatformat:2 }}</div>
+    <div class="stat-card__icon tone-success">{% icon "piggy-bank" %}</div>
+    <div class="stat-card__label">Lucro real (mês)</div>
+    <div class="stat-card__value">R$ {{ lucro_real_mes|floatformat:2 }}</div>
   </div>
 </div>
 
-<div class="row g-3 mb-3">
-  <div class="col-lg-8">
-    <div class="card h-100">
-      <div class="card-header"><strong>Faturamento e lucro — últimos 14 dias</strong></div>
-      <div class="card-body">
-        <div class="skeleton" id="skeleton-vendas-dia" style="height:300px; border-radius: var(--radius-md);"></div>
-        <div style="position:relative; height:300px;" class="d-none" id="wrap-chart-vendas-dia"><canvas id="chart-vendas-dia"></canvas></div>
-      </div>
+<div class="dashboard-charts dashboard-charts--2-1 mb-4">
+  <div class="card card--full">
+    <div class="card__header"><strong>Faturamento e lucro — últimos 14 dias</strong></div>
+    <div class="card__body">
+      <div class="skeleton" id="skeleton-vendas-dia" style="height:300px;"></div>
+      <div style="position:relative; height:300px;" class="hidden" id="wrap-chart-vendas-dia"><canvas id="chart-vendas-dia"></canvas></div>
     </div>
   </div>
-  <div class="col-lg-4">
-    <div class="card h-100">
-      <div class="card-header"><strong>Produtos mais vendidos (mês)</strong></div>
-      <div class="card-body">
-        <div class="skeleton" id="skeleton-top-produtos" style="height:300px; border-radius: var(--radius-md);"></div>
-        <div style="position:relative; height:300px;" class="d-none" id="wrap-chart-top-produtos"><canvas id="chart-top-produtos"></canvas></div>
-      </div>
+  <div class="card card--full">
+    <div class="card__header"><strong>Produtos mais vendidos (mês)</strong></div>
+    <div class="card__body">
+      <div class="skeleton" id="skeleton-top-produtos" style="height:300px;"></div>
+      <div style="position:relative; height:300px;" class="hidden" id="wrap-chart-top-produtos"><canvas id="chart-top-produtos"></canvas></div>
     </div>
   </div>
 </div>
 
-<div class="row g-3">
-  <div class="col-lg-4">
-    <div class="card h-100">
-      <div class="card-header"><strong>Vendas por forma de pagamento</strong></div>
-      <div class="card-body">
-        <div class="skeleton" id="skeleton-formas-pagamento" style="height:280px; border-radius: var(--radius-md);"></div>
-        <div style="position:relative; height:280px;" class="d-none" id="wrap-chart-formas-pagamento"><canvas id="chart-formas-pagamento"></canvas></div>
+<div class="dashboard-charts dashboard-charts--3 mb-4">
+  <div class="card card--full">
+    <div class="card__header"><strong>Vendas por forma de pagamento</strong></div>
+    <div class="card__body">
+      <div class="skeleton" id="skeleton-formas-pagamento" style="height:280px;"></div>
+      <div style="position:relative; height:280px;" class="hidden" id="wrap-chart-formas-pagamento"><canvas id="chart-formas-pagamento"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card card--full">
+    <div class="card__header"><strong class="flex items-center gap-2">{% icon "exclamation-triangle" class="text-danger" %}Alertas de estoque</strong></div>
+    <div class="list">
+      {% for ing in ingredientes_baixo_estoque %}
+      <div class="list__item">
+        <a href="{% url 'estoque:ingrediente_detail' ing.pk %}">{{ ing.nome }}</a>
+        <span class="badge badge--danger">{{ ing.estoque_atual }} {{ ing.get_unidade_medida_display }}</span>
       </div>
+      {% empty %}
+      <div class="empty-state empty-state--sm">
+        {% icon "check2-circle" %}
+        <span class="empty-state__title">Estoque em dia</span>
+        <span class="empty-state__subtitle">Nenhum ingrediente abaixo do mínimo.</span>
+      </div>
+      {% endfor %}
     </div>
   </div>
 
-  <div class="col-lg-4">
-    <div class="card h-100">
-      <div class="card-header"><strong><i class="bi bi-exclamation-triangle text-danger me-1"></i>Alertas de estoque</strong></div>
-      <ul class="list-group list-group-flush">
-        {% for ing in ingredientes_baixo_estoque %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <a href="{% url 'estoque:ingrediente_detail' ing.pk %}">{{ ing.nome }}</a>
-          <span class="badge badge-vermelho">{{ ing.estoque_atual }} {{ ing.get_unidade_medida_display }}</span>
-        </li>
-        {% empty %}
-        <li class="list-group-item">
-          <div class="empty-state py-2">
-            <i class="bi bi-check2-circle"></i>
-            <span class="empty-title">Estoque em dia</span>
-            <span class="empty-subtitle">Nenhum ingrediente abaixo do mínimo.</span>
-          </div>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
-
-  <div class="col-lg-4">
-    <div class="card h-100">
-      <div class="card-header"><strong><i class="bi bi-arrow-up-circle text-warning me-1"></i>Alertas de aumento de preço</strong></div>
-      <ul class="list-group list-group-flush">
-        {% for h in alertas_preco %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <span>{{ h.produto_fornecedor.ingrediente|default:h.produto_fornecedor.nome_produto }}</span>
-          <span class="badge badge-amarelo">+{{ h.variacao_percentual|floatformat:1 }}%</span>
-        </li>
-        {% empty %}
-        <li class="list-group-item">
-          <div class="empty-state py-2">
-            <i class="bi bi-check2-circle"></i>
-            <span class="empty-title">Preços estáveis</span>
-            <span class="empty-subtitle">Nenhuma alta relevante recente.</span>
-          </div>
-        </li>
-        {% endfor %}
-      </ul>
+  <div class="card card--full">
+    <div class="card__header"><strong class="flex items-center gap-2">{% icon "arrow-up-circle" class="text-warning" %}Alertas de aumento de preço</strong></div>
+    <div class="list">
+      {% for h in alertas_preco %}
+      <div class="list__item">
+        <span>{{ h.produto_fornecedor.ingrediente|default:h.produto_fornecedor.nome_produto }}</span>
+        <span class="badge badge--warning">+{{ h.variacao_percentual|floatformat:1 }}%</span>
+      </div>
+      {% empty %}
+      <div class="empty-state empty-state--sm">
+        {% icon "check2-circle" %}
+        <span class="empty-state__title">Preços estáveis</span>
+        <span class="empty-state__subtitle">Nenhuma alta relevante recente.</span>
+      </div>
+      {% endfor %}
     </div>
   </div>
 </div>
 
-<div class="row g-3 mt-1">
-  <div class="col-lg-6">
-    <div class="card h-100">
-      <div class="card-header"><strong><i class="bi bi-exclamation-triangle text-danger me-1"></i>Despesas em atraso</strong></div>
-      <ul class="list-group list-group-flush">
-        {% for d in despesas_atrasadas %}
-        <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-1">
-          <a href="{% url 'despesas:despesa_update' d.pk %}">{{ d.descricao }}</a>
-          <span class="badge badge-vermelho">venceu em {{ d.data_vencimento|date:'d/m/Y' }} · R$ {{ d.valor|floatformat:2 }}</span>
-        </li>
-        {% empty %}
-        <li class="list-group-item">
-          <div class="empty-state py-2">
-            <i class="bi bi-check2-circle"></i>
-            <span class="empty-title">Nenhuma despesa em atraso</span>
-          </div>
-        </li>
-        {% endfor %}
-      </ul>
-      {% if despesas_atrasadas %}<div class="card-footer text-end"><a href="{% url 'despesas:despesa_list' %}?status=ATRASADO" class="small">Ver todas →</a></div>{% endif %}
+<div class="dashboard-charts dashboard-charts--2">
+  <div class="card card--full">
+    <div class="card__header"><strong class="flex items-center gap-2">{% icon "exclamation-triangle" class="text-danger" %}Despesas em atraso</strong></div>
+    <div class="list">
+      {% for d in despesas_atrasadas %}
+      <div class="list__item">
+        <a href="{% url 'despesas:despesa_update' d.pk %}">{{ d.descricao }}</a>
+        <span class="badge badge--danger">venceu em {{ d.data_vencimento|date:'d/m/Y' }} · R$ {{ d.valor|floatformat:2 }}</span>
+      </div>
+      {% empty %}
+      <div class="empty-state empty-state--sm">
+        {% icon "check2-circle" %}
+        <span class="empty-state__title">Nenhuma despesa em atraso</span>
+      </div>
+      {% endfor %}
     </div>
+    {% if despesas_atrasadas %}<div class="card__footer text-end"><a href="{% url 'despesas:despesa_list' %}?status=ATRASADO" class="text-sm">Ver todas →</a></div>{% endif %}
   </div>
-  <div class="col-lg-6">
-    <div class="card h-100">
-      <div class="card-header"><strong><i class="bi bi-bell text-warning me-1"></i>Despesas a vencer (7 dias)</strong></div>
-      <ul class="list-group list-group-flush">
-        {% for d in despesas_a_vencer %}
-        <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-1">
-          <a href="{% url 'despesas:despesa_update' d.pk %}">{{ d.descricao }}</a>
-          <span class="badge badge-amarelo">vence em {{ d.data_vencimento|date:'d/m/Y' }} · R$ {{ d.valor|floatformat:2 }}</span>
-        </li>
-        {% empty %}
-        <li class="list-group-item">
-          <div class="empty-state py-2">
-            <i class="bi bi-check2-circle"></i>
-            <span class="empty-title">Nada vencendo nos próximos 7 dias</span>
-          </div>
-        </li>
-        {% endfor %}
-      </ul>
-      {% if despesas_a_vencer %}<div class="card-footer text-end"><a href="{% url 'despesas:despesa_list' %}" class="small">Ver todas →</a></div>{% endif %}
+  <div class="card card--full">
+    <div class="card__header"><strong class="flex items-center gap-2">{% icon "bell" class="text-warning" %}Despesas a vencer (7 dias)</strong></div>
+    <div class="list">
+      {% for d in despesas_a_vencer %}
+      <div class="list__item">
+        <a href="{% url 'despesas:despesa_update' d.pk %}">{{ d.descricao }}</a>
+        <span class="badge badge--warning">vence em {{ d.data_vencimento|date:'d/m/Y' }} · R$ {{ d.valor|floatformat:2 }}</span>
+      </div>
+      {% empty %}
+      <div class="empty-state empty-state--sm">
+        {% icon "check2-circle" %}
+        <span class="empty-state__title">Nada vencendo nos próximos 7 dias</span>
+      </div>
+      {% endfor %}
     </div>
+    {% if despesas_a_vencer %}<div class="card__footer text-end"><a href="{% url 'despesas:despesa_list' %}" class="text-sm">Ver todas →</a></div>{% endif %}
   </div>
 </div>
 {% endblock %}
@@ -214,13 +194,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
-    (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
-  const textColor = isDark ? '#A39C92' : '#6F6A63';
-  Chart.defaults.color = textColor;
-  Chart.defaults.borderColor = gridColor;
-  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+  const theme = chartTheme();
 
   // Troca o skeleton pelo gráfico real assim que os dados chegam — evita o
   // "pulo" de um card vazio para um card cheio. Se não houver nenhum dado
@@ -230,14 +204,14 @@
     const skeleton = document.getElementById(skeletonId);
     if (isEmpty) {
       skeleton.classList.remove('skeleton');
-      skeleton.innerHTML = '<div class="empty-state h-100 justify-content-center">' +
-        '<i class="bi bi-bar-chart"></i>' +
-        '<span class="empty-title">Sem dados ainda</span>' +
-        '<span class="empty-subtitle">Assim que houver vendas, o gráfico aparece aqui.</span></div>';
+      skeleton.innerHTML = '<div class="empty-state" style="height:100%; justify-content:center;">' +
+        '<svg class="icon" aria-hidden="true"><use href="' + window.DS_SPRITE_URL + '#icon-bar-chart"></use></svg>' +
+        '<span class="empty-state__title">Sem dados ainda</span>' +
+        '<span class="empty-state__subtitle">Assim que houver vendas, o gráfico aparece aqui.</span></div>';
       return;
     }
-    skeleton.classList.add('d-none');
-    document.getElementById(wrapId).classList.remove('d-none');
+    skeleton.classList.add('hidden');
+    document.getElementById(wrapId).classList.remove('hidden');
   }
 
   fetch("{% url 'dashboard:api_vendas_por_dia' %}").then(r => r.json()).then(data => {
@@ -249,8 +223,8 @@
       data: {
         labels: data.labels,
         datasets: [
-          { label: 'Faturamento', data: data.faturamento, borderColor: '#E67E22', backgroundColor: 'rgba(230,126,34,.15)', tension: .35, fill: true },
-          { label: 'Lucro', data: data.lucro, borderColor: '#2F9E58', backgroundColor: 'rgba(47,158,88,.1)', tension: .35, fill: true },
+          { label: 'Faturamento', data: data.faturamento, borderColor: theme.primary, backgroundColor: theme.primary + '26', tension: .35, fill: true },
+          { label: 'Lucro', data: data.lucro, borderColor: theme.success, backgroundColor: theme.success + '1a', tension: .35, fill: true },
         ],
       },
       options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } },
@@ -262,7 +236,7 @@
     if (data.labels.length === 0) return;
     new Chart(document.getElementById('chart-top-produtos'), {
       type: 'bar',
-      data: { labels: data.labels, datasets: [{ label: 'Unidades vendidas', data: data.quantidades, backgroundColor: '#E67E22', borderRadius: 6 }] },
+      data: { labels: data.labels, datasets: [{ label: 'Unidades vendidas', data: data.quantidades, backgroundColor: theme.primary, borderRadius: 6 }] },
       options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } },
     });
   });
@@ -272,10 +246,7 @@
     if (data.labels.length === 0) return;
     new Chart(document.getElementById('chart-formas-pagamento'), {
       type: 'doughnut',
-      data: {
-        labels: data.labels,
-        datasets: [{ data: data.valores, backgroundColor: ['#E67E22', '#F4B400', '#2F9E58', '#3B82C4', '#E5484D', '#7048e8'], borderWidth: 0 }],
-      },
+      data: { labels: data.labels, datasets: [{ data: data.valores, backgroundColor: theme.palette, borderWidth: 0 }] },
       options: { responsive: true, maintainAspectRatio: false },
     });
   });

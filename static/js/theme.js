@@ -1,3 +1,5 @@
+/* Alterna e persiste o tema claro/escuro. Carregado no <head> (antes do body
+   renderizar) para aplicar o tema salvo sem "flash" do tema errado. */
 (function () {
   const STORAGE_KEY = 'hamburgueria-theme';
   const root = document.documentElement;
@@ -9,12 +11,7 @@
   }
 
   function applyTheme(theme) {
-    // data-theme alimenta as variáveis CSS próprias (sidebar, cards etc.) e
-    // data-bs-theme liga o modo escuro nativo do Bootstrap — sem os dois, componentes
-    // do Bootstrap (text-muted, alerts, dropdowns, form-text...) continuam com as cores
-    // claras padrão e ficam ilegíveis sobre o fundo escuro.
     root.setAttribute('data-theme', theme);
-    root.setAttribute('data-bs-theme', theme);
   }
 
   applyTheme(resolveTheme());
@@ -33,8 +30,11 @@
 
     function updateIcon() {
       const current = resolveTheme();
-      const icon = toggle.querySelector('i');
-      if (icon) icon.className = current === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+      const use = toggle.querySelector('use');
+      if (!use) return;
+      const href = use.getAttribute('href') || '';
+      const base = href.split('#')[0];
+      use.setAttribute('href', base + '#icon-' + (current === 'dark' ? 'sun' : 'moon-stars'));
     }
   });
 })();

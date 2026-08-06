@@ -1,30 +1,32 @@
 {% extends 'base.html' %}
+{% load ds_icons %}
 {% block title %}Receitas de Produção{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <div>
-    <h4 class="mb-1"><i class="bi bi-cup-hot me-2"></i>Receitas de Produção</h4>
-    <small class="text-muted">Ingredientes preparados internamente (molhos, temperos, carnes marinadas...) a partir de outros itens do estoque, em vez de comprados prontos de um fornecedor. O sistema calcula o custo por unidade automaticamente.</small>
+<div class="page-header">
+  <div class="page-header__title">
+    {% icon "cup-hot" %}
+    <div>
+      <h1 style="font-size: var(--text-xl);">Receitas de Produção</h1>
+      <p class="text-muted text-sm">Ingredientes preparados internamente (molhos, temperos, carnes marinadas...) a partir de outros itens do estoque, em vez de comprados prontos de um fornecedor. O sistema calcula o custo por unidade automaticamente.</p>
+    </div>
   </div>
-  <a href="{% url 'receitas:receitaproducao_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Nova Receita de Produção</a>
+  <div class="page-header__actions">
+    <a href="{% url 'receitas:receitaproducao_create' %}" class="btn btn--primary">{% icon "plus-lg" class="icon-sm" %}Nova Receita de Produção</a>
+  </div>
 </div>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <form method="get" class="row g-2">
-      <div class="col-md-8">
-        <input type="text" name="q" class="form-control" placeholder="Buscar receita de produção..." value="{{ request.GET.q }}">
-      </div>
-      <div class="col-md-4">
-        <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-search me-1"></i>Buscar</button>
-      </div>
+<div class="card mb-4">
+  <div class="card__body">
+    <form method="get" class="filter-bar">
+      <div class="field"><input type="text" name="q" class="field__control" placeholder="Buscar receita de produção..." value="{{ request.GET.q }}"></div>
+      <button type="submit" class="btn btn--outline">{% icon "search" class="icon-sm" %}Buscar</button>
     </form>
   </div>
 </div>
 
 <div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
+  <div class="table-wrap">
+    <table class="table">
       <thead><tr><th>Nome</th><th>Ingrediente produzido</th><th>Rendimento</th><th>Custo unitário</th><th>Status</th><th></th></tr></thead>
       <tbody>
         {% for receita_producao in receitas_producao %}
@@ -33,17 +35,20 @@
           <td>{{ receita_producao.ingrediente_produzido }}</td>
           <td>{{ receita_producao.rendimento_quantidade }} {{ receita_producao.ingrediente_produzido.get_unidade_medida_display }}</td>
           <td>R$ {{ receita_producao.ingrediente_produzido.custo_unitario_atual|floatformat:4 }}</td>
-          <td>{% if receita_producao.ativo %}<span class="badge badge-verde">Ativa</span>{% else %}<span class="badge bg-secondary">Inativa</span>{% endif %}</td>
-          <td class="text-end">
-            <a href="{% url 'receitas:receitaproducao_update' receita_producao.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-            <a href="{% url 'receitas:receitaproducao_delete' receita_producao.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+          <td>{% if receita_producao.ativo %}<span class="badge badge--success">Ativa</span>{% else %}<span class="badge badge--neutral">Inativa</span>{% endif %}</td>
+          <td class="table__actions">
+            <a href="{% url 'receitas:receitaproducao_update' receita_producao.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Editar">{% icon "pencil" class="icon-sm" %}</a>
+            <a href="{% url 'receitas:receitaproducao_delete' receita_producao.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Excluir">{% icon "trash" class="icon-sm" %}</a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" class="text-center py-5">
-          <i class="bi bi-cup-hot fs-1 text-muted d-block mb-2"></i>
-          <p class="text-muted mb-2">Nenhuma receita de produção cadastrada ainda.<br>Use isso para ingredientes preparados na casa (molhos, temperos...) em vez de comprados prontos.</p>
-          <a href="{% url 'receitas:receitaproducao_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Criar primeira receita de produção</a>
+        <tr><td colspan="6">
+          <div class="empty-state">
+            {% icon "cup-hot" %}
+            <span class="empty-state__title">Nenhuma receita de produção cadastrada ainda.</span>
+            <span class="empty-state__subtitle">Use isso para ingredientes preparados na casa (molhos, temperos...) em vez de comprados prontos.</span>
+            <a href="{% url 'receitas:receitaproducao_create' %}" class="btn btn--primary btn--sm mt-3">{% icon "plus-lg" class="icon-sm" %}Criar primeira receita de produção</a>
+          </div>
         </td></tr>
         {% endfor %}
       </tbody>

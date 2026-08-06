@@ -1,0 +1,133 @@
+/* ============================================================
+   DESIGN SYSTEM · Hamburgueria ERP
+   Camada 4 — Utilitários: um vocabulário pequeno e propositalmente
+   limitado (não é um framework de utilities completo) para
+   composição de layout dentro dos templates, sem recorrer a CSS
+   inline nem a classes do Bootstrap. Espaçamento sempre na escala
+   de 8px definida em tokens.css.
+   ============================================================ */
+@layer utilities {
+
+  /* ---- Ícone base (usado pela tag {% icon %}) ---- */
+  .icon {
+    width: 1.2em;
+    height: 1.2em;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vertical-align: -0.2em;
+  }
+  .icon-xs { width: .85rem; height: .85rem; }
+  .icon-sm { width: 1rem; height: 1rem; }
+  .icon-lg { width: 1.5rem; height: 1.5rem; }
+  .icon-xl { width: 2rem; height: 2rem; }
+
+  /* ---- Container / largura ---- */
+  .container-fluid { width: 100%; max-width: var(--shell-content-max); margin-inline: auto; }
+  .w-full { width: 100%; }
+  .max-w-sm { max-width: 24rem; }
+  .max-w-md { max-width: 32rem; }
+  .max-w-lg { max-width: 48rem; }
+  .mx-auto { margin-inline: auto; }
+
+  /* ---- Flexbox ---- */
+  .block { display: block; }
+  .inline-block { display: inline-block; }
+  .flex { display: flex; }
+  .inline-flex { display: inline-flex; }
+  .flex-col { flex-direction: column; }
+  .flex-wrap { flex-wrap: wrap; }
+  .flex-1 { flex: 1 1 0%; }
+  .items-start { align-items: flex-start; }
+  .items-center { align-items: center; }
+  .items-end { align-items: flex-end; }
+  .items-stretch { align-items: stretch; }
+  .justify-start { justify-content: flex-start; }
+  .justify-center { justify-content: center; }
+  .justify-end { justify-content: flex-end; }
+  .justify-between { justify-content: space-between; }
+
+  /* ---- Grid ---- */
+  .grid { display: grid; }
+  .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-auto-fit { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+
+  /* ---- Gap / espaçamento (escala 8px de tokens.css) ---- */
+  .gap-1 { gap: var(--space-1); } .gap-2 { gap: var(--space-2); } .gap-3 { gap: var(--space-3); }
+  .gap-4 { gap: var(--space-4); } .gap-5 { gap: var(--space-5); } .gap-6 { gap: var(--space-6); }
+
+  .mt-0 { margin-top: 0; } .mt-1 { margin-top: var(--space-1); } .mt-2 { margin-top: var(--space-2); }
+  .mt-3 { margin-top: var(--space-3); } .mt-4 { margin-top: var(--space-4); } .mt-5 { margin-top: var(--space-5); } .mt-6 { margin-top: var(--space-6); }
+  .mb-0 { margin-bottom: 0; } .mb-1 { margin-bottom: var(--space-1); } .mb-2 { margin-bottom: var(--space-2); }
+  .mb-3 { margin-bottom: var(--space-3); } .mb-4 { margin-bottom: var(--space-4); } .mb-5 { margin-bottom: var(--space-5); } .mb-6 { margin-bottom: var(--space-6); }
+  .mb-0\.5 { margin-bottom: .15rem; }
+
+  .p-0 { padding: 0; } .p-2 { padding: var(--space-2); } .p-3 { padding: var(--space-3); } .p-4 { padding: var(--space-4); }
+  .py-2 { padding-block: var(--space-2); } .py-3 { padding-block: var(--space-3); } .py-6 { padding-block: var(--space-6); } .py-8 { padding-block: var(--space-8); }
+  .px-2 { padding-inline: var(--space-2); } .px-3 { padding-inline: var(--space-3); }
+
+  /* ---- Stack: espaça filhos diretos verticalmente sem precisar de mb-* em cada um ---- */
+  .stack > * + * { margin-top: var(--space-4); }
+  .stack-sm > * + * { margin-top: var(--space-2); }
+  .stack-lg > * + * { margin-top: var(--space-6); }
+
+  /* ---- Tipografia utilitária ---- */
+  .text-muted { color: var(--color-text-muted); }
+  .text-faint { color: var(--color-text-faint); }
+  .text-primary { color: var(--color-primary); }
+  .text-success { color: var(--color-success); }
+  .text-warning { color: var(--color-warning); }
+  .text-danger { color: var(--color-danger); }
+  .text-xs { font-size: var(--text-xs); }
+  .text-sm { font-size: var(--text-sm); }
+  .text-lg { font-size: var(--text-lg); }
+  .text-center { text-align: center; }
+  .text-end { text-align: right; }
+  .font-medium { font-weight: 500; }
+  .font-semibold { font-weight: 600; }
+  .font-bold { font-weight: 700; }
+  .text-balance { text-wrap: balance; }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .whitespace-nowrap { white-space: nowrap; }
+  .line-through { text-decoration: line-through; }
+
+  /* ---- Visibilidade responsiva (mobile-first: visível por padrão) ---- */
+  .hidden { display: none !important; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+
+  @media (min-width: 640px) {
+    .sm\:hidden { display: none !important; }
+    .sm\:flex { display: flex !important; }
+    .sm\:inline { display: inline !important; }
+  }
+  @media (min-width: 768px) {
+    .md\:hidden { display: none !important; }
+    .md\:flex { display: flex !important; }
+    .md\:inline { display: inline !important; }
+    .md\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .md\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 992px) {
+    .lg\:hidden { display: none !important; }
+    .lg\:flex { display: flex !important; }
+    .lg\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .lg\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .lg\:grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+    /* Layout comum de tela de detalhe: conteúdo principal + painel lateral */
+    .grid-detail { grid-template-columns: 1.6fr 1fr; align-items: start; }
+  }
+
+  /* ---- Bordas / superfícies genéricas ---- */
+  .rounded-sm { border-radius: var(--radius-sm); }
+  .rounded-md { border-radius: var(--radius-md); }
+  .rounded-lg { border-radius: var(--radius-lg); }
+  .border-top { border-top: 1px solid var(--color-border); }
+  .divider { height: 1px; background: var(--color-border); border: 0; margin: var(--space-4) 0; }
+}

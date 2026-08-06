@@ -1,0 +1,22 @@
+/* Página: Dashboard — grids específicos que não valem a pena virar utilitário
+   genérico (só esta tela usa proporções de coluna assim). */
+@layer pages {
+  .dashboard-charts { display: grid; gap: var(--space-4); grid-template-columns: 1fr; }
+  .dashboard-onboarding__grid { display: grid; gap: var(--space-2); grid-template-columns: 1fr; }
+  .dashboard-onboarding__step {
+    display: flex; align-items: flex-start; gap: var(--space-2);
+    padding: var(--space-2); border-radius: var(--radius-md);
+  }
+  .dashboard-onboarding__step--next { background: var(--color-surface-alt); }
+  .dashboard-onboarding__step .icon { flex-shrink: 0; margin-top: .1rem; }
+
+  .progress-track { height: 8px; border-radius: var(--radius-full); background: var(--color-surface-alt); overflow: hidden; }
+  .progress-track__bar { height: 100%; background: var(--color-primary); border-radius: var(--radius-full); transition: width var(--dur-slow) var(--ease); }
+
+  @media (min-width: 992px) {
+    .dashboard-charts--2-1 { grid-template-columns: 2fr 1fr; }
+    .dashboard-charts--3 { grid-template-columns: repeat(3, 1fr); }
+    .dashboard-charts--2 { grid-template-columns: repeat(2, 1fr); }
+    .dashboard-onboarding__grid { grid-template-columns: repeat(4, 1fr); }
+  }
+}

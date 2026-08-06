@@ -1,0 +1,17 @@
+{% load ds_icons %}
+{% comment %}
+Corpo comum das telas de "Excluir X": card de confirmação + opção de
+cascata para superusuário. Cada tela extra fornece object/cancel_url e,
+opcionalmente, um parágrafo de aviso específico antes deste include.
+{% endcomment %}
+<div class="card max-w-md">
+  <div class="card__body">
+    <p class="mb-4">Tem certeza que deseja excluir <strong>{{ object }}</strong>? Esta ação não pode ser desfeita.</p>
+    <form method="post" class="btn-group">
+      {% csrf_token %}
+      <button type="submit" class="btn btn--danger">{% icon "trash" class="icon-sm" %}Confirmar exclusão</button>
+      <a href="{{ cancel_url }}" class="btn btn--outline">Cancelar</a>
+    </form>
+    {% include 'partials/_excluir_cascata.html' %}
+  </div>
+</div>

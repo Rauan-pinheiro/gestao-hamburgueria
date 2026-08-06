@@ -1,16 +1,8 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
+{% load ds_icons %}
 {% block title %}{% if object %}Editar{% else %}Nova{% endif %} Categoria{% endblock %}
 {% block content %}
-<h4 class="mb-3"><i class="bi bi-tags me-2"></i>{% if object %}Editar{% else %}Nova{% endif %} Categoria</h4>
-<div class="card"><div class="card-body">
-  <form method="post">
-    {% csrf_token %}
-    {{ form|crispy }}
-    <div class="d-flex gap-2 mt-3">
-      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar</button>
-      <a href="{% url 'estoque:categoria_list' %}" class="btn btn-outline-secondary">Cancelar</a>
-    </div>
-  </form>
-</div></div>
+<div class="page-header"><div class="page-header__title">{% icon "tags" %}<h1 style="font-size: var(--text-xl);">{% if object %}Editar{% else %}Nova{% endif %} Categoria</h1></div></div>
+{% url 'estoque:categoria_list' as cancel_url %}
+{% include 'partials/_form_card.html' with cancel_url=cancel_url %}
 {% endblock %}

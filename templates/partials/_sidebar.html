@@ -1,45 +1,46 @@
+{% load ds_icons %}
 {% with app=request.resolver_match.app_name %}
-<a class="nav-link {% if app == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:index' %}">
-  <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+<a class="nav-link{% if app == 'dashboard' %} is-active{% endif %}" href="{% url 'dashboard:index' %}">
+  {% icon "speedometer2" %}<span>Dashboard</span>
 </a>
-<a class="nav-link {% if app == 'configuracoes' %}active{% endif %}" href="{% url 'configuracoes:home' %}">
-  <i class="bi bi-gear"></i><span>Configurações</span>
-</a>
-
-<div class="sidebar-section-title">1. Suprimentos</div>
-<a class="nav-link {% if app == 'fornecedores' %}active{% endif %}" href="{% url 'fornecedores:fornecedor_list' %}">
-  <i class="bi bi-truck"></i><span>Fornecedores</span>
-</a>
-<a class="nav-link {% if app == 'estoque' %}active{% endif %}" href="{% url 'estoque:ingrediente_list' %}">
-  <i class="bi bi-box-seam"></i><span>Estoque</span>
-</a>
-<a class="nav-link {% if 'receitaproducao' in request.resolver_match.url_name|default:'' %}active{% endif %}" href="{% url 'receitas:receitaproducao_list' %}">
-  <i class="bi bi-cup-hot"></i><span>Receitas de Produção</span>
+<a class="nav-link{% if app == 'configuracoes' %} is-active{% endif %}" href="{% url 'configuracoes:home' %}">
+  {% icon "gear" %}<span>Configurações</span>
 </a>
 
-<div class="sidebar-section-title">2. Cardápio</div>
-<a class="nav-link {% if app == 'cardapio' %}active{% endif %}" href="{% url 'cardapio:itemcardapio_list' %}">
-  <i class="bi bi-menu-button-wide"></i><span>Itens do Cardápio</span>
+<div class="sidebar__section-title">1. Suprimentos</div>
+<a class="nav-link{% if app == 'fornecedores' %} is-active{% endif %}" href="{% url 'fornecedores:fornecedor_list' %}">
+  {% icon "truck" %}<span>Fornecedores</span>
 </a>
-<a class="nav-link {% if app == 'receitas' and 'receitaproducao' not in request.resolver_match.url_name|default:'' %}active{% endif %}" href="{% url 'receitas:receita_list' %}">
-  <i class="bi bi-journal-text"></i><span>Fichas Técnicas</span>
+<a class="nav-link{% if app == 'estoque' %} is-active{% endif %}" href="{% url 'estoque:ingrediente_list' %}">
+  {% icon "box-seam" %}<span>Estoque</span>
 </a>
-<a class="nav-link {% if app == 'precificacao' %}active{% endif %}" href="{% url 'precificacao:formacaopreco_list' %}">
-  <i class="bi bi-tags"></i><span>Precificação</span>
-</a>
-
-<div class="sidebar-section-title">3. Operação</div>
-<a class="nav-link {% if app == 'vendas' %}active{% endif %}" href="{% url 'vendas:venda_list' %}">
-  <i class="bi bi-cart-check"></i><span>Vendas</span>
+<a class="nav-link{% if 'receitaproducao' in request.resolver_match.url_name|default:'' %} is-active{% endif %}" href="{% url 'receitas:receitaproducao_list' %}">
+  {% icon "cup-hot" %}<span>Receitas de Produção</span>
 </a>
 
-<div class="sidebar-section-title">4. Financeiro</div>
-<a class="nav-link {% if app == 'despesas' %}active{% endif %}" href="{% url 'despesas:despesa_list' %}">
-  <i class="bi bi-wallet2"></i><span>Despesas</span>
+<div class="sidebar__section-title">2. Cardápio</div>
+<a class="nav-link{% if app == 'cardapio' %} is-active{% endif %}" href="{% url 'cardapio:itemcardapio_list' %}">
+  {% icon "menu-button-wide" %}<span>Itens do Cardápio</span>
+</a>
+<a class="nav-link{% if app == 'receitas' and 'receitaproducao' not in request.resolver_match.url_name|default:'' %} is-active{% endif %}" href="{% url 'receitas:receita_list' %}">
+  {% icon "journal-text" %}<span>Fichas Técnicas</span>
+</a>
+<a class="nav-link{% if app == 'precificacao' %} is-active{% endif %}" href="{% url 'precificacao:formacaopreco_list' %}">
+  {% icon "tags" %}<span>Precificação</span>
 </a>
 
-<div class="sidebar-section-title">Ajuda</div>
-<a class="nav-link {% if app == 'ajuda' %}active{% endif %}" href="{% url 'ajuda:leiame' %}">
-  <i class="bi bi-book"></i><span>📖 Leia-me</span>
+<div class="sidebar__section-title">3. Operação</div>
+<a class="nav-link{% if app == 'vendas' %} is-active{% endif %}" href="{% url 'vendas:venda_list' %}">
+  {% icon "cart-check" %}<span>Vendas</span>
+</a>
+
+<div class="sidebar__section-title">4. Financeiro</div>
+<a class="nav-link{% if app == 'despesas' %} is-active{% endif %}" href="{% url 'despesas:despesa_list' %}">
+  {% icon "wallet2" %}<span>Despesas</span>
+</a>
+
+<div class="sidebar__section-title">Ajuda</div>
+<a class="nav-link{% if app == 'ajuda' %} is-active{% endif %}" href="{% url 'ajuda:leiame' %}">
+  {% icon "book" %}<span>Leia-me</span>
 </a>
 {% endwith %}

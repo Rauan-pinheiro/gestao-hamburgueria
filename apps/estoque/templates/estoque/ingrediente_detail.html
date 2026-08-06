@@ -1,79 +1,70 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
+{% load ds_icons %}
 {% block title %}{{ ingrediente }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <h4 class="mb-0"><i class="bi bi-box-seam me-2"></i>{{ ingrediente }}</h4>
-  <div>
-    <a href="{% url 'fornecedores:comparar_fornecedores' ingrediente.pk %}" class="btn btn-outline-secondary"><i class="bi bi-bar-chart-line me-1"></i>Comparar Fornecedores</a>
-    <a href="{% url 'estoque:ingrediente_update' ingrediente.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Editar</a>
-    <form method="post" action="{% url 'estoque:ingrediente_toggle_ativo' ingrediente.pk %}" class="d-inline">
+<div class="page-header">
+  <div class="page-header__title">{% icon "box-seam" %}<h1 style="font-size: var(--text-xl);">{{ ingrediente }}</h1></div>
+  <div class="page-header__actions">
+    <a href="{% url 'fornecedores:comparar_fornecedores' ingrediente.pk %}" class="btn btn--outline">{% icon "bar-chart-line" class="icon-sm" %}Comparar Fornecedores</a>
+    <a href="{% url 'estoque:ingrediente_update' ingrediente.pk %}" class="btn btn--outline">{% icon "pencil" class="icon-sm" %}Editar</a>
+    <form method="post" action="{% url 'estoque:ingrediente_toggle_ativo' ingrediente.pk %}" class="inline-block">
       {% csrf_token %}
-      <button type="submit" class="btn btn-outline-secondary">
-        <i class="bi bi-{% if ingrediente.ativo %}toggle-on{% else %}toggle-off{% endif %} me-1"></i>{% if ingrediente.ativo %}Inativar{% else %}Ativar{% endif %}
-      </button>
+      <button type="submit" class="btn btn--outline">{% icon "toggle" class="icon-sm" %}{% if ingrediente.ativo %}Inativar{% else %}Ativar{% endif %}</button>
     </form>
-    <a href="{% url 'estoque:ingrediente_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+    <a href="{% url 'estoque:ingrediente_list' %}" class="btn btn--outline">{% icon "arrow-left" class="icon-sm" %}Voltar</a>
   </div>
 </div>
 
-<div class="row g-3 mb-3">
-  <div class="col-md-3">
-    <div class="card stat-card h-100">
-      <div class="stat-label">Estoque atual</div>
-      <div class="stat-value">{{ ingrediente.estoque_atual }} {{ ingrediente.get_unidade_medida_display }}</div>
-      {% if ingrediente.esta_abaixo_do_minimo %}<span class="badge badge-vermelho mt-2">Abaixo do mínimo</span>{% else %}<span class="badge badge-verde mt-2">OK</span>{% endif %}
-    </div>
+<div class="stat-grid mb-4">
+  <div class="card stat-card">
+    <div class="stat-card__label">Estoque atual</div>
+    <div class="stat-card__value">{{ ingrediente.estoque_atual }} {{ ingrediente.get_unidade_medida_display }}</div>
+    {% if ingrediente.esta_abaixo_do_minimo %}<span class="badge badge--danger mt-2">Abaixo do mínimo</span>{% else %}<span class="badge badge--success mt-2">OK</span>{% endif %}
   </div>
-  <div class="col-md-3">
-    <div class="card stat-card h-100">
-      <div class="stat-label">Estoque mínimo / ideal</div>
-      <div class="stat-value">{{ ingrediente.estoque_minimo }} / {{ ingrediente.estoque_ideal }}</div>
-    </div>
+  <div class="card stat-card">
+    <div class="stat-card__label">Estoque mínimo / ideal</div>
+    <div class="stat-card__value">{{ ingrediente.estoque_minimo }} / {{ ingrediente.estoque_ideal }}</div>
   </div>
-  <div class="col-md-3">
-    <div class="card stat-card h-100">
-      <div class="stat-label">Custo unitário atual</div>
-      {% if ingrediente.usa_rendimento_por_porcao %}
-        <div class="stat-value">R$ {{ ingrediente.custo_por_porcao_rendimento|floatformat:4 }}</div>
-        <small class="text-muted">
-          por porção (R$ {{ ingrediente.custo_unitario_atual }} / {{ ingrediente.get_unidade_medida_display }}
-          ÷ {{ ingrediente.rendimento_unidades }} porções)
-        </small>
-      {% elif ingrediente.custo_unitario_atual %}
-        <div class="stat-value">R$ {{ ingrediente.custo_unitario_atual }}</div>
-        <small class="text-muted">por {{ ingrediente.get_unidade_medida_display }}</small>
-      {% else %}
-        <div class="stat-value">R$ {{ ingrediente.custo_unitario_atual }}</div>
-        <small class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Sem oferta de fornecedor vinculada</small>
-      {% endif %}
-    </div>
+  <div class="card stat-card">
+    <div class="stat-card__label">Custo unitário atual</div>
+    {% if ingrediente.usa_rendimento_por_porcao %}
+      <div class="stat-card__value">R$ {{ ingrediente.custo_por_porcao_rendimento|floatformat:4 }}</div>
+      <small class="text-muted">
+        por porção (R$ {{ ingrediente.custo_unitario_atual }} / {{ ingrediente.get_unidade_medida_display }}
+        ÷ {{ ingrediente.rendimento_unidades }} porções)
+      </small>
+    {% elif ingrediente.custo_unitario_atual %}
+      <div class="stat-card__value">R$ {{ ingrediente.custo_unitario_atual }}</div>
+      <small class="text-muted">por {{ ingrediente.get_unidade_medida_display }}</small>
+    {% else %}
+      <div class="stat-card__value">R$ {{ ingrediente.custo_unitario_atual }}</div>
+      <small class="text-danger flex items-center gap-1">{% icon "exclamation-triangle" class="icon-xs" %}Sem oferta de fornecedor vinculada</small>
+    {% endif %}
   </div>
-  <div class="col-md-3">
-    <div class="card stat-card h-100">
-      <div class="stat-label">Localização</div>
-      <div class="stat-value" style="font-size:1.1rem;">{{ ingrediente.localizacao|default:'—' }}</div>
-      <small class="text-muted">{{ ingrediente.categoria|default:'Sem categoria' }}</small>
-    </div>
+  <div class="card stat-card">
+    <div class="stat-card__label">Localização</div>
+    <div class="stat-card__value" style="font-size:1.1rem;">{{ ingrediente.localizacao|default:'—' }}</div>
+    <small class="text-muted">{{ ingrediente.categoria|default:'Sem categoria' }}</small>
   </div>
 </div>
 
-<div class="row g-3">
-  <div class="col-lg-7">
-    <div class="card mb-3">
-      <div class="card-header"><strong>Ofertas de fornecedores ativas</strong></div>
-      <div class="table-responsive">
-        <table class="table mb-0">
+<div class="grid grid-detail gap-4">
+  <div class="stack">
+    <div class="card">
+      <div class="card__header"><strong>Ofertas de fornecedores ativas</strong></div>
+      <div class="table-wrap">
+        <table class="table">
           <thead><tr><th>Fornecedor</th><th>Preço/un. base</th><th>Preferencial</th></tr></thead>
           <tbody>
             {% for oferta in ofertas %}
             <tr>
               <td>{{ oferta.fornecedor }}</td>
               <td>R$ {{ oferta.preco_por_unidade_base }}</td>
-              <td>{% if oferta.preferencial %}<i class="bi bi-star-fill text-warning"></i>{% endif %}</td>
+              <td>{% if oferta.preferencial %}{% icon "star-fill" class="text-warning icon-sm" %}{% endif %}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="3" class="text-center text-muted py-3">Nenhuma oferta cadastrada. <a href="{% url 'fornecedores:produtofornecedor_create' %}?ingrediente={{ ingrediente.pk }}">Cadastrar oferta</a></td></tr>
+            <tr><td colspan="3"><div class="empty-state empty-state--sm">Nenhuma oferta cadastrada. <a href="{% url 'fornecedores:produtofornecedor_create' %}?ingrediente={{ ingrediente.pk }}">Cadastrar oferta</a></div></td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -81,9 +72,9 @@
     </div>
 
     <div class="card">
-      <div class="card-header"><strong>Histórico de movimentações</strong></div>
-      <div class="table-responsive">
-        <table class="table table-sm mb-0">
+      <div class="card__header"><strong>Histórico de movimentações</strong></div>
+      <div class="table-wrap">
+        <table class="table table--compact">
           <thead><tr><th>Data</th><th>Tipo</th><th>Qtd.</th><th>Saldo anterior</th><th>Saldo posterior</th><th>Motivo</th></tr></thead>
           <tbody>
             {% for mov in movimentacoes %}
@@ -96,7 +87,7 @@
               <td>{{ mov.motivo|default:'—' }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="6" class="text-center text-muted py-3">Nenhuma movimentação registrada.</td></tr>
+            <tr><td colspan="6"><div class="empty-state empty-state--sm">Nenhuma movimentação registrada.</div></td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -104,16 +95,14 @@
     </div>
   </div>
 
-  <div class="col-lg-5">
-    <div class="card">
-      <div class="card-header"><strong>Registrar movimentação</strong></div>
-      <div class="card-body">
-        <form method="post" action="{% url 'estoque:movimentar' ingrediente.pk %}">
-          {% csrf_token %}
-          {{ movimentacao_form|crispy }}
-          <button type="submit" class="btn btn-primary w-100 mt-2"><i class="bi bi-arrow-left-right me-1"></i>Registrar</button>
-        </form>
-      </div>
+  <div class="card" style="height: fit-content;">
+    <div class="card__header"><strong>Registrar movimentação</strong></div>
+    <div class="card__body">
+      <form method="post" action="{% url 'estoque:movimentar' ingrediente.pk %}">
+        {% csrf_token %}
+        {{ movimentacao_form|crispy }}
+        <button type="submit" class="btn btn--primary btn--block mt-3">{% icon "arrow-left-right" class="icon-sm" %}Registrar</button>
+      </form>
     </div>
   </div>
 </div>

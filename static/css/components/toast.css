@@ -1,0 +1,42 @@
+/* Componente: Toasts — mensagens do Django viram notificações flutuantes
+   via static/js/toasts.js */
+@layer components {
+
+  .toast-viewport {
+    position: fixed;
+    top: var(--space-4);
+    right: var(--space-4);
+    z-index: var(--z-toast);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    width: min(360px, calc(100vw - 2rem));
+  }
+  .toast {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    animation: ds-toast-in var(--dur-base) var(--ease);
+  }
+  .toast.is-leaving { animation: ds-toast-out var(--dur-base) var(--ease) forwards; }
+  .toast[data-tag="success"] { border-left-color: var(--color-success); }
+  .toast[data-tag="error"], .toast[data-tag="danger"] { border-left-color: var(--color-danger); }
+  .toast[data-tag="warning"] { border-left-color: var(--color-warning); }
+  .toast__icon { margin-top: .1rem; }
+  .toast[data-tag="success"] .toast__icon { color: var(--color-success); }
+  .toast[data-tag="error"] .toast__icon, .toast[data-tag="danger"] .toast__icon { color: var(--color-danger); }
+  .toast[data-tag="warning"] .toast__icon { color: var(--color-warning); }
+  .toast[data-tag="info"] .toast__icon, .toast[data-tag="debug"] .toast__icon { color: var(--color-info); }
+  .toast__text { flex: 1; font-size: var(--text-sm); color: var(--color-text); }
+  .toast__close { color: var(--color-text-muted); min-width: 24px; min-height: 24px; }
+  .toast__close:hover { color: var(--color-text); }
+
+  @keyframes ds-toast-in { from { opacity: 0; transform: translateX(24px) scale(.97); } to { opacity: 1; transform: translateX(0) scale(1); } }
+  @keyframes ds-toast-out { to { opacity: 0; transform: translateX(24px) scale(.97); } }
+}

@@ -1,45 +1,48 @@
 {% extends 'base.html' %}
+{% load ds_icons %}
 {% block title %}Estoque{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <div>
-    <h4 class="mb-1"><i class="bi bi-box-seam me-2"></i>Estoque de Ingredientes</h4>
-    <small class="text-muted">O que você compra dos fornecedores e usa nas receitas (pão, carne, queijo...). Controle de entrada/saída fica na página de cada ingrediente.</small>
+<div class="page-header">
+  <div class="page-header__title">
+    {% icon "box-seam" %}
+    <div>
+      <h1 style="font-size: var(--text-xl);">Estoque de Ingredientes</h1>
+      <p class="text-muted text-sm">O que você compra dos fornecedores e usa nas receitas (pão, carne, queijo...). Controle de entrada/saída fica na página de cada ingrediente.</p>
+    </div>
   </div>
-  <div>
-    <a href="{% url 'estoque:categoria_list' %}" class="btn btn-outline-secondary"><i class="bi bi-tags me-1"></i>Categorias</a>
-    <a href="{% url 'estoque:ingrediente_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Novo Ingrediente</a>
+  <div class="page-header__actions">
+    <a href="{% url 'estoque:categoria_list' %}" class="btn btn--outline">{% icon "tags" class="icon-sm" %}Categorias</a>
+    <a href="{% url 'estoque:ingrediente_create' %}" class="btn btn--primary">{% icon "plus-lg" class="icon-sm" %}Novo Ingrediente</a>
   </div>
 </div>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <form method="get" class="row g-2">
-      <div class="col-md-5">
-        <input type="text" name="q" class="form-control" placeholder="Buscar ingrediente..." value="{{ request.GET.q }}">
+<div class="card mb-4">
+  <div class="card__body">
+    <form method="get" class="filter-bar">
+      <div class="field">
+        <input type="text" name="q" class="field__control" placeholder="Buscar ingrediente..." value="{{ request.GET.q }}">
       </div>
-      <div class="col-md-3">
-        <select name="categoria" class="form-select">
+      <div class="field">
+        <select name="categoria" class="field__control js-select-search">
           <option value="">Todas as categorias</option>
           {% for c in categorias %}
           <option value="{{ c.pk }}" {% if request.GET.categoria == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.nome }}</option>
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-2 form-check mt-2">
-        <input type="checkbox" class="form-check-input" name="abaixo_minimo" value="1" id="abaixoMin" {% if request.GET.abaixo_minimo == '1' %}checked{% endif %}>
-        <label class="form-check-label" for="abaixoMin">Abaixo do mínimo</label>
-      </div>
-      <div class="col-md-2">
-        <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-search me-1"></i>Filtrar</button>
-      </div>
+      <label class="field-check filter-bar__check">
+        <input type="checkbox" class="field-check__input" name="abaixo_minimo" value="1" {% if request.GET.abaixo_minimo == '1' %}checked{% endif %}>
+        <span class="field-check__box">{% icon "check" class="icon-xs" %}</span>
+        <span class="field-check__label">Abaixo do mínimo</span>
+      </label>
+      <button type="submit" class="btn btn--outline">{% icon "search" class="icon-sm" %}Filtrar</button>
     </form>
   </div>
 </div>
 
 <div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
+  <div class="table-wrap">
+    <table class="table">
       <thead><tr><th>Ingrediente</th><th>Categoria</th><th>Estoque</th><th>Mínimo</th><th>Custo unit.</th><th>Status</th><th></th></tr></thead>
       <tbody>
         {% for ing in ingredientes %}
@@ -51,21 +54,24 @@
           <td>R$ {{ ing.custo_unitario_atual }}</td>
           <td>
             {% if ing.esta_abaixo_do_minimo %}
-              <span class="badge badge-vermelho"><i class="bi bi-exclamation-triangle me-1"></i>Baixo</span>
+              <span class="badge badge--danger">{% icon "exclamation-triangle" class="icon-xs" %}Baixo</span>
             {% else %}
-              <span class="badge badge-verde">OK</span>
+              <span class="badge badge--success">OK</span>
             {% endif %}
           </td>
-          <td class="text-end">
-            <a href="{% url 'estoque:ingrediente_update' ing.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
-            <a href="{% url 'estoque:ingrediente_delete' ing.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></a>
+          <td class="table__actions">
+            <a href="{% url 'estoque:ingrediente_update' ing.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Editar">{% icon "pencil" class="icon-sm" %}</a>
+            <a href="{% url 'estoque:ingrediente_delete' ing.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Excluir">{% icon "trash" class="icon-sm" %}</a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="text-center py-5">
-          <i class="bi bi-box-seam fs-1 text-muted d-block mb-2"></i>
-          <p class="text-muted mb-2">Nenhum ingrediente cadastrado ainda.<br>Ingredientes são a base das suas fichas técnicas — comece cadastrando os mais usados.</p>
-          <a href="{% url 'estoque:ingrediente_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Cadastrar primeiro ingrediente</a>
+        <tr><td colspan="7">
+          <div class="empty-state">
+            {% icon "box-seam" %}
+            <span class="empty-state__title">Nenhum ingrediente cadastrado ainda.</span>
+            <span class="empty-state__subtitle">Ingredientes são a base das suas fichas técnicas — comece cadastrando os mais usados.</span>
+            <a href="{% url 'estoque:ingrediente_create' %}" class="btn btn--primary btn--sm mt-3">{% icon "plus-lg" class="icon-sm" %}Cadastrar primeiro ingrediente</a>
+          </div>
         </td></tr>
         {% endfor %}
       </tbody>

@@ -1,16 +1,8 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
+{% load ds_icons %}
 {% block title %}{% if object %}Editar{% else %}Novo{% endif %} Item do Cardápio{% endblock %}
 {% block content %}
-<h4 class="mb-3"><i class="bi bi-menu-button-wide me-2"></i>{% if object %}Editar{% else %}Novo{% endif %} Item do Cardápio</h4>
-<div class="card"><div class="card-body">
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form|crispy }}
-    <div class="d-flex gap-2 mt-3">
-      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar</button>
-      <a href="{% url 'cardapio:itemcardapio_list' %}" class="btn btn-outline-secondary">Cancelar</a>
-    </div>
-  </form>
-</div></div>
+<div class="page-header"><div class="page-header__title">{% icon "menu-button-wide" %}<h1 style="font-size: var(--text-xl);">{% if object %}Editar{% else %}Novo{% endif %} Item do Cardápio</h1></div></div>
+{% url 'cardapio:itemcardapio_list' as cancel_url %}
+{% include 'partials/_form_card.html' with cancel_url=cancel_url multipart=True %}
 {% endblock %}

@@ -1,0 +1,46 @@
+/* Componente: Badges e chips */
+@layer components {
+
+  .badge {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .3rem .7rem;
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: .01em;
+    line-height: 1;
+  }
+  .badge .icon { width: .8rem; height: .8rem; }
+  .badge--success { background: var(--color-success-soft); color: var(--color-success); }
+  .badge--warning { background: var(--color-warning-soft); color: var(--color-warning); }
+  .badge--danger { background: var(--color-danger-soft); color: var(--color-danger); }
+  .badge--info { background: var(--color-info-soft); color: var(--color-info); }
+  .badge--primary { background: var(--color-primary-soft); color: var(--color-primary); }
+  .badge--neutral { background: var(--color-surface-alt); color: var(--color-text-muted); border: 1px solid var(--color-border); }
+  .badge--solid-success { background: var(--color-success); color: #fff; }
+  .badge--solid-danger { background: var(--color-danger); color: #fff; }
+
+  /* Aliases para `status_margem()` (apps/precificacao/models.py), que retorna
+     literalmente 'verde'/'amarelo'/'vermelho' — mantidos aqui em vez de
+     alterar o model (regra de negócio, fora do escopo do frontend). */
+  .badge--verde { background: var(--color-success-soft); color: var(--color-success); }
+  .badge--amarelo { background: var(--color-warning-soft); color: var(--color-warning); }
+  .badge--vermelho { background: var(--color-danger-soft); color: var(--color-danger); }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .3rem .75rem;
+    border-radius: var(--radius-full);
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    font-size: var(--text-xs);
+    font-weight: 500;
+  }
+  .chip--primary { background: var(--color-primary-soft); border-color: transparent; color: var(--color-primary-strong); }
+}

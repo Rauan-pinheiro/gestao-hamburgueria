@@ -1,80 +1,79 @@
 {% extends 'base.html' %}
+{% load ds_icons %}
 {% block title %}{{ receita }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <h4 class="mb-0"><i class="bi bi-journal-text me-2"></i>{{ receita }}</h4>
-  <div>
-    <a href="{% url 'receitas:receita_update' receita.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Editar</a>
-    <a href="{% url 'receitas:receita_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+<div class="page-header">
+  <div class="page-header__title">{% icon "journal-text" %}<h1 style="font-size: var(--text-xl);">{{ receita }}</h1></div>
+  <div class="page-header__actions">
+    <a href="{% url 'receitas:receita_update' receita.pk %}" class="btn btn--outline">{% icon "pencil" class="icon-sm" %}Editar</a>
+    <a href="{% url 'receitas:receita_list' %}" class="btn btn--outline">{% icon "arrow-left" class="icon-sm" %}Voltar</a>
   </div>
 </div>
 
-<div class="row g-3 mb-3">
-  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Custo ingredientes</div><div class="stat-value">R$ {{ custo_ingredientes|floatformat:2 }}</div></div></div>
-  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Custos indiretos</div><div class="stat-value">R$ {{ custo_indiretos|floatformat:2 }}</div></div></div>
-  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Custo total</div><div class="stat-value">R$ {{ custo_total|floatformat:2 }}</div></div></div>
-  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Custo por porção</div><div class="stat-value">R$ {{ custo_por_porcao|floatformat:2 }}</div></div></div>
+<div class="stat-grid mb-4">
+  <div class="card stat-card"><div class="stat-card__label">Custo ingredientes</div><div class="stat-card__value">R$ {{ custo_ingredientes|floatformat:2 }}</div></div>
+  <div class="card stat-card"><div class="stat-card__label">Custos indiretos</div><div class="stat-card__value">R$ {{ custo_indiretos|floatformat:2 }}</div></div>
+  <div class="card stat-card"><div class="stat-card__label">Custo total</div><div class="stat-card__value">R$ {{ custo_total|floatformat:2 }}</div></div>
+  <div class="card stat-card"><div class="stat-card__label">Custo por porção</div><div class="stat-card__value">R$ {{ custo_por_porcao|floatformat:2 }}</div></div>
 </div>
 
 {% if ingredientes_sem_custo %}
-<div class="alert alert-warning py-2 px-3 small d-flex align-items-start gap-2 mb-3">
-  <i class="bi bi-exclamation-triangle fs-6"></i>
+<div class="alert alert--warning mb-4">
+  {% icon "exclamation-triangle" %}
   <div>
     {{ ingredientes_sem_custo|length }} ingrediente(s) desta ficha estão com custo R$ 0,00 porque não têm
-    nenhuma <a href="{% url 'fornecedores:fornecedor_list' %}" class="alert-link">oferta de fornecedor vinculada</a>
+    nenhuma <a href="{% url 'fornecedores:fornecedor_list' %}">oferta de fornecedor vinculada</a>
     no estoque: {% for i in ingredientes_sem_custo %}<a href="{% url 'estoque:ingrediente_detail' i.pk %}">{{ i.nome }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.
     Os custos acima estão subestimados até isso ser corrigido.
   </div>
 </div>
 {% endif %}
 
-<div class="row g-3">
-  <div class="col-lg-7">
-    <div class="card">
-      <div class="card-header"><strong>Ingredientes</strong></div>
-      <div class="table-responsive">
-        <table class="table mb-0">
-          <thead><tr><th>Ingrediente</th><th>Quantidade</th><th>Custo unit.</th><th>Custo total</th></tr></thead>
-          <tbody>
-            {% for item in itens %}
-            <tr>
-              <td>{{ item.ingrediente.nome }}</td>
-              <td>{{ item.quantidade }} {{ item.ingrediente.unidade_consumo_display }}</td>
-              <td>
-                {% if item.ingrediente.usa_rendimento_por_porcao %}
-                  R$ {{ item.ingrediente.custo_por_porcao_rendimento|floatformat:4 }} /porção
-                {% else %}
-                  R$ {{ item.ingrediente.custo_unitario_atual }}
-                {% endif %}
-                {% if not item.ingrediente.custo_unitario_atual %}
-                <a href="{% url 'estoque:ingrediente_detail' item.ingrediente.pk %}" class="badge badge-vermelho text-decoration-none" title="Sem oferta de fornecedor vinculada — custo não calculado">Sem custo</a>
-                {% endif %}
-              </td>
-              <td>R$ {{ item.custo_total|floatformat:2 }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4" class="text-center text-muted py-3">Nenhum ingrediente cadastrado nesta ficha.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+<div class="grid grid-detail gap-4">
+  <div class="card">
+    <div class="card__header"><strong>Ingredientes</strong></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Ingrediente</th><th>Quantidade</th><th>Custo unit.</th><th>Custo total</th></tr></thead>
+        <tbody>
+          {% for item in itens %}
+          <tr>
+            <td>{{ item.ingrediente.nome }}</td>
+            <td>{{ item.quantidade }} {{ item.ingrediente.unidade_consumo_display }}</td>
+            <td>
+              {% if item.ingrediente.usa_rendimento_por_porcao %}
+                R$ {{ item.ingrediente.custo_por_porcao_rendimento|floatformat:4 }} /porção
+              {% else %}
+                R$ {{ item.ingrediente.custo_unitario_atual }}
+              {% endif %}
+              {% if not item.ingrediente.custo_unitario_atual %}
+              <a href="{% url 'estoque:ingrediente_detail' item.ingrediente.pk %}" class="badge badge--danger" data-tooltip="Sem oferta de fornecedor vinculada — custo não calculado">Sem custo</a>
+              {% endif %}
+            </td>
+            <td>R$ {{ item.custo_total|floatformat:2 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4"><div class="empty-state empty-state--sm">Nenhum ingrediente cadastrado nesta ficha.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
-  <div class="col-lg-5">
-    <div class="card h-100"><div class="card-body">
-      <h6 class="text-muted mb-3">Detalhes</h6>
-      <dl class="row mb-0">
-        <dt class="col-12 col-sm-6">Rendimento</dt><dd class="col-12 col-sm-6">{{ receita.rendimento_quantidade }} {{ receita.get_rendimento_unidade_display }}</dd>
-        <dt class="col-12 col-sm-6">Tempo de preparo</dt><dd class="col-12 col-sm-6">{{ receita.tempo_preparo_minutos }} min</dd>
-        <dt class="col-12 col-sm-6">Item do cardápio</dt><dd class="col-12 col-sm-6">{{ receita.item_cardapio|default:'—' }}</dd>
-        <dt class="col-12 col-sm-6">Embalagem</dt><dd class="col-12 col-sm-6">R$ {{ custo_embalagem }}</dd>
+  <div class="card">
+    <div class="card__body">
+      <h4 class="text-muted mb-3" style="font-size: var(--text-sm);">Detalhes</h4>
+      <dl class="grid grid-cols-2 gap-2 text-sm mb-0">
+        <dt class="text-muted">Rendimento</dt><dd>{{ receita.rendimento_quantidade }} {{ receita.get_rendimento_unidade_display }}</dd>
+        <dt class="text-muted">Tempo de preparo</dt><dd>{{ receita.tempo_preparo_minutos }} min</dd>
+        <dt class="text-muted">Item do cardápio</dt><dd>{{ receita.item_cardapio|default:'—' }}</dd>
+        <dt class="text-muted">Embalagem</dt><dd>R$ {{ custo_embalagem }}</dd>
       </dl>
       {% if receita.modo_preparo %}
-      <hr>
-      <h6 class="text-muted">Modo de preparo</h6>
-      <p class="mb-0">{{ receita.modo_preparo|linebreaksbr }}</p>
+      <hr class="divider">
+      <h4 class="text-muted mb-2" style="font-size: var(--text-sm);">Modo de preparo</h4>
+      <p class="mb-0 text-sm">{{ receita.modo_preparo|linebreaksbr }}</p>
       {% endif %}
-    </div></div>
+    </div>
   </div>
 </div>
 {% endblock %}

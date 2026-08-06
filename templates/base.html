@@ -1,117 +1,143 @@
 {% load static %}
+{% load ds_icons %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Sistema{% endblock %} · Gestão Hamburgueria</title>
+  <meta name="theme-color" content="#111111">
+  <title>{% block title %}Sistema{% endblock %} · Hamburgueria ERP</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
-  <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+  {# Camadas do design system, na ordem declarada abaixo — @layer garante a #}
+  {# cascata correta independente da ordem de download de cada arquivo. #}
+  <style>@layer tokens, reset, layout, utilities, components, pages;</style>
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'css/reset.css' %}">
+  <link rel="stylesheet" href="{% static 'css/layout.css' %}">
+  <link rel="stylesheet" href="{% static 'css/utilities.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/buttons.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/forms.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/cards.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/badges.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/tables.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/list.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/dropdown.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/modal.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/tooltip.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/toast.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/tabs.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/accordion.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/skeleton.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/empty-state.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/select.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components/alerts.css' %}">
   {% block extra_css %}{% endblock %}
 
+  <script>window.DS_SPRITE_URL = "{% static 'img/icons/sprite.svg' %}";</script>
   <script src="{% static 'js/theme.js' %}"></script>
 </head>
 <body>
-  <script src="{% static 'js/sidebar.js' %}"></script>
-
   {% if user.is_authenticated %}
-  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
-  <nav class="sidebar">
-    <div class="sidebar-brand">
-      <i class="bi bi-egg-fried"></i>
-      <span>Hamburgueria ERP</span>
-    </div>
-    <div class="sidebar-nav">
-      {% include 'partials/_sidebar.html' %}
-    </div>
-  </nav>
+  <div class="app-shell">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
-  <div class="main-wrapper">
-    <header class="topbar">
-      <button id="sidebar-toggle" class="btn-icon" type="button" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Recolher menu">
-        <i class="bi bi-list"></i>
-      </button>
-
-      <div class="topbar-search">
-        <i class="bi bi-search"></i>
-        <input type="text" id="topbar-search-input" placeholder="Ir para..." aria-label="Buscar página do sistema" autocomplete="off">
-        <div class="topbar-search-results" id="topbar-search-results"></div>
+    <nav class="sidebar">
+      <div class="sidebar__brand">
+        <span class="brand-mark">{% icon "burger" %}</span>
+        <span>Hamburgueria ERP</span>
       </div>
+      <div class="sidebar__nav">
+        {% include 'partials/_sidebar.html' %}
+      </div>
+    </nav>
 
-      <div class="flex-grow-1"></div>
-
-      <button id="theme-toggle" class="btn-icon" type="button" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Alternar tema">
-        <i class="bi bi-moon-stars"></i>
-      </button>
-
-      <div class="dropdown">
-        <button class="btn-icon dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notificações" title="Notificações">
-          <i class="bi bi-bell"></i>
-          {% if alertas_total %}<span class="icon-badge">{{ alertas_total }}</span>{% endif %}
+    <div class="app-main">
+      <header class="topbar">
+        <button id="sidebar-toggle" class="btn-icon" type="button" data-tooltip="Recolher menu" aria-label="Abrir ou recolher menu">
+          {% icon "list" %}
         </button>
-        <div class="dropdown-menu dropdown-menu-end notif-dropdown">
-          <div class="notif-dropdown-header">
-            <span>Notificações</span>
-            {% if alertas_total %}<span class="chip chip-primary">{{ alertas_total }}</span>{% endif %}
-          </div>
-          {% for n in alertas_notificacoes %}
-          <a href="{{ n.url }}" class="notif-item">
-            <span class="notif-icon nivel-{{ n.nivel }}"><i class="bi {{ n.icone }}"></i></span>
-            <span>
-              <span class="notif-title d-block">{{ n.titulo }}</span>
-              <span class="notif-subtitle">{{ n.subtitulo }}</span>
-            </span>
-          </a>
-          {% empty %}
-          <div class="notif-empty">
-            <i class="bi bi-check2-circle fs-4 d-block mb-1"></i>
-            Tudo em dia por aqui.
-          </div>
-          {% endfor %}
+
+        <div class="topbar__search">
+          {% icon "search" %}
+          <input type="text" id="topbar-search-input" placeholder="Ir para..." aria-label="Buscar página do sistema" autocomplete="off">
+          <div class="topbar__search-results" id="topbar-search-results"></div>
         </div>
-      </div>
 
-      <div class="dropdown">
-        <button class="btn dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width:auto; padding: 0 .4rem; border: none; background: transparent;">
-          <span class="avatar-circle">{{ user.get_full_name|default:user.username|slice:":1"|upper }}</span>
-          <span class="d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
+        <div class="topbar__spacer"></div>
+
+        <button id="theme-toggle" class="btn-icon" type="button" data-tooltip="Alternar tema" aria-label="Alternar tema claro/escuro">
+          {% icon "moon-stars" %}
         </button>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" href="/admin/"><i class="bi bi-gear me-2"></i>Admin</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li>
+
+        <div class="dropdown" data-dropdown>
+          <button class="btn-icon" type="button" data-dropdown-toggle aria-haspopup="true" aria-expanded="false" aria-label="Notificações" data-tooltip="Notificações">
+            {% icon "bell" %}
+            {% if alertas_total %}<span class="icon-badge">{{ alertas_total }}</span>{% endif %}
+          </button>
+          <div class="dropdown__menu notif-panel" data-dropdown-menu>
+            <div class="notif-panel__header">
+              <span>Notificações</span>
+              {% if alertas_total %}<span class="chip chip--primary">{{ alertas_total }}</span>{% endif %}
+            </div>
+            {% for n in alertas_notificacoes %}
+            <a href="{{ n.url }}" class="notif-item">
+              <span class="notif-item__icon tone-{{ n.nivel }}">{% icon n.icone %}</span>
+              <span>
+                <span class="notif-item__title">{{ n.titulo }}</span>
+                <span class="notif-item__subtitle">{{ n.subtitulo }}</span>
+              </span>
+            </a>
+            {% empty %}
+            <div class="notif-empty">
+              {% icon "check2-circle" class="icon-lg mb-2" %}
+              <div>Tudo em dia por aqui.</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="dropdown" data-dropdown>
+          <button class="flex items-center gap-2" type="button" data-dropdown-toggle aria-haspopup="true" aria-expanded="false" style="min-height:44px;">
+            <span class="avatar">{{ user.get_full_name|default:user.username|slice:":1"|upper }}</span>
+            <span class="md:inline hidden text-sm font-semibold">{{ user.get_full_name|default:user.username }}</span>
+          </button>
+          <div class="dropdown__menu" data-dropdown-menu>
+            <a class="dropdown__item" href="/admin/">{% icon "gear" %}Admin</a>
+            <div class="dropdown__divider"></div>
             <form method="post" action="{% url 'logout' %}">
               {% csrf_token %}
-              <button class="dropdown-item" type="submit"><i class="bi bi-box-arrow-right me-2"></i>Sair</button>
+              <button class="dropdown__item" type="submit">{% icon "box-arrow-right" %}Sair</button>
             </form>
-          </li>
-        </ul>
-      </div>
-    </header>
+          </div>
+        </div>
+      </header>
 
-    <main class="page-content">
-      {% include 'partials/_messages.html' %}
-      {% block content %}{% endblock %}
-    </main>
+      <main class="page-content">
+        {% include 'partials/_messages.html' %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+
+    {% include 'partials/_bottom_nav.html' %}
   </div>
-
-  {% include 'partials/_bottom_nav.html' %}
   {% else %}
     {% block content_public %}{% endblock %}
   {% endif %}
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
-  <script src="{% static 'js/select-busca.js' %}"></script>
-  <script src="{% static 'js/nav-search.js' %}"></script>
+  <script src="{% static 'js/sidebar.js' %}"></script>
+  <script src="{% static 'js/dropdown.js' %}"></script>
+  <script src="{% static 'js/tooltip.js' %}"></script>
+  <script src="{% static 'js/modal.js' %}"></script>
+  <script src="{% static 'js/tabs.js' %}"></script>
+  <script src="{% static 'js/accordion.js' %}"></script>
+  <script src="{% static 'js/select.js' %}"></script>
   <script src="{% static 'js/toasts.js' %}"></script>
+  <script src="{% static 'js/nav-search.js' %}"></script>
+  <script src="{% static 'js/charts-theme.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

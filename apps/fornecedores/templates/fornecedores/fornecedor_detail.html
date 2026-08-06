@@ -1,52 +1,51 @@
 {% extends 'base.html' %}
+{% load ds_icons %}
 {% block title %}{{ fornecedor }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <h4 class="mb-0"><i class="bi bi-truck me-2"></i>{{ fornecedor }}</h4>
-  <div>
-    <a href="{% url 'fornecedores:fornecedor_update' fornecedor.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Editar</a>
-    <form method="post" action="{% url 'fornecedores:fornecedor_toggle_ativo' fornecedor.pk %}" class="d-inline">
+<div class="page-header">
+  <div class="page-header__title">{% icon "truck" %}<h1 style="font-size: var(--text-xl);">{{ fornecedor }}</h1></div>
+  <div class="page-header__actions">
+    <a href="{% url 'fornecedores:fornecedor_update' fornecedor.pk %}" class="btn btn--outline">{% icon "pencil" class="icon-sm" %}Editar</a>
+    <form method="post" action="{% url 'fornecedores:fornecedor_toggle_ativo' fornecedor.pk %}" class="inline-block">
       {% csrf_token %}
-      <button type="submit" class="btn btn-outline-secondary">
-        <i class="bi bi-{% if fornecedor.ativo %}toggle-on{% else %}toggle-off{% endif %} me-1"></i>{% if fornecedor.ativo %}Inativar{% else %}Ativar{% endif %}
-      </button>
+      <button type="submit" class="btn btn--outline">{% icon "toggle" class="icon-sm" %}{% if fornecedor.ativo %}Inativar{% else %}Ativar{% endif %}</button>
     </form>
-    <a href="{% url 'fornecedores:fornecedor_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+    <a href="{% url 'fornecedores:fornecedor_list' %}" class="btn btn--outline">{% icon "arrow-left" class="icon-sm" %}Voltar</a>
   </div>
 </div>
 
-<div class="row g-3 mb-3">
-  <div class="col-md-6">
-    <div class="card h-100"><div class="card-body">
-      <h6 class="text-muted mb-3">Dados cadastrais</h6>
-      <dl class="row mb-0">
-        <dt class="col-12 col-sm-5">Razão social</dt><dd class="col-12 col-sm-7">{{ fornecedor.nome }}</dd>
-        <dt class="col-12 col-sm-5">CNPJ/CPF</dt><dd class="col-12 col-sm-7">{{ fornecedor.cnpj_cpf|default:'—' }}</dd>
-        <dt class="col-12 col-sm-5">Telefone</dt><dd class="col-12 col-sm-7">{{ fornecedor.telefone|default:'—' }}</dd>
-        <dt class="col-12 col-sm-5">WhatsApp</dt><dd class="col-12 col-sm-7">{{ fornecedor.whatsapp|default:'—' }}</dd>
-        <dt class="col-12 col-sm-5">E-mail</dt><dd class="col-12 col-sm-7">{{ fornecedor.email|default:'—' }}</dd>
-        <dt class="col-12 col-sm-5">Cidade/UF</dt><dd class="col-12 col-sm-7">{{ fornecedor.cidade }}{% if fornecedor.estado %}/{{ fornecedor.estado }}{% endif %}</dd>
-        <dt class="col-12 col-sm-5">Contato</dt><dd class="col-12 col-sm-7">{{ fornecedor.contato_nome|default:'—' }}</dd>
-        <dt class="col-12 col-sm-5">Prazo de entrega</dt><dd class="col-12 col-sm-7">{{ fornecedor.prazo_entrega_dias }} dias</dd>
-        <dt class="col-12 col-sm-5">Pedido mínimo</dt><dd class="col-12 col-sm-7">{% if fornecedor.pedido_minimo %}R$ {{ fornecedor.pedido_minimo }}{% else %}—{% endif %}</dd>
+<div class="grid md:grid-cols-2 gap-4 mb-4">
+  <div class="card card--full">
+    <div class="card__body">
+      <h4 class="text-muted mb-3" style="font-size: var(--text-sm);">Dados cadastrais</h4>
+      <dl class="grid grid-cols-2 gap-2 text-sm mb-0">
+        <dt class="text-muted">Razão social</dt><dd>{{ fornecedor.nome }}</dd>
+        <dt class="text-muted">CNPJ/CPF</dt><dd>{{ fornecedor.cnpj_cpf|default:'—' }}</dd>
+        <dt class="text-muted">Telefone</dt><dd>{{ fornecedor.telefone|default:'—' }}</dd>
+        <dt class="text-muted">WhatsApp</dt><dd>{{ fornecedor.whatsapp|default:'—' }}</dd>
+        <dt class="text-muted">E-mail</dt><dd>{{ fornecedor.email|default:'—' }}</dd>
+        <dt class="text-muted">Cidade/UF</dt><dd>{{ fornecedor.cidade }}{% if fornecedor.estado %}/{{ fornecedor.estado }}{% endif %}</dd>
+        <dt class="text-muted">Contato</dt><dd>{{ fornecedor.contato_nome|default:'—' }}</dd>
+        <dt class="text-muted">Prazo de entrega</dt><dd>{{ fornecedor.prazo_entrega_dias }} dias</dd>
+        <dt class="text-muted">Pedido mínimo</dt><dd>{% if fornecedor.pedido_minimo %}R$ {{ fornecedor.pedido_minimo }}{% else %}—{% endif %}</dd>
       </dl>
-    </div></div>
+    </div>
   </div>
-  <div class="col-md-6">
-    <div class="card h-100"><div class="card-body">
-      <h6 class="text-muted mb-3">Observações</h6>
-      <p class="mb-0">{{ fornecedor.observacoes|default:'Nenhuma observação.'|linebreaksbr }}</p>
-    </div></div>
+  <div class="card card--full">
+    <div class="card__body">
+      <h4 class="text-muted mb-3" style="font-size: var(--text-sm);">Observações</h4>
+      <p class="mb-0 text-sm">{{ fornecedor.observacoes|default:'Nenhuma observação.'|linebreaksbr }}</p>
+    </div>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div class="card__header">
     <strong>Produtos ofertados</strong>
-    <a href="{% url 'fornecedores:produtofornecedor_create' %}?fornecedor={{ fornecedor.pk }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Novo Produto</a>
+    <a href="{% url 'fornecedores:produtofornecedor_create' %}?fornecedor={{ fornecedor.pk }}" class="btn btn--sm btn--primary">{% icon "plus-lg" class="icon-sm" %}Novo Produto</a>
   </div>
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
+  <div class="table-wrap">
+    <table class="table">
       <thead><tr><th>Produto</th><th>Ingrediente</th><th>Embalagem</th><th>Preço</th><th>Frete</th><th>Preço/un. base</th><th></th></tr></thead>
       <tbody>
         {% for produto in produtos %}
@@ -56,20 +55,20 @@
             {% if produto.ingrediente %}
               {{ produto.ingrediente }}
             {% else %}
-              <a href="{% url 'fornecedores:produtofornecedor_update' produto.pk %}" class="badge badge-vermelho text-decoration-none" title="Sem ingrediente vinculado — este preço não entra no custo de nenhuma ficha técnica">Não vinculado</a>
+              <a href="{% url 'fornecedores:produtofornecedor_update' produto.pk %}" class="badge badge--danger" data-tooltip="Sem ingrediente vinculado — este preço não entra no custo de nenhuma ficha técnica">Não vinculado</a>
             {% endif %}
           </td>
           <td>{{ produto.quantidade_embalagem }} {{ produto.get_unidade_embalagem_display }}</td>
           <td>R$ {{ produto.preco_embalagem }}</td>
           <td>R$ {{ produto.frete }}</td>
           <td>R$ {{ produto.preco_por_unidade_base }}</td>
-          <td class="text-end">
-            <a href="{% url 'fornecedores:produtofornecedor_update' produto.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-            <a href="{% url 'fornecedores:produtofornecedor_delete' produto.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+          <td class="table__actions">
+            <a href="{% url 'fornecedores:produtofornecedor_update' produto.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Editar">{% icon "pencil" class="icon-sm" %}</a>
+            <a href="{% url 'fornecedores:produtofornecedor_delete' produto.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Excluir">{% icon "trash" class="icon-sm" %}</a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="text-center text-muted py-4">Nenhum produto cadastrado para este fornecedor.</td></tr>
+        <tr><td colspan="7"><div class="empty-state">{% icon "box-seam" %}<span class="empty-state__title">Nenhum produto cadastrado para este fornecedor.</span></div></td></tr>
         {% endfor %}
       </tbody>
     </table>

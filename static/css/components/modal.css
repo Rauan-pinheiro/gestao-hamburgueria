@@ -1,0 +1,33 @@
+/* Componente: Modal — controlado por static/js/modal.js via [data-modal-target]/[data-modal-close]. */
+@layer components {
+
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: var(--color-overlay);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    z-index: var(--z-modal);
+  }
+  .modal-overlay.is-open { display: flex; animation: ds-fade var(--dur-base) var(--ease); }
+
+  .modal {
+    width: 100%;
+    max-width: 30rem;
+    max-height: calc(100vh - var(--space-8));
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    animation: ds-pop var(--dur-base) var(--ease-out);
+  }
+  .modal__header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-5); border-bottom: 1px solid var(--color-border); }
+  .modal__title { font-family: var(--font-display); font-weight: 600; font-size: var(--text-lg); }
+  .modal__body { padding: var(--space-5); overflow-y: auto; }
+  .modal__footer { display: flex; justify-content: flex-end; gap: var(--space-2); padding: var(--space-5); border-top: 1px solid var(--color-border); }
+
+  @keyframes ds-fade { from { opacity: 0; } to { opacity: 1; } }
+}

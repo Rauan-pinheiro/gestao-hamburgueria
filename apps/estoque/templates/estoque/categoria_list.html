@@ -1,29 +1,30 @@
 {% extends 'base.html' %}
+{% load ds_icons %}
 {% block title %}Categorias de Ingredientes{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <h4 class="mb-0"><i class="bi bi-tags me-2"></i>Categorias de Ingredientes</h4>
-  <div>
-    <a href="{% url 'estoque:ingrediente_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
-    <a href="{% url 'estoque:categoria_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Nova Categoria</a>
+<div class="page-header">
+  <div class="page-header__title">{% icon "tags" %}<h1 style="font-size: var(--text-xl);">Categorias de Ingredientes</h1></div>
+  <div class="page-header__actions">
+    <a href="{% url 'estoque:ingrediente_list' %}" class="btn btn--outline">{% icon "arrow-left" class="icon-sm" %}Voltar</a>
+    <a href="{% url 'estoque:categoria_create' %}" class="btn btn--primary">{% icon "plus-lg" class="icon-sm" %}Nova Categoria</a>
   </div>
 </div>
 <div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
+  <div class="table-wrap">
+    <table class="table">
       <thead><tr><th>Nome</th><th>Status</th><th></th></tr></thead>
       <tbody>
         {% for c in categorias %}
         <tr>
           <td>{{ c.nome }}</td>
-          <td>{% if c.ativo %}<span class="badge badge-verde">Ativa</span>{% else %}<span class="badge bg-secondary">Inativa</span>{% endif %}</td>
-          <td class="text-end">
-            <a href="{% url 'estoque:categoria_update' c.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-            <a href="{% url 'estoque:categoria_delete' c.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+          <td>{% if c.ativo %}<span class="badge badge--success">Ativa</span>{% else %}<span class="badge badge--neutral">Inativa</span>{% endif %}</td>
+          <td class="table__actions">
+            <a href="{% url 'estoque:categoria_update' c.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Editar">{% icon "pencil" class="icon-sm" %}</a>
+            <a href="{% url 'estoque:categoria_delete' c.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Excluir">{% icon "trash" class="icon-sm" %}</a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="3" class="text-center text-muted py-4">Nenhuma categoria cadastrada.</td></tr>
+        <tr><td colspan="3"><div class="empty-state">{% icon "tags" %}<span class="empty-state__title">Nenhuma categoria cadastrada.</span></div></td></tr>
         {% endfor %}
       </tbody>
     </table>

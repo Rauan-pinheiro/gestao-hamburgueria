@@ -1,0 +1,10 @@
+{% if form.non_field_errors %}
+<div class="alert alert--danger mb-4">
+    <div>
+        {% if form_error_title %}<strong class="block mb-1">{{ form_error_title }}</strong>{% endif %}
+        <ul class="stack-sm" style="list-style: disc; padding-left: 1.1rem;">
+            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}

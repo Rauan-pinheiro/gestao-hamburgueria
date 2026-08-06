@@ -1,0 +1,5 @@
+{% load crispy_forms_field %}
+{% crispy_field field 'class' 'field__control' %}
+{% if field.value %}
+<p class="field__hint">Arquivo atual: {{ field.value }}</p>
+{% endif %}

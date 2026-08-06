@@ -1,10 +1,11 @@
 {% extends 'base.html' %}
+{% load ds_icons %}
 {% block title %}Alertas de Estoque{% endblock %}
 {% block content %}
-<h4 class="mb-3"><i class="bi bi-exclamation-triangle me-2"></i>Alertas de Estoque Baixo</h4>
+<div class="page-header"><div class="page-header__title">{% icon "exclamation-triangle" %}<h1 style="font-size: var(--text-xl);">Alertas de Estoque Baixo</h1></div></div>
 <div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
+  <div class="table-wrap">
+    <table class="table">
       <thead><tr><th>Ingrediente</th><th>Estoque atual</th><th>Mínimo</th><th></th></tr></thead>
       <tbody>
         {% for ing in abaixo_minimo %}
@@ -12,10 +13,10 @@
           <td>{{ ing.nome }}</td>
           <td>{{ ing.estoque_atual }} {{ ing.get_unidade_medida_display }}</td>
           <td>{{ ing.estoque_minimo }} {{ ing.get_unidade_medida_display }}</td>
-          <td><a href="{% url 'estoque:ingrediente_detail' ing.pk %}" class="btn btn-sm btn-outline-secondary">Ver</a></td>
+          <td><a href="{% url 'estoque:ingrediente_detail' ing.pk %}" class="btn btn--sm btn--outline">Ver</a></td>
         </tr>
         {% empty %}
-        <tr><td colspan="4" class="text-center text-muted py-4">Nenhum ingrediente abaixo do mínimo.</td></tr>
+        <tr><td colspan="4"><div class="empty-state">{% icon "check2-circle" %}<span class="empty-state__title">Nenhum ingrediente abaixo do mínimo.</span></div></td></tr>
         {% endfor %}
       </tbody>
     </table>

@@ -28,7 +28,7 @@ def alertas_topbar(request):
     for ing in qs_estoque.order_by('estoque_atual')[:3]:
         notificacoes.append({
             'nivel': 'danger',
-            'icone': 'bi-box-seam',
+            'icone': 'box-seam',
             'titulo': f'{ing.nome} com estoque baixo',
             'subtitulo': f'{ing.estoque_atual} {ing.get_unidade_medida_display()} restantes',
             'url': reverse('estoque:ingrediente_detail', args=[ing.pk]),
@@ -36,7 +36,7 @@ def alertas_topbar(request):
     for d in qs_atrasadas.order_by('data_vencimento')[:3]:
         notificacoes.append({
             'nivel': 'danger',
-            'icone': 'bi-exclamation-triangle',
+            'icone': 'exclamation-triangle',
             'titulo': f'Despesa em atraso: {d.descricao}',
             'subtitulo': f'venceu em {d.data_vencimento:%d/%m/%Y}',
             'url': reverse('despesas:despesa_update', args=[d.pk]),
@@ -44,7 +44,7 @@ def alertas_topbar(request):
     for d in qs_a_vencer.order_by('data_vencimento')[:2]:
         notificacoes.append({
             'nivel': 'warning',
-            'icone': 'bi-bell',
+            'icone': 'bell',
             'titulo': f'Despesa a vencer: {d.descricao}',
             'subtitulo': f'vence em {d.data_vencimento:%d/%m/%Y}',
             'url': reverse('despesas:despesa_update', args=[d.pk]),

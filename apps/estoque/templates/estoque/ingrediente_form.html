@@ -1,18 +1,10 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
+{% load ds_icons %}
 {% block title %}{% if object %}Editar{% else %}Novo{% endif %} Ingrediente{% endblock %}
 {% block content %}
-<h4 class="mb-3"><i class="bi bi-box-seam me-2"></i>{% if object %}Editar{% else %}Novo{% endif %} Ingrediente</h4>
-<div class="card"><div class="card-body">
-  <form method="post">
-    {% csrf_token %}
-    {{ form|crispy }}
-    <div class="d-flex gap-2 mt-3">
-      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar</button>
-      <a href="{% url 'estoque:ingrediente_list' %}" class="btn btn-outline-secondary">Cancelar</a>
-    </div>
-  </form>
-</div></div>
+<div class="page-header"><div class="page-header__title">{% icon "box-seam" %}<h1 style="font-size: var(--text-xl);">{% if object %}Editar{% else %}Novo{% endif %} Ingrediente</h1></div></div>
+{% url 'estoque:ingrediente_list' as cancel_url %}
+{% include 'partials/_form_card.html' with cancel_url=cancel_url %}
 {% endblock %}
 
 {% block extra_js %}
@@ -25,11 +17,11 @@ document.addEventListener('DOMContentLoaded', function () {
   const campoRendimento = document.querySelector('.js-campo-rendimento');
   if (!unidadeSelect || !campoRendimento) return;
 
-  const grupoRendimento = campoRendimento.closest('.mb-3, .form-group') || campoRendimento.parentElement;
+  const grupoRendimento = campoRendimento.closest('.field') || campoRendimento.parentElement;
 
   function atualizarVisibilidade() {
     const ehUnidade = unidadeSelect.value === 'un';
-    if (grupoRendimento) grupoRendimento.classList.toggle('d-none', !ehUnidade);
+    if (grupoRendimento) grupoRendimento.classList.toggle('hidden', !ehUnidade);
     if (!ehUnidade) campoRendimento.value = '';
   }
 

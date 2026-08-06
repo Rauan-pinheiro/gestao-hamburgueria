@@ -1,0 +1,82 @@
+/* ============================================================
+   DESIGN SYSTEM · Hamburgueria ERP
+   Camada 2 — Reset moderno + tipografia base + acessibilidade.
+   ============================================================ */
+@layer reset {
+
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    color-scheme: light dark;
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    line-height: var(--leading-base);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    transition: background-color var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
+  }
+
+  img, picture, svg, video, canvas { display: block; max-width: 100%; }
+
+  input, button, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; background: none; border: none; }
+  a { color: var(--color-primary); text-decoration: none; }
+  a:hover { color: var(--color-primary-strong); }
+
+  ul, ol { list-style: none; padding: 0; }
+
+  table { border-collapse: collapse; width: 100%; }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: var(--leading-tight);
+    letter-spacing: -.01em;
+    color: var(--color-text);
+  }
+
+  h1 { font-size: var(--text-3xl); }
+  h2 { font-size: var(--text-2xl); }
+  h3 { font-size: var(--text-xl); }
+  h4 { font-size: var(--text-lg); }
+  small { font-size: var(--text-sm); }
+
+  p { line-height: var(--leading-base); }
+
+  fieldset { border: none; padding: 0; }
+
+  /* Foco visível consistente — não depende de cada componente lembrar de
+     estilizar :focus, então nenhum elemento interativo novo fica "mudo"
+     para navegação por teclado. */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Scrollbar discreta, coerente com o resto da UI */
+  * { scrollbar-width: thin; scrollbar-color: var(--color-border-strong) transparent; }
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: var(--radius-full); }
+  *::-webkit-scrollbar-track { background: transparent; }
+
+  ::selection { background: var(--color-primary); color: #fff; }
+}

@@ -1,0 +1,108 @@
+/* Componente: Botões */
+@layer components {
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+    min-height: 44px;
+    padding: 0 var(--space-4);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    background: var(--color-surface-alt);
+    color: var(--color-text);
+    transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+                box-shadow var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+  }
+  .btn .icon { width: 1.05rem; height: 1.05rem; }
+  .btn:hover { background: var(--color-border); }
+  .btn:active:not(:disabled) { transform: scale(.97); }
+  .btn:disabled, .btn[aria-disabled="true"] { opacity: .55; pointer-events: none; }
+
+  .btn--sm { min-height: 36px; padding: 0 var(--space-3); border-radius: var(--radius-sm); font-size: var(--text-xs); }
+  .btn--lg { min-height: 52px; padding: 0 var(--space-6); font-size: var(--text-md); }
+  .btn--block { width: 100%; }
+
+  .btn--primary { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-primary-contrast); }
+  .btn--primary:hover { background: var(--color-primary-strong); border-color: var(--color-primary-strong); box-shadow: var(--shadow-glow); }
+  .btn--primary:focus-visible { box-shadow: 0 0 0 .2rem var(--color-primary-soft); }
+
+  .btn--secondary { background: var(--color-secondary); border-color: var(--color-secondary); color: var(--color-secondary-contrast); }
+  .btn--secondary:hover { filter: brightness(.95); }
+
+  .btn--outline { background: transparent; border-color: var(--color-border-strong); color: var(--color-text); }
+  .btn--outline:hover { background: var(--color-surface-alt); border-color: var(--color-text-muted); }
+
+  .btn--outline-primary { background: transparent; border-color: var(--color-primary); color: var(--color-primary); }
+  .btn--outline-primary:hover { background: var(--color-primary); color: var(--color-primary-contrast); }
+
+  .btn--outline-danger { background: transparent; border-color: var(--color-danger); color: var(--color-danger); }
+  .btn--outline-danger:hover { background: var(--color-danger); color: #fff; }
+
+  .btn--ghost { background: transparent; color: var(--color-text); }
+  .btn--ghost:hover { background: var(--color-surface-alt); }
+
+  .btn--success { background: var(--color-success); border-color: var(--color-success); color: #fff; }
+  .btn--warning { background: var(--color-warning); border-color: var(--color-warning); color: #2b1d00; }
+  .btn--danger { background: var(--color-danger); border-color: var(--color-danger); color: #fff; }
+
+  /* Botão só-ícone (topbar, ações de tabela) */
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+    position: relative;
+    flex-shrink: 0;
+    transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .btn-icon:hover { background: var(--color-surface-alt); border-color: var(--color-primary); }
+  .btn-icon:active { transform: scale(.94); }
+  .btn-icon--sm { width: 2.15rem; height: 2.15rem; min-width: 36px; min-height: 36px; border-radius: var(--radius-sm); }
+
+  .icon-badge {
+    position: absolute;
+    top: -3px; right: -3px;
+    min-width: 1.1rem; height: 1.1rem;
+    padding: 0 .3rem;
+    border-radius: var(--radius-full);
+    background: var(--color-danger);
+    color: #fff;
+    font-size: .62rem;
+    font-weight: 700;
+    line-height: 1.1rem;
+    text-align: center;
+    border: 2px solid var(--color-surface);
+  }
+
+  /* Grupo de botões/ações lado a lado */
+  .btn-group { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+  /* Estado de carregamento: o texto original fica invisível (mas mantém o
+     espaço) para o botão não "pular" de tamanho quando o spinner aparece. */
+  .btn.is-loading { position: relative; color: transparent !important; pointer-events: none; }
+  .btn.is-loading::after {
+    content: '';
+    position: absolute;
+    width: 1rem; height: 1rem;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, .5);
+    border-top-color: #fff;
+    animation: ds-spin .7s linear infinite;
+  }
+  @keyframes ds-spin { to { transform: rotate(360deg); } }
+}

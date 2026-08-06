@@ -29,14 +29,14 @@
   document.addEventListener('DOMContentLoaded', function () {
     const toggle = document.getElementById('sidebar-toggle');
     const backdrop = document.getElementById('sidebar-backdrop');
-    const sidebarNav = document.querySelector('.sidebar-nav');
+    const sidebarNav = document.querySelector('.sidebar__nav');
 
     if (toggle) {
       toggle.addEventListener('click', toggleSidebar);
     }
 
     // Botão "Mais" da bottom nav (mobile) abre o mesmo painel deslizante.
-    document.querySelectorAll('[data-bs-toggle-sidebar]').forEach(function (el) {
+    document.querySelectorAll('[data-toggle-sidebar]').forEach(function (el) {
       el.addEventListener('click', function (e) {
         e.preventDefault();
         toggleSidebar();

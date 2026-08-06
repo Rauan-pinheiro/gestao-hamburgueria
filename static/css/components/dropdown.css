@@ -1,0 +1,79 @@
+/* Componente: Dropdown genérico (menu de perfil, notificações, ações de
+   tabela) — controlado pelo static/js/dropdown.js via [data-dropdown]. */
+@layer components {
+
+  .dropdown { position: relative; display: inline-flex; }
+
+  .dropdown__menu {
+    position: absolute;
+    top: calc(100% + .5rem);
+    right: 0;
+    min-width: 12rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-2);
+    z-index: var(--z-dropdown);
+    display: none;
+  }
+  .dropdown__menu--left { right: auto; left: 0; }
+  .dropdown.is-open .dropdown__menu { display: block; animation: ds-pop var(--dur-base) var(--ease); }
+
+  .dropdown__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    min-height: 40px;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    text-align: left;
+  }
+  .dropdown__item:hover { background: var(--color-surface-alt); }
+  .dropdown__item .icon { color: var(--color-text-muted); }
+  .dropdown__divider { height: 1px; background: var(--color-border); margin: var(--space-2) 0; }
+
+  /* Painel de notificações (variação de tamanho/estrutura do dropdown) */
+  .notif-panel { width: min(360px, 90vw); padding: 0; }
+  .notif-panel__header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    font-family: var(--font-display);
+    font-weight: 600;
+  }
+  .notif-item {
+    display: flex; gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    align-items: flex-start;
+  }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-item:hover { background: var(--color-surface-alt); }
+  .notif-item__icon {
+    width: 2.1rem; height: 2.1rem;
+    border-radius: var(--radius-md);
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .notif-item__title { font-size: var(--text-sm); font-weight: 600; line-height: 1.25; display: block; }
+  .notif-item__subtitle { font-size: var(--text-xs); color: var(--color-text-muted); }
+  .notif-empty { padding: var(--space-6) var(--space-4); text-align: center; color: var(--color-text-muted); font-size: var(--text-sm); }
+
+  .avatar {
+    width: 2.35rem; height: 2.35rem;
+    border-radius: var(--radius-full);
+    background: var(--chrome-active-bg);
+    color: var(--chrome-active-contrast);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--text-sm);
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  @keyframes ds-pop { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+}

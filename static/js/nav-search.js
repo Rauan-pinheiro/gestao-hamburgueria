@@ -7,10 +7,11 @@
     const results = document.getElementById('topbar-search-results');
     if (!input || !results) return;
 
-    const pages = Array.from(document.querySelectorAll('.sidebar-nav .nav-link')).map(function (link) {
+    const pages = Array.from(document.querySelectorAll('.sidebar__nav .nav-link')).map(function (link) {
+      const iconEl = link.querySelector('svg.icon');
       return {
         text: link.querySelector('span') ? link.querySelector('span').textContent.trim() : link.textContent.trim(),
-        icon: (link.querySelector('i') && link.querySelector('i').className) || 'bi bi-arrow-right',
+        iconHtml: iconEl ? iconEl.outerHTML : '',
         href: link.getAttribute('href'),
       };
     });
@@ -18,29 +19,29 @@
     function render(query) {
       const q = query.trim().toLowerCase();
       if (!q) {
-        results.classList.remove('show');
+        results.classList.remove('is-open');
         results.innerHTML = '';
         return;
       }
       const matches = pages.filter((p) => p.text.toLowerCase().includes(q)).slice(0, 8);
       results.innerHTML = matches.length
-        ? matches.map((p) => '<a href="' + p.href + '"><i class="' + p.icon + '"></i>' + p.text + '</a>').join('')
+        ? matches.map((p) => '<a href="' + p.href + '">' + p.iconHtml + p.text + '</a>').join('')
         : '<div class="empty">Nenhuma página encontrada.</div>';
-      results.classList.add('show');
+      results.classList.add('is-open');
     }
 
     input.addEventListener('input', function () { render(input.value); });
     input.addEventListener('focus', function () { if (input.value) render(input.value); });
 
     document.addEventListener('click', function (e) {
-      if (!e.target.closest('.topbar-search')) {
-        results.classList.remove('show');
+      if (!e.target.closest('.topbar__search')) {
+        results.classList.remove('is-open');
       }
     });
 
     input.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
-        results.classList.remove('show');
+        results.classList.remove('is-open');
         input.blur();
       } else if (e.key === 'Enter') {
         const first = results.querySelector('a');

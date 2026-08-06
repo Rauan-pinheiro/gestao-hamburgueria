@@ -1,0 +1,8 @@
+{% load ds_icons %}
+{% if field.errors %}
+    {% for error in field.errors %}
+    <p class="field__error">{% icon "exclamation-circle" class="icon-xs" %}{{ error }}</p>
+    {% endfor %}
+{% elif field.help_text %}
+    <p class="field__hint">{{ field.help_text|safe }}</p>
+{% endif %}

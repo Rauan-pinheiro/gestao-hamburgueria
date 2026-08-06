@@ -1,16 +1,24 @@
+{% load ds_icons %}
 {% if user.is_superuser and cascata_url %}
-<hr>
-<details class="mt-2">
-  <summary class="text-danger small" style="cursor:pointer;">Opção avançada para superusuário</summary>
-  <div class="alert alert-danger mt-2">
-    <strong><i class="bi bi-exclamation-octagon me-1"></i>Excluir em cascata</strong>
-    <p class="small mb-2">Apaga este registro <strong>e todos os que dependem dele</strong> (ex: movimentações de estoque,
-    itens de ficha técnica, ofertas de fornecedor). Use apenas para limpar cadastros de teste — vendas reais nunca são
-    apagadas por esta opção. Esta ação não pode ser desfeita.</p>
-    <form method="post" action="{{ cascata_url }}" onsubmit="return confirm('Excluir definitivamente este registro e tudo que depende dele? Esta ação não pode ser desfeita.');">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash3 me-1"></i>Excluir em cascata</button>
-    </form>
+<div class="accordion__item mt-4" data-accordion-item>
+  <button type="button" class="accordion__trigger text-danger" data-accordion-trigger>
+    <span>Opção avançada para superusuário</span>
+    {% icon "chevron-down" %}
+  </button>
+  <div class="accordion__panel" data-accordion-panel hidden>
+    <div class="alert alert--danger">
+      {% icon "exclamation-octagon" %}
+      <div>
+        <strong class="block mb-1">Excluir em cascata</strong>
+        <p class="text-sm mb-3">Apaga este registro <strong>e todos os que dependem dele</strong> (ex: movimentações de
+        estoque, itens de ficha técnica, ofertas de fornecedor). Use apenas para limpar cadastros de teste — vendas
+        reais nunca são apagadas por esta opção. Esta ação não pode ser desfeita.</p>
+        <form method="post" action="{{ cascata_url }}" onsubmit="return confirm('Excluir definitivamente este registro e tudo que depende dele? Esta ação não pode ser desfeita.');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn--sm btn--danger">{% icon "trash" class="icon-sm" %}Excluir em cascata</button>
+        </form>
+      </div>
+    </div>
   </div>
-</details>
+</div>
 {% endif %}

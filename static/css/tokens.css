@@ -1,0 +1,182 @@
+/* ============================================================
+   DESIGN SYSTEM · Hamburgueria ERP
+   Camada 1 — Tokens: cores de marca, superfícies, espaçamento,
+   tipografia, raios, sombras e movimento. Tudo em CSS variables,
+   sem nenhuma dependência de framework. Reconstruído do zero.
+   ============================================================ */
+@layer tokens {
+
+  :root {
+    /* ---- Marca ---- */
+    --brand-orange: #E67E22;
+    --brand-orange-strong: #C8650F;
+    --brand-orange-soft: #FFB74D;
+    --brand-gold: #F4B400;
+    --brand-gold-strong: #D69B00;
+    --brand-amber: #FFD166;
+    --brand-ink: #111111;
+    --brand-ink-2: #1B1B1B;
+    --brand-ink-3: #2D2D2D;
+    --brand-cream: #FAFAFA;
+    --brand-white: #FFFFFF;
+
+    /* ---- Papéis semânticos (tema claro = padrão) ---- */
+    --color-bg: var(--brand-cream);
+    --color-surface: var(--brand-white);
+    --color-surface-alt: #F3EFE9;
+    --color-surface-raised: var(--brand-white);
+    --color-border: #E6E0D6;
+    --color-border-strong: #D8D0C2;
+    --color-text: var(--brand-ink);
+    --color-text-muted: #6E675D;
+    --color-text-faint: #948C7F;
+    --color-overlay: rgba(17, 15, 12, .5);
+
+    --color-primary: var(--brand-orange);
+    --color-primary-strong: var(--brand-orange-strong);
+    --color-primary-soft: color-mix(in srgb, var(--brand-orange) 14%, transparent);
+    --color-primary-contrast: #FFFFFF;
+    --color-secondary: var(--brand-gold);
+    --color-secondary-strong: var(--brand-gold-strong);
+    --color-secondary-contrast: #2B1D00;
+
+    --color-success: #23895B;
+    --color-success-soft: color-mix(in srgb, #23895B 14%, transparent);
+    --color-warning: #B8790A;
+    --color-warning-soft: color-mix(in srgb, #F0A202 18%, transparent);
+    --color-danger: #D8434A;
+    --color-danger-soft: color-mix(in srgb, #D8434A 14%, transparent);
+    --color-info: #2E76B6;
+    --color-info-soft: color-mix(in srgb, #2E76B6 14%, transparent);
+
+    /* Chrome sempre escuro (sidebar/topbar) — identidade da marca não muda com o tema */
+    --chrome-bg: linear-gradient(180deg, #161311 0%, #0C0A08 100%);
+    --chrome-text: #C9BFB0;
+    --chrome-text-active: #FFFFFF;
+    --chrome-active-bg: linear-gradient(135deg, var(--brand-orange) 0%, var(--brand-gold) 130%);
+    --chrome-active-contrast: #1F1400;
+    --chrome-border: rgba(255, 255, 255, .08);
+
+    /* ---- Layout ---- */
+    --shell-sidebar-w: 17rem;
+    --shell-sidebar-w-collapsed: 4.75rem;
+    --shell-topbar-h: 4rem;
+    --shell-bottomnav-h: 4.25rem;
+    --shell-content-max: 1400px;
+
+    /* ---- Espaçamento — grid de 8px (com meio-passo de 4px) ---- */
+    --space-0: 0;
+    --space-1: .25rem;   /* 4  */
+    --space-2: .5rem;    /* 8  */
+    --space-3: .75rem;   /* 12 */
+    --space-4: 1rem;     /* 16 */
+    --space-5: 1.5rem;   /* 24 */
+    --space-6: 2rem;     /* 32 */
+    --space-7: 2.5rem;   /* 40 */
+    --space-8: 3rem;     /* 48 */
+    --space-9: 4rem;     /* 64 */
+    --space-10: 5rem;    /* 80 */
+
+    /* ---- Tipografia ---- */
+    --font-display: 'Poppins', 'Inter', system-ui, -apple-system, sans-serif;
+    --font-body: 'Inter', 'Poppins', system-ui, -apple-system, sans-serif;
+
+    --text-xs: .75rem;
+    --text-sm: .8125rem;
+    --text-base: clamp(.9rem, .87rem + .1vw, .95rem);
+    --text-md: 1.0625rem;
+    --text-lg: 1.25rem;
+    --text-xl: clamp(1.375rem, 1.25rem + .5vw, 1.625rem);
+    --text-2xl: clamp(1.75rem, 1.5rem + 1vw, 2.125rem);
+    --text-3xl: clamp(2.125rem, 1.7rem + 1.8vw, 2.75rem);
+    --leading-tight: 1.2;
+    --leading-base: 1.55;
+
+    /* ---- Raios ---- */
+    --radius-xs: .375rem;
+    --radius-sm: .5rem;
+    --radius-md: .75rem;
+    --radius-lg: 1.05rem;
+    --radius-xl: 1.5rem;
+    --radius-full: 999px;
+
+    /* ---- Elevação ---- */
+    --shadow-xs: 0 1px 2px rgba(17, 15, 12, .05);
+    --shadow-sm: 0 1px 2px rgba(17, 15, 12, .06), 0 1px 1px rgba(17, 15, 12, .04);
+    --shadow-md: 0 8px 20px -6px rgba(17, 15, 12, .12), 0 2px 8px -2px rgba(17, 15, 12, .06);
+    --shadow-lg: 0 20px 42px -14px rgba(17, 15, 12, .20), 0 8px 18px -8px rgba(17, 15, 12, .10);
+    --shadow-glow: 0 10px 24px -8px color-mix(in srgb, var(--brand-orange) 55%, transparent);
+
+    /* ---- Movimento ---- */
+    --ease: cubic-bezier(.4, 0, .2, 1);
+    --ease-out: cubic-bezier(0, 0, .2, 1);
+    --ease-spring: cubic-bezier(.34, 1.4, .64, 1);
+    --dur-fast: 150ms;
+    --dur-base: 220ms;
+    --dur-slow: 320ms;
+
+    /* ---- z-index ---- */
+    --z-sidebar: 1040;
+    --z-topbar: 1020;
+    --z-bottomnav: 1035;
+    --z-backdrop: 1038;
+    --z-dropdown: 1050;
+    --z-modal: 1060;
+    --z-toast: 1080;
+    --z-tooltip: 1090;
+  }
+
+  /* ---- Tema escuro: manual via [data-theme="dark"] (botão no topbar) ou por
+     preferência do sistema quando o usuário não escolheu explicitamente o
+     tema claro. As duas regras precisam ficar separadas porque um seletor
+     comum e uma @media não podem compor a mesma lista de seletores. ---- */
+  :root[data-theme="dark"] {
+    --color-bg: var(--brand-ink);
+    --color-surface: var(--brand-ink-2);
+    --color-surface-alt: #222220;
+    --color-surface-raised: #232220;
+    --color-border: var(--brand-ink-3);
+    --color-border-strong: #3A3A37;
+    --color-text: #F3F0EA;
+    --color-text-muted: #ACA599;
+    --color-text-faint: #746E63;
+    --color-overlay: rgba(0, 0, 0, .6);
+
+    --color-primary-soft: color-mix(in srgb, var(--brand-orange) 22%, transparent);
+    --color-success-soft: color-mix(in srgb, #23895B 22%, transparent);
+    --color-warning-soft: color-mix(in srgb, #F0A202 24%, transparent);
+    --color-danger-soft: color-mix(in srgb, #D8434A 22%, transparent);
+    --color-info-soft: color-mix(in srgb, #2E76B6 22%, transparent);
+
+    --chrome-bg: linear-gradient(180deg, #0C0B0A 0%, #060605 100%);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .5);
+    --shadow-md: 0 10px 22px -6px rgba(0, 0, 0, .55);
+    --shadow-lg: 0 22px 46px -16px rgba(0, 0, 0, .65);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-bg: var(--brand-ink);
+      --color-surface: var(--brand-ink-2);
+      --color-surface-alt: #222220;
+      --color-surface-raised: #232220;
+      --color-border: var(--brand-ink-3);
+      --color-border-strong: #3A3A37;
+      --color-text: #F3F0EA;
+      --color-text-muted: #ACA599;
+      --color-text-faint: #746E63;
+      --color-overlay: rgba(0, 0, 0, .6);
+
+      --color-primary-soft: color-mix(in srgb, var(--brand-orange) 22%, transparent);
+      --color-success-soft: color-mix(in srgb, #23895B 22%, transparent);
+      --color-warning-soft: color-mix(in srgb, #F0A202 24%, transparent);
+      --color-danger-soft: color-mix(in srgb, #D8434A 22%, transparent);
+      --color-info-soft: color-mix(in srgb, #2E76B6 22%, transparent);
+
+      --chrome-bg: linear-gradient(180deg, #0C0B0A 0%, #060605 100%);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, .5);
+      --shadow-md: 0 10px 22px -6px rgba(0, 0, 0, .55);
+      --shadow-lg: 0 22px 46px -16px rgba(0, 0, 0, .65);
+    }
+  }
+}

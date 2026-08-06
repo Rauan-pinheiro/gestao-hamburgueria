@@ -1,37 +1,41 @@
 {% extends 'base.html' %}
+{% load ds_icons %}
 {% block title %}Fornecedores{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <div>
-    <h4 class="mb-1"><i class="bi bi-truck me-2"></i>Fornecedores</h4>
-    <small class="text-muted">Cadastre aqui quem vende seus ingredientes. Depois, em cada fornecedor você cadastra os produtos que ele oferece (com preço) para comparar quem é mais barato.</small>
+<div class="page-header">
+  <div class="page-header__title">
+    {% icon "truck" %}
+    <div>
+      <h1 style="font-size: var(--text-xl);">Fornecedores</h1>
+      <p class="text-muted text-sm">Cadastre aqui quem vende seus ingredientes. Depois, em cada fornecedor você cadastra os produtos que ele oferece (com preço) para comparar quem é mais barato.</p>
+    </div>
   </div>
-  <a href="{% url 'fornecedores:fornecedor_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Novo Fornecedor</a>
+  <div class="page-header__actions">
+    <a href="{% url 'fornecedores:fornecedor_create' %}" class="btn btn--primary">{% icon "plus-lg" class="icon-sm" %}Novo Fornecedor</a>
+  </div>
 </div>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <form method="get" class="row g-2">
-      <div class="col-md-6">
-        <input type="text" name="q" class="form-control" placeholder="Buscar por nome, fantasia ou CNPJ..." value="{{ request.GET.q }}">
+<div class="card mb-4">
+  <div class="card__body">
+    <form method="get" class="filter-bar">
+      <div class="field">
+        <input type="text" name="q" class="field__control" placeholder="Buscar por nome, fantasia ou CNPJ..." value="{{ request.GET.q }}">
       </div>
-      <div class="col-md-3">
-        <select name="status" class="form-select">
+      <div class="field">
+        <select name="status" class="field__control">
           <option value="">Todos os status</option>
           <option value="ativos" {% if request.GET.status == 'ativos' %}selected{% endif %}>Ativos</option>
           <option value="inativos" {% if request.GET.status == 'inativos' %}selected{% endif %}>Inativos</option>
         </select>
       </div>
-      <div class="col-md-3">
-        <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-search me-1"></i>Filtrar</button>
-      </div>
+      <button type="submit" class="btn btn--outline">{% icon "search" class="icon-sm" %}Filtrar</button>
     </form>
   </div>
 </div>
 
 <div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
+  <div class="table-wrap">
+    <table class="table">
       <thead><tr><th>Nome</th><th>Cidade/UF</th><th>Telefone</th><th>Produtos</th><th>Status</th><th></th></tr></thead>
       <tbody>
         {% for fornecedor in fornecedores %}
@@ -40,23 +44,24 @@
           <td>{{ fornecedor.cidade }}{% if fornecedor.estado %}/{{ fornecedor.estado }}{% endif %}</td>
           <td>{{ fornecedor.telefone|default:'—' }}</td>
           <td>{{ fornecedor.total_produtos }}</td>
-          <td>{% if fornecedor.ativo %}<span class="badge badge-verde">Ativo</span>{% else %}<span class="badge bg-secondary">Inativo</span>{% endif %}</td>
-          <td class="text-end">
-            <a href="{% url 'fornecedores:fornecedor_update' fornecedor.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
-            <form method="post" action="{% url 'fornecedores:fornecedor_toggle_ativo' fornecedor.pk %}" class="d-inline">
+          <td>{% if fornecedor.ativo %}<span class="badge badge--success">Ativo</span>{% else %}<span class="badge badge--neutral">Inativo</span>{% endif %}</td>
+          <td class="table__actions">
+            <a href="{% url 'fornecedores:fornecedor_update' fornecedor.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Editar">{% icon "pencil" class="icon-sm" %}</a>
+            <form method="post" action="{% url 'fornecedores:fornecedor_toggle_ativo' fornecedor.pk %}" class="inline-block">
               {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-outline-secondary" title="{% if fornecedor.ativo %}Inativar{% else %}Ativar{% endif %}">
-                <i class="bi bi-{% if fornecedor.ativo %}toggle-on{% else %}toggle-off{% endif %}"></i>
-              </button>
+              <button type="submit" class="btn btn-icon btn-icon--sm" data-tooltip="{% if fornecedor.ativo %}Inativar{% else %}Ativar{% endif %}">{% icon "toggle" class="icon-sm" %}</button>
             </form>
-            <a href="{% url 'fornecedores:fornecedor_delete' fornecedor.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></a>
+            <a href="{% url 'fornecedores:fornecedor_delete' fornecedor.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Excluir">{% icon "trash" class="icon-sm" %}</a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" class="text-center py-5">
-          <i class="bi bi-truck fs-1 text-muted d-block mb-2"></i>
-          <p class="text-muted mb-2">Nenhum fornecedor cadastrado ainda.<br>Fornecedores são quem vende os ingredientes — comece por aqui.</p>
-          <a href="{% url 'fornecedores:fornecedor_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Cadastrar primeiro fornecedor</a>
+        <tr><td colspan="6">
+          <div class="empty-state">
+            {% icon "truck" %}
+            <span class="empty-state__title">Nenhum fornecedor cadastrado ainda.</span>
+            <span class="empty-state__subtitle">Fornecedores são quem vende os ingredientes — comece por aqui.</span>
+            <a href="{% url 'fornecedores:fornecedor_create' %}" class="btn btn--primary btn--sm mt-3">{% icon "plus-lg" class="icon-sm" %}Cadastrar primeiro fornecedor</a>
+          </div>
         </td></tr>
         {% endfor %}
       </tbody>

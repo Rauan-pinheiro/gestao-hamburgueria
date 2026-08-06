@@ -1,0 +1,48 @@
+{% load crispy_forms_field %}
+{% load ds_icons %}
+{% if field.is_hidden %}
+    {{ field }}
+{% else %}
+    {% if field|is_checkbox %}
+        <div class="field mb-4" id="div_{{ field.auto_id }}">
+            <label class="field-check" for="{{ field.id_for_label }}">
+                {% crispy_field field 'class' 'field-check__input' %}
+                <span class="field-check__box">{% icon "check" class="icon-xs" %}</span>
+                <span class="field-check__label">{{ field.label }}{% if field.field.required %}<span class="required">*</span>{% endif %}</span>
+            </label>
+            {% include "hamburgueria/layout/help_text_and_errors.html" %}
+        </div>
+
+    {% elif field|is_radioselect or field|is_checkboxselectmultiple %}
+        <div class="field mb-4" id="div_{{ field.auto_id }}">
+            {% if field.label %}
+            <div class="field__label">{{ field.label }}{% if field.field.required %}<span class="required">*</span>{% endif %}</div>
+            {% endif %}
+            <div class="field-check-group">
+                {% for choice in field %}
+                <label class="field-check{% if field|is_radioselect %} field-check--radio{% endif %}">
+                    {{ choice.tag }}
+                    <span class="field-check__box"></span>
+                    <span class="field-check__label">{{ choice.choice_label }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            {% include "hamburgueria/layout/help_text_and_errors.html" %}
+        </div>
+
+    {% else %}
+        <div class="field" id="div_{{ field.auto_id }}">
+            {% if field.label %}
+            <label class="field__label" for="{{ field.id_for_label }}">
+                {{ field.label }}{% if field.field.required %}<span class="required">*</span>{% endif %}
+            </label>
+            {% endif %}
+            {% if field|is_file %}
+                {% include "hamburgueria/layout/field_file.html" %}
+            {% else %}
+                {% crispy_field field 'class' 'field__control' %}
+            {% endif %}
+            {% include "hamburgueria/layout/help_text_and_errors.html" %}
+        </div>
+    {% endif %}
+{% endif %}

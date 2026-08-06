@@ -24,7 +24,6 @@ INSTALLED_APPS = [
 
     # third-party
     'crispy_forms',
-    'crispy_bootstrap5',
 
     # apps do projeto
     'apps.core',
@@ -164,8 +163,8 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard:index'
 LOGOUT_REDIRECT_URL = 'login'
 
-CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'
-CRISPY_TEMPLATE_PACK = 'bootstrap5'
+CRISPY_ALLOWED_TEMPLATE_PACKS = 'hamburgueria'
+CRISPY_TEMPLATE_PACK = 'hamburgueria'
 
 # Segurança básica (válida em qualquer ambiente; prod.py reforça com HTTPS/HSTS)
 SECURE_CONTENT_TYPE_NOSNIFF = True

@@ -1,0 +1,19 @@
+/* Componente: Alertas em linha (avisos dentro de cards/formulários) */
+@layer components {
+
+  .alert {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    font-size: var(--text-sm);
+  }
+  .alert .icon { margin-top: .1rem; flex-shrink: 0; }
+  .alert--success { background: var(--color-success-soft); color: var(--color-success); border-color: color-mix(in srgb, var(--color-success) 30%, transparent); }
+  .alert--danger { background: var(--color-danger-soft); color: var(--color-danger); border-color: color-mix(in srgb, var(--color-danger) 30%, transparent); }
+  .alert--warning { background: var(--color-warning-soft); color: var(--color-warning); border-color: color-mix(in srgb, var(--color-warning) 30%, transparent); }
+  .alert--info { background: var(--color-info-soft); color: var(--color-info); border-color: color-mix(in srgb, var(--color-info) 30%, transparent); }
+  .alert a { text-decoration: underline; color: inherit; font-weight: 600; }
+}
