@@ -1,7 +1,12 @@
 {% extends 'base.html' %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<h4 class="mb-3"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h4>
+<div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-4">
+  <div>
+    <h4 class="display-title mb-1"><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h4>
+    <p class="text-muted mb-0 small">Visão geral do negócio hoje, {% now "d/m/Y" %}.</p>
+  </div>
+</div>
 
 {% if not setup.completo %}
 <div class="card mb-4 border-primary">
@@ -13,7 +18,7 @@
       </div>
       <span class="badge badge-verde fs-6">{{ setup.percentual }}%</span>
     </div>
-    <div class="progress mb-3" style="height:8px;">
+    <div class="progress mb-3" style="height:8px; border-radius: var(--radius-full);">
       <div class="progress-bar bg-primary" style="width: {{ setup.percentual }}%;"></div>
     </div>
     <div class="row g-2">
@@ -39,62 +44,46 @@
 </div>
 {% endif %}
 
-<div class="row g-3 mb-3">
-  <div class="col-md-4 col-lg-2">
-    <div class="card stat-card h-100">
-      <div class="stat-icon mb-2" style="background:rgba(217,72,15,.12); color:var(--primary);"><i class="bi bi-cash-coin"></i></div>
-      <div class="stat-label">Faturamento hoje</div>
-      <div class="stat-value">R$ {{ faturamento_dia|floatformat:2 }}</div>
-    </div>
+<div class="stat-grid mb-3">
+  <div class="card stat-card">
+    <div class="stat-icon tone-primary mb-2"><i class="bi bi-cash-coin"></i></div>
+    <div class="stat-label">Faturamento hoje</div>
+    <div class="stat-value">R$ {{ faturamento_dia|floatformat:2 }}</div>
   </div>
-  <div class="col-md-4 col-lg-2">
-    <div class="card stat-card h-100">
-      <div class="stat-icon mb-2" style="background:rgba(47,158,68,.12); color:var(--success);"><i class="bi bi-calendar-week"></i></div>
-      <div class="stat-label">Faturamento semana</div>
-      <div class="stat-value">R$ {{ faturamento_semana|floatformat:2 }}</div>
-    </div>
+  <div class="card stat-card">
+    <div class="stat-icon tone-success mb-2"><i class="bi bi-calendar-week"></i></div>
+    <div class="stat-label">Faturamento semana</div>
+    <div class="stat-value">R$ {{ faturamento_semana|floatformat:2 }}</div>
   </div>
-  <div class="col-md-4 col-lg-2">
-    <div class="card stat-card h-100">
-      <div class="stat-icon mb-2" style="background:rgba(47,158,68,.12); color:var(--success);"><i class="bi bi-calendar-month"></i></div>
-      <div class="stat-label">Faturamento mês</div>
-      <div class="stat-value">R$ {{ faturamento_mes|floatformat:2 }}</div>
-    </div>
+  <div class="card stat-card">
+    <div class="stat-icon tone-success mb-2"><i class="bi bi-calendar-month"></i></div>
+    <div class="stat-label">Faturamento mês</div>
+    <div class="stat-value">R$ {{ faturamento_mes|floatformat:2 }}</div>
   </div>
-  <div class="col-md-4 col-lg-2">
-    <div class="card stat-card h-100">
-      <div class="stat-icon mb-2" style="background:rgba(240,140,0,.12); color:var(--warning);"><i class="bi bi-graph-up-arrow"></i></div>
-      <div class="stat-label">Lucro hoje</div>
-      <div class="stat-value">R$ {{ lucro_dia|floatformat:2 }}</div>
-    </div>
+  <div class="card stat-card">
+    <div class="stat-icon tone-warning mb-2"><i class="bi bi-graph-up-arrow"></i></div>
+    <div class="stat-label">Lucro hoje</div>
+    <div class="stat-value">R$ {{ lucro_dia|floatformat:2 }}</div>
   </div>
-  <div class="col-md-4 col-lg-2">
-    <div class="card stat-card h-100">
-      <div class="stat-icon mb-2" style="background:rgba(240,140,0,.12); color:var(--warning);"><i class="bi bi-graph-up"></i></div>
-      <div class="stat-label">Lucro mensal</div>
-      <div class="stat-value">R$ {{ lucro_mes|floatformat:2 }}</div>
-    </div>
+  <div class="card stat-card">
+    <div class="stat-icon tone-warning mb-2"><i class="bi bi-graph-up"></i></div>
+    <div class="stat-label">Lucro mensal</div>
+    <div class="stat-value">R$ {{ lucro_mes|floatformat:2 }}</div>
   </div>
-  <div class="col-md-4 col-lg-2">
-    <div class="card stat-card h-100">
-      <div class="stat-icon mb-2" style="background:rgba(13,110,253,.12); color:#0d6efd;"><i class="bi bi-receipt"></i></div>
-      <div class="stat-label">Ticket médio (mês)</div>
-      <div class="stat-value">R$ {{ ticket_medio_mes|floatformat:2 }}</div>
-    </div>
+  <div class="card stat-card">
+    <div class="stat-icon tone-info mb-2"><i class="bi bi-receipt"></i></div>
+    <div class="stat-label">Ticket médio (mês)</div>
+    <div class="stat-value">R$ {{ ticket_medio_mes|floatformat:2 }}</div>
   </div>
-  <div class="col-md-4 col-lg-2">
-    <div class="card stat-card h-100">
-      <div class="stat-icon mb-2" style="background:rgba(224,49,49,.12); color:var(--danger);"><i class="bi bi-wallet2"></i></div>
-      <div class="stat-label">Despesas pagas (mês)</div>
-      <div class="stat-value">R$ {{ despesas_pagas_mes|floatformat:2 }}</div>
-    </div>
+  <div class="card stat-card">
+    <div class="stat-icon tone-danger mb-2"><i class="bi bi-wallet2"></i></div>
+    <div class="stat-label">Despesas pagas (mês)</div>
+    <div class="stat-value">R$ {{ despesas_pagas_mes|floatformat:2 }}</div>
   </div>
-  <div class="col-md-4 col-lg-2">
-    <div class="card stat-card h-100">
-      <div class="stat-icon mb-2" style="background:rgba(47,158,68,.12); color:var(--success);"><i class="bi bi-piggy-bank"></i></div>
-      <div class="stat-label">Lucro real (mês)</div>
-      <div class="stat-value">R$ {{ lucro_real_mes|floatformat:2 }}</div>
-    </div>
+  <div class="card stat-card">
+    <div class="stat-icon tone-success mb-2"><i class="bi bi-piggy-bank"></i></div>
+    <div class="stat-label">Lucro real (mês)</div>
+    <div class="stat-value">R$ {{ lucro_real_mes|floatformat:2 }}</div>
   </div>
 </div>
 
@@ -102,13 +91,19 @@
   <div class="col-lg-8">
     <div class="card h-100">
       <div class="card-header"><strong>Faturamento e lucro — últimos 14 dias</strong></div>
-      <div class="card-body"><div style="position:relative; height:300px;"><canvas id="chart-vendas-dia"></canvas></div></div>
+      <div class="card-body">
+        <div class="skeleton" id="skeleton-vendas-dia" style="height:300px; border-radius: var(--radius-md);"></div>
+        <div style="position:relative; height:300px;" class="d-none" id="wrap-chart-vendas-dia"><canvas id="chart-vendas-dia"></canvas></div>
+      </div>
     </div>
   </div>
   <div class="col-lg-4">
     <div class="card h-100">
       <div class="card-header"><strong>Produtos mais vendidos (mês)</strong></div>
-      <div class="card-body"><div style="position:relative; height:300px;"><canvas id="chart-top-produtos"></canvas></div></div>
+      <div class="card-body">
+        <div class="skeleton" id="skeleton-top-produtos" style="height:300px; border-radius: var(--radius-md);"></div>
+        <div style="position:relative; height:300px;" class="d-none" id="wrap-chart-top-produtos"><canvas id="chart-top-produtos"></canvas></div>
+      </div>
     </div>
   </div>
 </div>
@@ -117,7 +112,10 @@
   <div class="col-lg-4">
     <div class="card h-100">
       <div class="card-header"><strong>Vendas por forma de pagamento</strong></div>
-      <div class="card-body"><div style="position:relative; height:280px;"><canvas id="chart-formas-pagamento"></canvas></div></div>
+      <div class="card-body">
+        <div class="skeleton" id="skeleton-formas-pagamento" style="height:280px; border-radius: var(--radius-md);"></div>
+        <div style="position:relative; height:280px;" class="d-none" id="wrap-chart-formas-pagamento"><canvas id="chart-formas-pagamento"></canvas></div>
+      </div>
     </div>
   </div>
 
@@ -131,7 +129,13 @@
           <span class="badge badge-vermelho">{{ ing.estoque_atual }} {{ ing.get_unidade_medida_display }}</span>
         </li>
         {% empty %}
-        <li class="list-group-item text-muted">Nenhum alerta de estoque.</li>
+        <li class="list-group-item">
+          <div class="empty-state py-2">
+            <i class="bi bi-check2-circle"></i>
+            <span class="empty-title">Estoque em dia</span>
+            <span class="empty-subtitle">Nenhum ingrediente abaixo do mínimo.</span>
+          </div>
+        </li>
         {% endfor %}
       </ul>
     </div>
@@ -147,7 +151,13 @@
           <span class="badge badge-amarelo">+{{ h.variacao_percentual|floatformat:1 }}%</span>
         </li>
         {% empty %}
-        <li class="list-group-item text-muted">Nenhum alerta de preço.</li>
+        <li class="list-group-item">
+          <div class="empty-state py-2">
+            <i class="bi bi-check2-circle"></i>
+            <span class="empty-title">Preços estáveis</span>
+            <span class="empty-subtitle">Nenhuma alta relevante recente.</span>
+          </div>
+        </li>
         {% endfor %}
       </ul>
     </div>
@@ -160,12 +170,17 @@
       <div class="card-header"><strong><i class="bi bi-exclamation-triangle text-danger me-1"></i>Despesas em atraso</strong></div>
       <ul class="list-group list-group-flush">
         {% for d in despesas_atrasadas %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
+        <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-1">
           <a href="{% url 'despesas:despesa_update' d.pk %}">{{ d.descricao }}</a>
           <span class="badge badge-vermelho">venceu em {{ d.data_vencimento|date:'d/m/Y' }} · R$ {{ d.valor|floatformat:2 }}</span>
         </li>
         {% empty %}
-        <li class="list-group-item text-muted">Nenhuma despesa em atraso.</li>
+        <li class="list-group-item">
+          <div class="empty-state py-2">
+            <i class="bi bi-check2-circle"></i>
+            <span class="empty-title">Nenhuma despesa em atraso</span>
+          </div>
+        </li>
         {% endfor %}
       </ul>
       {% if despesas_atrasadas %}<div class="card-footer text-end"><a href="{% url 'despesas:despesa_list' %}?status=ATRASADO" class="small">Ver todas →</a></div>{% endif %}
@@ -176,12 +191,17 @@
       <div class="card-header"><strong><i class="bi bi-bell text-warning me-1"></i>Despesas a vencer (7 dias)</strong></div>
       <ul class="list-group list-group-flush">
         {% for d in despesas_a_vencer %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
+        <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-1">
           <a href="{% url 'despesas:despesa_update' d.pk %}">{{ d.descricao }}</a>
           <span class="badge badge-amarelo">vence em {{ d.data_vencimento|date:'d/m/Y' }} · R$ {{ d.valor|floatformat:2 }}</span>
         </li>
         {% empty %}
-        <li class="list-group-item text-muted">Nenhuma despesa a vencer nos próximos 7 dias.</li>
+        <li class="list-group-item">
+          <div class="empty-state py-2">
+            <i class="bi bi-check2-circle"></i>
+            <span class="empty-title">Nada vencendo nos próximos 7 dias</span>
+          </div>
+        </li>
         {% endfor %}
       </ul>
       {% if despesas_a_vencer %}<div class="card-footer text-end"><a href="{% url 'despesas:despesa_list' %}" class="small">Ver todas →</a></div>{% endif %}
@@ -197,18 +217,40 @@
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
     (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
-  const textColor = isDark ? '#9aa0ae' : '#6b7280';
+  const textColor = isDark ? '#A39C92' : '#6F6A63';
   Chart.defaults.color = textColor;
   Chart.defaults.borderColor = gridColor;
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+
+  // Troca o skeleton pelo gráfico real assim que os dados chegam — evita o
+  // "pulo" de um card vazio para um card cheio. Se não houver nenhum dado
+  // (ex.: loja nova, sem vendas ainda), mostra um empty-state em vez de um
+  // canvas vazio sem explicação.
+  function reveal(skeletonId, wrapId, isEmpty) {
+    const skeleton = document.getElementById(skeletonId);
+    if (isEmpty) {
+      skeleton.classList.remove('skeleton');
+      skeleton.innerHTML = '<div class="empty-state h-100 justify-content-center">' +
+        '<i class="bi bi-bar-chart"></i>' +
+        '<span class="empty-title">Sem dados ainda</span>' +
+        '<span class="empty-subtitle">Assim que houver vendas, o gráfico aparece aqui.</span></div>';
+      return;
+    }
+    skeleton.classList.add('d-none');
+    document.getElementById(wrapId).classList.remove('d-none');
+  }
 
   fetch("{% url 'dashboard:api_vendas_por_dia' %}").then(r => r.json()).then(data => {
+    const semDados = !data.faturamento.some(v => v) && !data.lucro.some(v => v);
+    reveal('skeleton-vendas-dia', 'wrap-chart-vendas-dia', semDados);
+    if (semDados) return;
     new Chart(document.getElementById('chart-vendas-dia'), {
       type: 'line',
       data: {
         labels: data.labels,
         datasets: [
-          { label: 'Faturamento', data: data.faturamento, borderColor: '#d9480f', backgroundColor: 'rgba(217,72,15,.15)', tension: .3, fill: true },
-          { label: 'Lucro', data: data.lucro, borderColor: '#2f9e44', backgroundColor: 'rgba(47,158,68,.1)', tension: .3, fill: true },
+          { label: 'Faturamento', data: data.faturamento, borderColor: '#E67E22', backgroundColor: 'rgba(230,126,34,.15)', tension: .35, fill: true },
+          { label: 'Lucro', data: data.lucro, borderColor: '#2F9E58', backgroundColor: 'rgba(47,158,88,.1)', tension: .35, fill: true },
         ],
       },
       options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } },
@@ -216,19 +258,23 @@
   });
 
   fetch("{% url 'dashboard:api_top_produtos' %}").then(r => r.json()).then(data => {
+    reveal('skeleton-top-produtos', 'wrap-chart-top-produtos', data.labels.length === 0);
+    if (data.labels.length === 0) return;
     new Chart(document.getElementById('chart-top-produtos'), {
       type: 'bar',
-      data: { labels: data.labels, datasets: [{ label: 'Unidades vendidas', data: data.quantidades, backgroundColor: '#d9480f' }] },
+      data: { labels: data.labels, datasets: [{ label: 'Unidades vendidas', data: data.quantidades, backgroundColor: '#E67E22', borderRadius: 6 }] },
       options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } },
     });
   });
 
   fetch("{% url 'dashboard:api_formas_pagamento' %}").then(r => r.json()).then(data => {
+    reveal('skeleton-formas-pagamento', 'wrap-chart-formas-pagamento', data.labels.length === 0);
+    if (data.labels.length === 0) return;
     new Chart(document.getElementById('chart-formas-pagamento'), {
       type: 'doughnut',
       data: {
         labels: data.labels,
-        datasets: [{ data: data.valores, backgroundColor: ['#d9480f', '#2f9e44', '#f08c00', '#0d6efd', '#e03131', '#7048e8'] }],
+        datasets: [{ data: data.valores, backgroundColor: ['#E67E22', '#F4B400', '#2F9E58', '#3B82C4', '#E5484D', '#7048e8'], borderWidth: 0 }],
       },
       options: { responsive: true, maintainAspectRatio: false },
     });

@@ -6,6 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Sistema{% endblock %} · Gestão Hamburgueria</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
@@ -31,16 +35,52 @@
 
   <div class="main-wrapper">
     <header class="topbar">
-      <button id="sidebar-toggle" class="btn-icon" type="button" title="Recolher menu">
+      <button id="sidebar-toggle" class="btn-icon" type="button" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Recolher menu">
         <i class="bi bi-list"></i>
       </button>
+
+      <div class="topbar-search">
+        <i class="bi bi-search"></i>
+        <input type="text" id="topbar-search-input" placeholder="Ir para..." aria-label="Buscar página do sistema" autocomplete="off">
+        <div class="topbar-search-results" id="topbar-search-results"></div>
+      </div>
+
       <div class="flex-grow-1"></div>
-      <button id="theme-toggle" class="btn-icon" type="button" title="Alternar tema">
+
+      <button id="theme-toggle" class="btn-icon" type="button" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Alternar tema">
         <i class="bi bi-moon-stars"></i>
       </button>
+
       <div class="dropdown">
-        <button class="btn btn-icon dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" style="width:auto; padding: 0 .6rem;">
-          <i class="bi bi-person-circle"></i>
+        <button class="btn-icon dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notificações" title="Notificações">
+          <i class="bi bi-bell"></i>
+          {% if alertas_total %}<span class="icon-badge">{{ alertas_total }}</span>{% endif %}
+        </button>
+        <div class="dropdown-menu dropdown-menu-end notif-dropdown">
+          <div class="notif-dropdown-header">
+            <span>Notificações</span>
+            {% if alertas_total %}<span class="chip chip-primary">{{ alertas_total }}</span>{% endif %}
+          </div>
+          {% for n in alertas_notificacoes %}
+          <a href="{{ n.url }}" class="notif-item">
+            <span class="notif-icon nivel-{{ n.nivel }}"><i class="bi {{ n.icone }}"></i></span>
+            <span>
+              <span class="notif-title d-block">{{ n.titulo }}</span>
+              <span class="notif-subtitle">{{ n.subtitulo }}</span>
+            </span>
+          </a>
+          {% empty %}
+          <div class="notif-empty">
+            <i class="bi bi-check2-circle fs-4 d-block mb-1"></i>
+            Tudo em dia por aqui.
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="dropdown">
+        <button class="btn dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width:auto; padding: 0 .4rem; border: none; background: transparent;">
+          <span class="avatar-circle">{{ user.get_full_name|default:user.username|slice:":1"|upper }}</span>
           <span class="d-none d-md-inline">{{ user.get_full_name|default:user.username }}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
@@ -61,6 +101,8 @@
       {% block content %}{% endblock %}
     </main>
   </div>
+
+  {% include 'partials/_bottom_nav.html' %}
   {% else %}
     {% block content_public %}{% endblock %}
   {% endif %}
@@ -68,6 +110,8 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
   <script src="{% static 'js/select-busca.js' %}"></script>
+  <script src="{% static 'js/nav-search.js' %}"></script>
+  <script src="{% static 'js/toasts.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

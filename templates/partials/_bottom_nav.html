@@ -1,0 +1,19 @@
+{% with app=request.resolver_match.app_name %}
+<nav class="bottom-nav" aria-label="Navegação principal">
+  <a href="{% url 'dashboard:index' %}" class="{% if app == 'dashboard' %}active{% endif %}">
+    <i class="bi bi-speedometer2"></i><span>Início</span>
+  </a>
+  <a href="{% url 'estoque:ingrediente_list' %}" class="{% if app == 'estoque' %}active{% endif %}">
+    <i class="bi bi-box-seam"></i><span>Estoque</span>
+  </a>
+  <a href="{% url 'vendas:venda_list' %}" class="{% if app == 'vendas' %}active{% endif %}">
+    <i class="bi bi-cart-check"></i><span>Vendas</span>
+  </a>
+  <a href="{% url 'despesas:despesa_list' %}" class="{% if app == 'despesas' %}active{% endif %}">
+    <i class="bi bi-wallet2"></i><span>Despesas</span>
+  </a>
+  <a href="#" id="bottom-nav-more" data-bs-toggle-sidebar>
+    <i class="bi bi-grid-3x3-gap"></i><span>Mais</span>
+  </a>
+</nav>
+{% endwith %}
