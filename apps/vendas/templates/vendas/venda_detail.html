@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Venda {{ venda.numero }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
   <h4 class="mb-0">
     <i class="bi bi-cart-check me-2"></i>Venda {{ venda.numero }}
     {% if venda.status == 'cancelada' %}<span class="badge badge-vermelho ms-2">Cancelada</span>{% endif %}
@@ -27,10 +27,10 @@
 
 <div class="card mb-3"><div class="card-body">
   <dl class="row mb-0">
-    <dt class="col-2">Data/hora</dt><dd class="col-4">{{ venda.data_hora|date:'d/m/Y H:i' }}</dd>
-    <dt class="col-2">Canal</dt><dd class="col-4">{{ venda.get_canal_display }}</dd>
-    <dt class="col-2">Pagamento</dt><dd class="col-4">{{ venda.forma_pagamento }}</dd>
-    <dt class="col-2">Status</dt><dd class="col-4">{{ venda.get_status_display }}</dd>
+    <dt class="col-12 col-sm-2">Data/hora</dt><dd class="col-12 col-sm-4">{{ venda.data_hora|date:'d/m/Y H:i' }}</dd>
+    <dt class="col-12 col-sm-2">Canal</dt><dd class="col-12 col-sm-4">{{ venda.get_canal_display }}</dd>
+    <dt class="col-12 col-sm-2">Pagamento</dt><dd class="col-12 col-sm-4">{{ venda.forma_pagamento }}</dd>
+    <dt class="col-12 col-sm-2">Status</dt><dd class="col-12 col-sm-4">{{ venda.get_status_display }}</dd>
   </dl>
 </div></div>
 

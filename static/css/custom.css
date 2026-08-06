@@ -172,6 +172,21 @@ body.sidebar-collapsed .main-wrapper { margin-left: var(--sidebar-width-collapse
 .table thead th { border-bottom-color: var(--border); color: var(--text-muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; }
 .table td, .table th { border-color: var(--border); vertical-align: middle; }
 
+/* Tabelas de formset editável (Ficha Técnica / Receita de Produção): cada linha
+   tem select + input por célula, então precisam de largura mínima própria —
+   sem isso, os campos ficam espremidos antes mesmo de precisar rolar. Com o
+   min-width abaixo, a .table-responsive que já envolve a tabela assume a
+   rolagem horizontal em telas estreitas em vez de comprimir os campos. */
+#itens-formset-table { min-width: 640px; }
+#itens-formset-table .form-select,
+#itens-formset-table .form-control,
+#itens-formset-table .ts-wrapper { min-width: 140px; }
+
+/* Input de quantidade do carrinho em Nova Venda — compacto, mas com largura
+   fixa via classe (não inline) para não brigar com a rolagem horizontal da
+   .table-responsive que envolve #carrinho-tabela. */
+#carrinho-tabela .qtd-input { width: 4.5rem; }
+
 .badge-verde { background-color: var(--success); }
 .badge-amarelo { background-color: var(--warning); color: #2b1d00; }
 .badge-vermelho { background-color: var(--danger); }
@@ -220,4 +235,42 @@ body.sidebar-collapsed .main-wrapper { margin-left: var(--sidebar-width-collapse
   body.sidebar-collapsed .sidebar { width: var(--sidebar-width); }
   body.sidebar-collapsed .sidebar-nav .nav-link span, body.sidebar-collapsed .sidebar-brand span { display: inline; }
   body.sidebar-collapsed .main-wrapper { margin-left: var(--sidebar-width); }
+}
+
+/* ---------- Sidebar off-canvas (celular) ---------- */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .5);
+  z-index: 1025;
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  /* Abaixo de 768px a sidebar some por padrão e vira um painel deslizante por
+     cima do conteúdo (não empurra mais o layout) — em telas de celular os 76px
+     fixos do modo "ícones" (regra acima, para tablets) ainda tomavam espaço
+     permanente demais. */
+  .sidebar {
+    width: var(--sidebar-width);
+    transform: translateX(-100%);
+    transition: transform .2s ease;
+    box-shadow: 4px 0 16px rgba(0, 0, 0, .25);
+  }
+  .sidebar-nav .nav-link span, .sidebar-brand span { display: inline; }
+  body.sidebar-mobile-open .sidebar { transform: translateX(0); }
+  body.sidebar-mobile-open .sidebar-backdrop { display: block; }
+
+  .main-wrapper { margin-left: 0; }
+  body.sidebar-collapsed .main-wrapper { margin-left: 0; }
+
+  .page-content { padding: 1rem; }
+
+  /* Alvos de toque maiores para os botões de ação (Editar/Excluir etc.) que
+     aparecem nas tabelas em quase toda tela de listagem. */
+  .table .btn-sm, .table-sm .btn-sm {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: .4rem .5rem;
+  }
 }

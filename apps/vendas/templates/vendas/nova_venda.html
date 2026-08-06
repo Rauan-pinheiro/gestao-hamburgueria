@@ -2,7 +2,7 @@
 {% block title %}Nova Venda{% endblock %}
 {% block content %}
 {% csrf_token %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
   <div>
     <h4 class="mb-1"><i class="bi bi-cart-plus me-2"></i>Nova Venda</h4>
     <small class="text-muted">Clique nos itens para adicionar ao carrinho, escolha a forma de pagamento e finalize.</small>
@@ -110,10 +110,12 @@
           <i class="bi bi-cart-x fs-3 d-block mb-1"></i>
           Nenhum item adicionado. Clique em "Adicionar" nos itens ao lado.
         </div>
-        <table class="table table-sm d-none" id="carrinho-tabela">
-          <thead><tr><th>Item</th><th>Qtd.</th><th>Subtotal</th><th></th></tr></thead>
-          <tbody id="carrinho-itens"></tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-sm d-none" id="carrinho-tabela">
+            <thead><tr><th>Item</th><th>Qtd.</th><th>Subtotal</th><th></th></tr></thead>
+            <tbody id="carrinho-itens"></tbody>
+          </table>
+        </div>
         <hr>
         <div class="mb-2">
           <label class="form-label">Forma de pagamento</label>
@@ -199,7 +201,7 @@
       total += subtotal;
       const tr = document.createElement('tr');
       tr.innerHTML = `<td>${it.nome}</td>
-        <td><input type="number" min="1" value="${it.quantidade}" class="form-control form-control-sm qtd-input" data-id="${id}" style="width:60px;"></td>
+        <td><input type="number" min="1" value="${it.quantidade}" class="form-control form-control-sm qtd-input" data-id="${id}"></td>
         <td>R$ ${subtotal.toFixed(2)}</td>
         <td><button class="btn btn-sm btn-outline-danger remove-item" data-id="${id}"><i class="bi bi-x-lg"></i></button></td>`;
       itensDiv.appendChild(tr);

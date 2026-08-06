@@ -2,7 +2,7 @@
 {% load crispy_forms_tags %}
 {% block title %}{% if object %}Editar{% else %}Nova{% endif %} Precificação{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
   <div>
     <h4 class="mb-1"><i class="bi bi-tags me-2"></i>{% if object %}Editar{% else %}Nova{% endif %} Precificação</h4>
     <small class="text-muted">Escolha como quer definir o preço — o sistema mostra o resultado antes de você salvar.</small>
@@ -75,7 +75,7 @@
           <div class="d-flex justify-content-between"><span class="text-muted">Preço ideal</span><span id="prev-ideal">R$ 0,00</span></div>
           <div class="d-flex justify-content-between mb-2"><span class="text-muted">Preço premium</span><span id="prev-premium">R$ 0,00</span></div>
           <hr>
-          <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
             <span class="fw-bold">Preço final (praticado)</span>
             <span class="fs-4 fw-bold" id="prev-final">R$ 0,00</span>
           </div>

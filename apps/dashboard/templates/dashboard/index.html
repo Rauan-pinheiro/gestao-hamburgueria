@@ -102,13 +102,13 @@
   <div class="col-lg-8">
     <div class="card h-100">
       <div class="card-header"><strong>Faturamento e lucro — últimos 14 dias</strong></div>
-      <div class="card-body"><canvas id="chart-vendas-dia" height="90"></canvas></div>
+      <div class="card-body"><div style="position:relative; height:300px;"><canvas id="chart-vendas-dia"></canvas></div></div>
     </div>
   </div>
   <div class="col-lg-4">
     <div class="card h-100">
       <div class="card-header"><strong>Produtos mais vendidos (mês)</strong></div>
-      <div class="card-body"><canvas id="chart-top-produtos"></canvas></div>
+      <div class="card-body"><div style="position:relative; height:300px;"><canvas id="chart-top-produtos"></canvas></div></div>
     </div>
   </div>
 </div>
@@ -117,7 +117,7 @@
   <div class="col-lg-4">
     <div class="card h-100">
       <div class="card-header"><strong>Vendas por forma de pagamento</strong></div>
-      <div class="card-body"><canvas id="chart-formas-pagamento"></canvas></div>
+      <div class="card-body"><div style="position:relative; height:280px;"><canvas id="chart-formas-pagamento"></canvas></div></div>
     </div>
   </div>
 
@@ -211,7 +211,7 @@
           { label: 'Lucro', data: data.lucro, borderColor: '#2f9e44', backgroundColor: 'rgba(47,158,68,.1)', tension: .3, fill: true },
         ],
       },
-      options: { responsive: true, scales: { y: { beginAtZero: true } } },
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } },
     });
   });
 
@@ -219,7 +219,7 @@
     new Chart(document.getElementById('chart-top-produtos'), {
       type: 'bar',
       data: { labels: data.labels, datasets: [{ label: 'Unidades vendidas', data: data.quantidades, backgroundColor: '#d9480f' }] },
-      options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } } },
+      options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } },
     });
   });
 
@@ -230,7 +230,7 @@
         labels: data.labels,
         datasets: [{ data: data.valores, backgroundColor: ['#d9480f', '#2f9e44', '#f08c00', '#0d6efd', '#e03131', '#7048e8'] }],
       },
-      options: { responsive: true },
+      options: { responsive: true, maintainAspectRatio: false },
     });
   });
 })();

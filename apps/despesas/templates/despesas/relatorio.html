@@ -10,13 +10,13 @@
   <div class="col-lg-6">
     <div class="card h-100">
       <div class="card-header"><strong>Gastos por categoria (despesas pagas)</strong></div>
-      <div class="card-body"><canvas id="chart-gastos-categoria"></canvas></div>
+      <div class="card-body"><div style="position:relative; height:280px;"><canvas id="chart-gastos-categoria"></canvas></div></div>
     </div>
   </div>
   <div class="col-lg-6">
     <div class="card h-100">
       <div class="card-header"><strong>Lucro operacional × Despesas — últimos 6 meses</strong></div>
-      <div class="card-body"><canvas id="chart-comparativo" height="220"></canvas></div>
+      <div class="card-body"><div style="position:relative; height:280px;"><canvas id="chart-comparativo"></canvas></div></div>
       <div class="card-footer small text-muted">
         Lucro operacional = faturamento das vendas já descontando custo de ingredientes e taxas de pagamento.
         Lucro real = lucro operacional − despesas pagas no mês (aluguel, salários, contas fixas...).
@@ -60,7 +60,7 @@
         labels: data.labels,
         datasets: [{ data: data.valores, backgroundColor: ['#d9480f', '#2f9e44', '#f08c00', '#0d6efd', '#e03131', '#7048e8', '#12b886', '#ae3ec9', '#1098ad', '#495057'] }],
       },
-      options: { responsive: true },
+      options: { responsive: true, maintainAspectRatio: false },
     });
   });
 
@@ -75,7 +75,7 @@
           { label: 'Lucro real', data: data.lucro_real, type: 'line', borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,.15)', tension: .3, fill: true },
         ],
       },
-      options: { responsive: true, scales: { y: { beginAtZero: true } } },
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } },
     });
   });
 })();
