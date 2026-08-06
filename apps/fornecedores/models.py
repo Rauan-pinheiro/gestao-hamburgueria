@@ -102,6 +102,14 @@ class ProdutoFornecedor(TimestampedModel):
                     f'ingrediente ("{self.ingrediente.get_unidade_medida_display()}").'
                 )
             })
+        if self.ingrediente_id and self.disponivel and self.ativo and self.ingrediente.eh_produzido_internamente:
+            raise ValidationError({
+                'ingrediente': (
+                    f'"{self.ingrediente}" é produzido internamente (tem uma Receita de Produção vinculada) — '
+                    'um ingrediente não pode ser comprado e produzido ao mesmo tempo. Remova a receita de '
+                    'produção antes de cadastrar uma oferta de fornecedor para ele.'
+                )
+            })
 
     @property
     def quantidade_embalagem_em_unidade_base(self):

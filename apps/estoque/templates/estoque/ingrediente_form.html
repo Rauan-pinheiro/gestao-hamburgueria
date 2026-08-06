@@ -14,3 +14,27 @@
   </form>
 </div></div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // "Rendimento (porções por unidade comprada)" só se aplica quando a unidade de medida
+  // é "Unidade (un)" (ver Ingrediente.clean()) — some/mostra o campo para deixar isso
+  // óbvio na tela, em vez do usuário descobrir só ao tentar salvar.
+  const unidadeSelect = document.getElementById('id_unidade_medida');
+  const campoRendimento = document.querySelector('.js-campo-rendimento');
+  if (!unidadeSelect || !campoRendimento) return;
+
+  const grupoRendimento = campoRendimento.closest('.mb-3, .form-group') || campoRendimento.parentElement;
+
+  function atualizarVisibilidade() {
+    const ehUnidade = unidadeSelect.value === 'un';
+    if (grupoRendimento) grupoRendimento.classList.toggle('d-none', !ehUnidade);
+    if (!ehUnidade) campoRendimento.value = '';
+  }
+
+  unidadeSelect.addEventListener('change', atualizarVisibilidade);
+  atualizarVisibilidade();
+});
+</script>
+{% endblock %}

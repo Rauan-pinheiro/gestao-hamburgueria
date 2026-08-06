@@ -34,10 +34,17 @@
   <div class="col-md-3">
     <div class="card stat-card h-100">
       <div class="stat-label">Custo unitário atual</div>
-      <div class="stat-value">R$ {{ ingrediente.custo_unitario_atual }}</div>
-      {% if ingrediente.custo_unitario_atual %}
+      {% if ingrediente.usa_rendimento_por_porcao %}
+        <div class="stat-value">R$ {{ ingrediente.custo_por_porcao_rendimento|floatformat:4 }}</div>
+        <small class="text-muted">
+          por porção (R$ {{ ingrediente.custo_unitario_atual }} / {{ ingrediente.get_unidade_medida_display }}
+          ÷ {{ ingrediente.rendimento_unidades }} porções)
+        </small>
+      {% elif ingrediente.custo_unitario_atual %}
+        <div class="stat-value">R$ {{ ingrediente.custo_unitario_atual }}</div>
         <small class="text-muted">por {{ ingrediente.get_unidade_medida_display }}</small>
       {% else %}
+        <div class="stat-value">R$ {{ ingrediente.custo_unitario_atual }}</div>
         <small class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Sem oferta de fornecedor vinculada</small>
       {% endif %}
     </div>

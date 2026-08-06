@@ -11,7 +11,10 @@ class CategoriaIngredienteAdmin(admin.ModelAdmin):
 
 @admin.register(Ingrediente)
 class IngredienteAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'categoria', 'unidade_medida', 'estoque_atual', 'estoque_minimo', 'custo_unitario_atual', 'ativo')
+    list_display = (
+        'nome', 'categoria', 'unidade_medida', 'estoque_atual', 'estoque_minimo',
+        'custo_unitario_atual', 'rendimento_unidades', 'ativo',
+    )
     list_filter = ('ativo', 'categoria')
     search_fields = ('nome',)
     list_select_related = ('categoria',)

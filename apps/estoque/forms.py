@@ -22,12 +22,18 @@ class IngredienteForm(forms.ModelForm):
         model = Ingrediente
         fields = [
             'nome', 'categoria', 'unidade_medida', 'estoque_minimo', 'estoque_ideal',
-            'localizacao', 'validade_padrao_dias', 'fornecedor_preferencial', 'ativo',
+            'localizacao', 'validade_padrao_dias', 'fornecedor_preferencial', 'rendimento_unidades', 'ativo',
         ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         ativar_busca(self, 'categoria', 'fornecedor_preferencial')
+        # rendimento_unidades só faz sentido para unidade_medida == 'un' (ver Ingrediente.clean())
+        # — o JS abaixo (ver ingrediente_form.html) mostra/esconde o campo de acordo com a
+        # unidade escolhida, mas a classe já fica marcada aqui para não depender só do JS.
+        self.fields['rendimento_unidades'].widget.attrs['class'] = (
+            self.fields['rendimento_unidades'].widget.attrs.get('class', '') + ' js-campo-rendimento'
+        ).strip()
         if self.instance.pk:
             # Edição: o estoque já existe e só pode ser alterado via movimentação
             # auditada (tela de detalhe do ingrediente), nunca sobrescrito aqui.
@@ -35,7 +41,8 @@ class IngredienteForm(forms.ModelForm):
         else:
             self.order_fields([
                 'nome', 'categoria', 'unidade_medida', 'estoque_inicial', 'estoque_minimo',
-                'estoque_ideal', 'localizacao', 'validade_padrao_dias', 'fornecedor_preferencial', 'ativo',
+                'estoque_ideal', 'localizacao', 'validade_padrao_dias', 'fornecedor_preferencial',
+                'rendimento_unidades', 'ativo',
             ])
 
 

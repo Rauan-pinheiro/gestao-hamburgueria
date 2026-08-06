@@ -6,6 +6,7 @@ from django.db import models, transaction
 from django.utils import timezone
 
 from apps.core.models import TimestampedModel
+from apps.core.utils import converter_para_base
 
 
 class CategoriaIngrediente(TimestampedModel):
@@ -56,6 +57,15 @@ class Ingrediente(TimestampedModel):
         related_name='ingredientes_preferenciais', verbose_name='Fornecedor preferencial')
     custo_unitario_atual = models.DecimalField(
         'Custo unitário atual (R$/unidade-base)', max_digits=12, decimal_places=4, default=0, editable=False)
+    rendimento_unidades = models.DecimalField(
+        'Rendimento (porções por unidade comprada)', max_digits=10, decimal_places=3, null=True, blank=True,
+        validators=[MinValueValidator(Decimal('0.001'), message='O rendimento deve ser maior que zero.')],
+        help_text='Só se aplica a ingredientes medidos em "Unidade (un)" e comprados inteiros, mas usados em '
+                   'pequenas porções (ex.: alface, cebola, limão) — quando não há como pesar cada uso. '
+                   'Informe quantas porções uma unidade comprada rende (ex.: 10). Com isso preenchido, a '
+                   'quantidade na Ficha Técnica passa a ser em "porções", e o sistema divide o custo da '
+                   'unidade comprada por esse número. Deixe em branco para o comportamento padrão '
+                   '(quantidade em unidades inteiras, kg, g, l ou ml).')
     ativo = models.BooleanField('Ativo', default=True, db_index=True)
 
     objects = IngredienteQuerySet.as_manager()
@@ -71,6 +81,13 @@ class Ingrediente(TimestampedModel):
     def clean(self):
         if self.estoque_ideal and self.estoque_minimo and self.estoque_ideal < self.estoque_minimo:
             raise ValidationError({'estoque_ideal': 'O estoque ideal não pode ser menor que o estoque mínimo.'})
+        if self.rendimento_unidades and self.unidade_medida != 'un':
+            raise ValidationError({
+                'rendimento_unidades': (
+                    'O rendimento por porção só se aplica a ingredientes medidos em "Unidade (un)" — '
+                    f'este está em "{self.get_unidade_medida_display()}", que já é medido por peso/volume.'
+                )
+            })
 
     @property
     def esta_abaixo_do_minimo(self):
@@ -83,17 +100,100 @@ class Ingrediente(TimestampedModel):
         pct = (self.estoque_atual / self.estoque_ideal) * 100
         return min(pct, Decimal('100'))
 
+    @property
+    def usa_rendimento_por_porcao(self):
+        return bool(self.rendimento_unidades)
+
+    @property
+    def unidade_consumo_display(self):
+        """Unidade em que a quantidade deve ser informada na Ficha Técnica."""
+        if self.usa_rendimento_por_porcao:
+            return 'porção'
+        return self.get_unidade_medida_display()
+
+    @property
+    def custo_por_porcao_rendimento(self):
+        """Custo de 1 porção, quando o ingrediente usa rendimento (ex.: R$4,00 ÷ 10 porções)."""
+        if not self.usa_rendimento_por_porcao:
+            return None
+        return self.custo_unitario_atual / self.rendimento_unidades
+
+    def custo_para_quantidade(self, quantidade):
+        """
+        Custo, em R$, de usar `quantidade` deste ingrediente na Ficha Técnica.
+
+        `custo_unitario_atual` é sempre R$ por unidade-base (g para peso, ml para volume, un
+        para contagem — ver CONVERSAO_BASE). Dois ajustes precisam acontecer antes de
+        multiplicar pela quantidade informada na receita:
+
+        1. Ingredientes cadastrados em kg/l no Estoque: a quantidade da receita é digitada
+           nessa mesma unidade (kg/l), então precisa ser convertida para a unidade-base
+           (g/ml) antes da multiplicação — senão o custo sai 1000x menor.
+        2. Ingredientes com `rendimento_unidades` preenchido: a quantidade da receita é o
+           número de porções, não de unidades compradas — o custo por unidade comprada é
+           dividido pelo rendimento antes da multiplicação.
+        """
+        custo_unitario = self.custo_unitario_atual
+        if self.usa_rendimento_por_porcao:
+            custo_unitario = custo_unitario / self.rendimento_unidades
+        quantidade_em_unidade_base = converter_para_base(quantidade, self.unidade_medida)
+        return quantidade_em_unidade_base * custo_unitario
+
+    @property
+    def eh_produzido_internamente(self):
+        """
+        True quando este ingrediente tem uma Receita de Produção vinculada (ver
+        `apps.receitas.models.ReceitaProducao`) — nesse caso ele não é comprado de
+        fornecedor, é fabricado a partir de outros ingredientes do próprio estoque
+        (ex.: Molho da casa, feito de ketchup + maionese + mostarda...).
+        """
+        receita_producao = getattr(self, 'receita_producao', None)
+        return receita_producao is not None and receita_producao.ativo
+
+    def _definir_custo_unitario(self, novo_custo, _visitados=None):
+        """
+        Persiste `novo_custo` em `custo_unitario_atual` e propaga a mudança para
+        qualquer Receita de Produção que use ESTE ingrediente como insumo — ex.: o
+        preço do Ketchup mudou -> recalcula o Molho da casa -> recalcula quem mais usa
+        o Molho da casa como insumo, e assim por diante. `_visitados` evita loop
+        infinito caso alguém monte uma cadeia de produção circular por engano.
+        """
+        if novo_custo == self.custo_unitario_atual:
+            return
+        Ingrediente.objects.filter(pk=self.pk).update(custo_unitario_atual=novo_custo)
+        self.custo_unitario_atual = novo_custo
+        self._propagar_para_producoes_dependentes(_visitados)
+
+    def _propagar_para_producoes_dependentes(self, _visitados=None):
+        from apps.receitas.models import ReceitaProducao  # import local: receitas já importa estoque
+
+        visitados = _visitados if _visitados is not None else set()
+        if self.pk in visitados:
+            return
+        visitados.add(self.pk)
+
+        receitas_dependentes = ReceitaProducao.objects.filter(
+            itens__ingrediente_id=self.pk, ativo=True
+        ).distinct()
+        for receita_producao in receitas_dependentes:
+            receita_producao.atualizar_custo_ingrediente_produzido(_visitados=visitados)
+
     def atualizar_custo_unitario(self):
+        """
+        Recalcula `custo_unitario_atual` a partir da oferta ativa mais barata. Ingredientes
+        produzidos internamente (`eh_produzido_internamente`) não passam por aqui — o
+        custo deles vem de `ReceitaProducao.atualizar_custo_ingrediente_produzido()`, e os
+        dois fluxos são mutuamente exclusivos (ver `ProdutoFornecedor.clean()` e
+        `ReceitaProducao.clean()`).
+        """
         ofertas = list(self.ofertas.ativos())
         if not ofertas:
-            self.sem_fornecedor_ativo = True
+            # Sem oferta ativa nenhuma: o custo não pode continuar "grudado" no último
+            # valor conhecido — isso escondia o problema em vez de sinalizá-lo.
+            self._definir_custo_unitario(Decimal('0'))
             return
         ofertas.sort(key=lambda o: o.preco_por_unidade_base)
-        self.sem_fornecedor_ativo = False
-        novo_custo = ofertas[0].preco_por_unidade_base
-        if novo_custo != self.custo_unitario_atual:
-            Ingrediente.objects.filter(pk=self.pk).update(custo_unitario_atual=novo_custo)
-            self.custo_unitario_atual = novo_custo
+        self._definir_custo_unitario(ofertas[0].preco_por_unidade_base)
 
 
 class MovimentacaoEstoque(models.Model):

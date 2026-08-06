@@ -1,8 +1,14 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
-{% block title %}{% if object %}Editar{% else %}Nova{% endif %} Ficha Técnica{% endblock %}
+{% block title %}{% if object %}Editar{% else %}Nova{% endif %} Receita de Produção{% endblock %}
 {% block content %}
-<h4 class="mb-3"><i class="bi bi-journal-text me-2"></i>{% if object %}Editar{% else %}Nova{% endif %} Ficha Técnica</h4>
+<h4 class="mb-3"><i class="bi bi-cup-hot me-2"></i>{% if object %}Editar{% else %}Nova{% endif %} Receita de Produção</h4>
+<p class="text-muted small">
+  Use isto para ingredientes preparados na casa (molhos, temperos, carnes marinadas...) — o "ingrediente produzido"
+  precisa já existir no Estoque e não pode ter oferta de fornecedor ativa vinculada (ele deixa de ser "comprado" e
+  passa a ser "produzido"). O custo por unidade é calculado a partir dos insumos abaixo e do rendimento informado,
+  e alimenta automaticamente o custo desse ingrediente em qualquer outra Ficha Técnica que o use.
+</p>
 
 <form method="post">
   {% csrf_token %}
@@ -12,9 +18,9 @@
 
   <div class="card mb-3">
     <div class="card-header d-flex justify-content-between align-items-center">
-      <strong>Ingredientes</strong>
+      <strong>Ingredientes usados no preparo</strong>
       <span class="text-muted small">
-        Custo estimado dos ingredientes: <strong id="custo-ingredientes-estimado">R$ 0,00</strong>
+        Custo total da receita: <strong id="custo-ingredientes-estimado">R$ 0,00</strong>
       </span>
     </div>
     <div class="card-body">
@@ -25,8 +31,8 @@
       <div class="alert alert-warning py-2 px-3 small d-none" id="aviso-custo-zerado">
         <i class="bi bi-exclamation-triangle me-1"></i>
         Algum ingrediente selecionado está com custo R$ 0,00 — provavelmente não tem nenhuma
-        <a href="{% url 'fornecedores:fornecedor_list' %}" class="alert-link">oferta de fornecedor vinculada</a>.
-        O custo da ficha técnica fica subestimado até isso ser corrigido.
+        <a href="{% url 'fornecedores:fornecedor_list' %}" class="alert-link">oferta de fornecedor vinculada</a>
+        (nem outra receita de produção). O custo desta receita fica subestimado até isso ser corrigido.
       </div>
       <div class="table-responsive">
         <table class="table" id="itens-formset-table">
@@ -70,7 +76,7 @@
 
   <div class="d-flex gap-2">
     <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar</button>
-    <a href="{% url 'receitas:receita_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    <a href="{% url 'receitas:receitaproducao_list' %}" class="btn btn-outline-secondary">Cancelar</a>
   </div>
 </form>
 {% endblock %}
@@ -87,18 +93,11 @@ document.addEventListener('DOMContentLoaded', function () {
     return 'R$ ' + valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  // Fator de conversão de cada unidade para a unidade-base da sua grandeza (g para peso,
-  // ml para volume, un para unidade) — espelha CONVERSAO_BASE em apps/core/utils.py.
-  // Precisa ficar sincronizado manualmente com o Python: não há como importar o mesmo
-  // módulo dos dois lados.
+  // Mesma lógica de receita_form.html (Ficha Técnica de venda) — ver comentários lá.
+  // Mantida duplicada de propósito: são telas independentes, sem módulo JS compartilhado
+  // no projeto ainda.
   const FATORES_UNIDADE_BASE = { kg: 1000, g: 1, l: 1000, ml: 1, un: 1 };
 
-  // Mesma conta de Ingrediente.custo_para_quantidade() (apps/estoque/models.py): converte
-  // a quantidade para a unidade-base do ingrediente (kg/l -> g/ml) e, quando o ingrediente
-  // tem rendimento cadastrado (data-rendimento — ver SelectComCustoIngrediente em
-  // apps/receitas/forms.py), divide o custo por unidade comprada pelo rendimento antes de
-  // multiplicar. Manter as duas implementações em sincronia é intencional: o back-end é
-  // quem persiste o valor oficial, este cálculo é só o preview ao vivo antes de salvar.
   function custoParaQuantidade(custoUnitario, unidade, rendimento, quantidade) {
     let custoAjustado = custoUnitario;
     if (rendimento) custoAjustado = custoAjustado / rendimento;
@@ -106,14 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return (quantidade * fator) * custoAjustado;
   }
 
-  // Cálculo ao vivo do custo da ficha técnica, enquanto o usuário escolhe ingrediente e
-  // quantidade — sem precisar salvar antes para ver o total. O custo unitário de cada
-  // ingrediente vem do atributo data-custo de cada <option> (ver SelectComCustoIngrediente
-  // em apps/receitas/forms.py), que é o mesmo `custo_unitario_atual` usado no back-end
-  // por ItemReceita.custo_total(). Um ingrediente sem oferta de fornecedor vinculada tem
-  // custo 0 aqui pelo mesmo motivo que teria 0 depois de salvo — isso é sinalizado, não
-  // escondido.
-  function calcularCustoFicha() {
+  function calcularCustoReceita() {
     let total = 0;
     let temCustoZerado = false;
 
@@ -140,9 +132,6 @@ document.addEventListener('DOMContentLoaded', function () {
       total += custoLinha;
       if (custoUnitario === 0) temCustoZerado = true;
       if (linhaCustoEl) linhaCustoEl.textContent = formatarMoeda(custoLinha);
-      // Dica de unidade: evita repetir o erro que gerou este bug (quantidade digitada na
-      // unidade "grande" — kg/l — quando o sistema espera a quantidade real usada na
-      // receita já convertida para a unidade-base, ou em "porções" quando há rendimento).
       if (dicaUnidadeEl) dicaUnidadeEl.textContent = rendimento ? 'em porções' : 'em ' + unidade;
     });
 
@@ -154,9 +143,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   addBtn.addEventListener('click', function () {
-    // A nova linha vem do formset.empty_form (prefixo "__prefix__"), não de clonar a
-    // última linha visível — isso evita clonar o widget de busca (Tom Select) já
-    // inicializado, o que geraria um <select> "duplicado" e quebrado na tela.
     const idx = parseInt(totalForms.value, 10);
     const html = template.innerHTML.replace(/__prefix__/g, idx);
     const linhaTemp = document.createElement('tbody');
@@ -165,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function () {
     tbody.appendChild(newRow);
     totalForms.value = idx + 1;
     if (window.initSelectBusca) window.initSelectBusca(newRow);
-    calcularCustoFicha();
+    calcularCustoReceita();
   });
 
   tbody.addEventListener('click', function (e) {
@@ -175,12 +161,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (tbody.querySelectorAll('.formset-row').length > 1) {
       row.remove();
     }
-    calcularCustoFicha();
+    calcularCustoReceita();
   });
 
-  tbody.addEventListener('change', calcularCustoFicha);
-  tbody.addEventListener('input', calcularCustoFicha);
-  calcularCustoFicha();
+  tbody.addEventListener('change', calcularCustoReceita);
+  tbody.addEventListener('input', calcularCustoReceita);
+  calcularCustoReceita();
 });
 </script>
 {% endblock %}

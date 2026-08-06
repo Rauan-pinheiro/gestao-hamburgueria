@@ -13,12 +13,15 @@
 <a class="nav-link {% if app == 'estoque' %}active{% endif %}" href="{% url 'estoque:ingrediente_list' %}">
   <i class="bi bi-box-seam"></i><span>Estoque</span>
 </a>
+<a class="nav-link {% if 'receitaproducao' in request.resolver_match.url_name|default:'' %}active{% endif %}" href="{% url 'receitas:receitaproducao_list' %}">
+  <i class="bi bi-cup-hot"></i><span>Receitas de Produção</span>
+</a>
 
 <div class="sidebar-section-title">2. Cardápio</div>
 <a class="nav-link {% if app == 'cardapio' %}active{% endif %}" href="{% url 'cardapio:itemcardapio_list' %}">
   <i class="bi bi-menu-button-wide"></i><span>Itens do Cardápio</span>
 </a>
-<a class="nav-link {% if app == 'receitas' %}active{% endif %}" href="{% url 'receitas:receita_list' %}">
+<a class="nav-link {% if app == 'receitas' and 'receitaproducao' not in request.resolver_match.url_name|default:'' %}active{% endif %}" href="{% url 'receitas:receita_list' %}">
   <i class="bi bi-journal-text"></i><span>Fichas Técnicas</span>
 </a>
 <a class="nav-link {% if app == 'precificacao' %}active{% endif %}" href="{% url 'precificacao:formacaopreco_list' %}">

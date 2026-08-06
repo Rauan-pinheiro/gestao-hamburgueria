@@ -7,8 +7,8 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from apps.core.views import SafeDeleteView
 
-from .forms import ItemReceitaFormSet, ReceitaForm
-from .models import Receita
+from .forms import ItemReceitaFormSet, ItemReceitaProducaoFormSet, ReceitaForm, ReceitaProducaoForm
+from .models import Receita, ReceitaProducao
 
 
 class ReceitaListView(LoginRequiredMixin, ListView):
@@ -114,4 +114,92 @@ class ReceitaDeleteView(LoginRequiredMixin, SafeDeleteView):
         response = super().form_valid(form)
         if self.delete_succeeded:
             messages.success(self.request, f'Ficha técnica "{nome}" excluída com sucesso.')
+        return response
+
+
+class ReceitaProducaoListView(LoginRequiredMixin, ListView):
+    model = ReceitaProducao
+    template_name = 'receitas/receitaproducao_list.html'
+    context_object_name = 'receitas_producao'
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = ReceitaProducao.objects.select_related('ingrediente_produzido').prefetch_related('itens__ingrediente')
+        busca = self.request.GET.get('q')
+        if busca:
+            qs = qs.filter(nome__icontains=busca)
+        return qs
+
+
+class ReceitaProducaoDetailView(LoginRequiredMixin, DetailView):
+    model = ReceitaProducao
+    template_name = 'receitas/receitaproducao_detail.html'
+    context_object_name = 'receita_producao'
+
+    def get_queryset(self):
+        return ReceitaProducao.objects.select_related('ingrediente_produzido').prefetch_related('itens__ingrediente')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        itens = list(self.object.itens.select_related('ingrediente').all())
+        ctx['itens'] = itens
+        ctx['custo_total_producao'] = self.object.custo_total_producao()
+        ctx['custo_por_unidade_base_produzida'] = self.object.custo_por_unidade_base_produzida()
+        ctx['ingredientes_sem_custo'] = [
+            item.ingrediente for item in itens if not item.ingrediente.custo_unitario_atual
+        ]
+        return ctx
+
+
+class ReceitaProducaoFormSetMixin:
+    form_class = ReceitaProducaoForm
+    model = ReceitaProducao
+    template_name = 'receitas/receitaproducao_form.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        if self.request.POST:
+            ctx['formset'] = ItemReceitaProducaoFormSet(self.request.POST, instance=self.object)
+        else:
+            ctx['formset'] = ItemReceitaProducaoFormSet(instance=self.object)
+        return ctx
+
+    def form_valid(self, form):
+        """Mesma lógica de Receita/ItemReceita: salva receita + itens em uma única
+        transação, para nunca deixar uma Receita de Produção salva sem nenhum item."""
+        ctx = self.get_context_data()
+        formset = ctx['formset']
+        with transaction.atomic():
+            self.object = form.save()
+            formset.instance = self.object
+            if not formset.is_valid():
+                transaction.set_rollback(True)
+                return self.render_to_response(self.get_context_data(form=form))
+            formset.save()
+
+        messages.success(self.request, 'Receita de produção salva com sucesso.')
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse_lazy('receitas:receitaproducao_detail', args=[self.object.pk])
+
+
+class ReceitaProducaoCreateView(LoginRequiredMixin, ReceitaProducaoFormSetMixin, CreateView):
+    pass
+
+
+class ReceitaProducaoUpdateView(LoginRequiredMixin, ReceitaProducaoFormSetMixin, UpdateView):
+    pass
+
+
+class ReceitaProducaoDeleteView(LoginRequiredMixin, SafeDeleteView):
+    model = ReceitaProducao
+    template_name = 'receitas/receitaproducao_confirm_delete.html'
+    success_url = reverse_lazy('receitas:receitaproducao_list')
+
+    def form_valid(self, form):
+        nome = str(self.object)
+        response = super().form_valid(form)
+        if self.delete_succeeded:
+            messages.success(self.request, f'Receita de produção "{nome}" excluída com sucesso.')
         return response

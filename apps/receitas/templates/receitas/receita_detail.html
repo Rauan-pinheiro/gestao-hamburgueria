@@ -39,9 +39,13 @@
             {% for item in itens %}
             <tr>
               <td>{{ item.ingrediente.nome }}</td>
-              <td>{{ item.quantidade }} {{ item.ingrediente.get_unidade_medida_display }}</td>
+              <td>{{ item.quantidade }} {{ item.ingrediente.unidade_consumo_display }}</td>
               <td>
-                R$ {{ item.ingrediente.custo_unitario_atual }}
+                {% if item.ingrediente.usa_rendimento_por_porcao %}
+                  R$ {{ item.ingrediente.custo_por_porcao_rendimento|floatformat:4 }} /porção
+                {% else %}
+                  R$ {{ item.ingrediente.custo_unitario_atual }}
+                {% endif %}
                 {% if not item.ingrediente.custo_unitario_atual %}
                 <a href="{% url 'estoque:ingrediente_detail' item.ingrediente.pk %}" class="badge badge-vermelho text-decoration-none" title="Sem oferta de fornecedor vinculada — custo não calculado">Sem custo</a>
                 {% endif %}
