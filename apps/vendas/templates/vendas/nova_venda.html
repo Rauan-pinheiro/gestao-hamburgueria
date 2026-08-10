@@ -1,85 +1,87 @@
 {% extends 'base.html' %}
+{% load static %}
+{% load ds_icons %}
 {% block title %}Nova Venda{% endblock %}
 {% block content %}
 {% csrf_token %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <div>
-    <h4 class="mb-1"><i class="bi bi-cart-plus me-2"></i>Nova Venda</h4>
-    <small class="text-muted">Clique nos itens para adicionar ao carrinho, escolha a forma de pagamento e finalize.</small>
+<div class="page-header">
+  <div class="page-header__title">
+    {% icon "cart-plus" %}
+    <div>
+      <h1 style="font-size: var(--text-xl);">Nova Venda</h1>
+      <p class="text-muted text-sm">Clique nos itens para adicionar ao carrinho, escolha a forma de pagamento e finalize.</p>
+    </div>
   </div>
 </div>
 
 {% if not tem_itens %}
-<div class="alert alert-warning d-flex align-items-start gap-2">
-  <i class="bi bi-exclamation-triangle fs-5"></i>
+<div class="alert alert--warning mb-4">
+  {% icon "exclamation-triangle" %}
   <div>
     <strong>Ainda não há itens ativos no cardápio.</strong>
     Antes de vender, cadastre um item do cardápio e, de preferência, sua ficha técnica e preço.
-    <a href="{% url 'cardapio:itemcardapio_create' %}" class="alert-link">Cadastrar item do cardápio</a>.
+    <a href="{% url 'cardapio:itemcardapio_create' %}">Cadastrar item do cardápio</a>.
   </div>
 </div>
 {% elif not tem_forma_pagamento %}
-<div class="alert alert-warning d-flex align-items-start gap-2">
-  <i class="bi bi-exclamation-triangle fs-5"></i>
+<div class="alert alert--warning mb-4">
+  {% icon "exclamation-triangle" %}
   <div>
     <strong>Nenhuma forma de pagamento ativa.</strong>
     Cadastre pelo menos uma forma de pagamento (Dinheiro, Pix, Cartão...) para conseguir finalizar vendas.
-    <a href="{% url 'configuracoes:forma_pagamento_list' %}" class="alert-link">Configurar formas de pagamento</a>.
+    <a href="{% url 'configuracoes:forma_pagamento_list' %}">Configurar formas de pagamento</a>.
   </div>
 </div>
 {% elif itens_sem_preco %}
-<div class="alert alert-info d-flex align-items-start gap-2">
-  <i class="bi bi-info-circle fs-5"></i>
+<div class="alert alert--info mb-4">
+  {% icon "info-circle" %}
   <div>
-    {{ itens_sem_preco }} item(ns) do cardápio ainda não têm preço definido e aparecem como <strong>R$ 0,00</strong> abaixo
-    (destacados). Configure o preço em <a href="{% url 'precificacao:formacaopreco_list' %}" class="alert-link">Precificação</a>
+    {{ itens_sem_preco }} item(ns) do cardápio ainda não têm preço definido e aparecem abaixo como <strong>R$ 0,00</strong>
+    (destacados). Configure o preço em <a href="{% url 'precificacao:formacaopreco_list' %}">Precificação</a>
     antes de vendê-los.
   </div>
 </div>
 {% endif %}
 
-<div class="row g-3">
-  <div class="col-lg-8">
-    <div class="card mb-3">
-      <div class="card-body">
-        <div class="row g-2">
-          <div class="col-md-8">
-            <input type="text" id="busca-item" class="form-control" placeholder="Buscar item do cardápio..." {% if not tem_itens %}disabled{% endif %}>
-          </div>
-          <div class="col-md-4">
-            <select id="filtro-categoria" class="form-select" {% if not tem_itens %}disabled{% endif %}>
-              <option value="">Todas as categorias</option>
-              {% for categoria in categorias %}
-              <option value="{{ categoria.pk }}">{{ categoria.nome }}</option>
-              {% endfor %}
-            </select>
-          </div>
+<div class="grid grid-detail gap-4">
+  <div class="stack">
+    <div class="card">
+      <div class="card__body">
+        <div class="grid md:grid-cols-2 gap-2">
+          <input type="text" id="busca-item" class="field__control" placeholder="Buscar item do cardápio..." {% if not tem_itens %}disabled{% endif %}>
+          <select id="filtro-categoria" class="field__control" {% if not tem_itens %}disabled{% endif %}>
+            <option value="">Todas as categorias</option>
+            {% for categoria in categorias %}
+            <option value="{{ categoria.pk }}">{{ categoria.nome }}</option>
+            {% endfor %}
+          </select>
         </div>
       </div>
     </div>
-    <div class="row g-3" id="catalogo">
+
+    <div class="grid grid-auto-fit gap-3" id="catalogo">
       {% for item in itens_cardapio %}
       {% with preco=item.formacao_preco.preco_praticado|default:'0' %}
-      <div class="col-md-4 col-lg-3 item-catalogo" data-nome="{{ item.nome|lower }}" data-categoria-id="{{ item.categoria_id|default:'' }}">
-        <div class="card h-100 {% if preco == '0' %}border-warning{% endif %}">
-          <div class="card-body d-flex flex-column">
-            <h6 class="card-title mb-1">{{ item.nome }}</h6>
+      <div class="item-catalogo" data-nome="{{ item.nome|lower }}" data-categoria-id="{{ item.categoria_id|default:'' }}">
+        <div class="card card--full{% if preco == '0' %} card--accent-primary{% endif %}">
+          <div class="card__body flex flex-col">
+            <h3 class="font-semibold mb-1" style="font-size: var(--text-sm);">{{ item.nome }}</h3>
             <small class="text-muted mb-2">{{ item.categoria|default:'Sem categoria' }}</small>
             {% if not item.receita %}
-            <span class="badge bg-secondary mb-2 align-self-start" title="Item sem ficha técnica: a venda não baixará estoque de ingredientes.">
-              <i class="bi bi-journal-x me-1"></i>Sem ficha técnica
+            <span class="badge badge--neutral mb-2" style="align-self:flex-start;" title="Item sem ficha técnica: a venda não baixará estoque de ingredientes.">
+              {% icon "journal-x" class="icon-xs" %}Sem ficha técnica
             </span>
             {% endif %}
             <div class="mt-auto">
               {% if preco == '0' %}
-                <strong class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Preço não definido</strong>
+                <strong class="text-warning flex items-center gap-1">{% icon "exclamation-triangle" class="icon-xs" %}Preço não definido</strong>
               {% else %}
                 <strong>R$ {{ preco }}</strong>
               {% endif %}
-              <button type="button" class="btn btn-sm btn-primary w-100 mt-2 add-item"
+              <button type="button" class="btn btn--primary btn--sm btn--block mt-2 add-item"
                 data-id="{{ item.pk }}" data-nome="{{ item.nome }}"
                 data-preco="{{ preco }}">
-                <i class="bi bi-plus-lg me-1"></i>Adicionar
+                {% icon "plus-lg" class="icon-sm" %}Adicionar
               </button>
             </div>
           </div>
@@ -87,82 +89,148 @@
       </div>
       {% endwith %}
       {% empty %}
-      <div class="col-12">
-        <div class="alert alert-light border text-center py-5">
-          <i class="bi bi-menu-button-wide fs-1 text-muted d-block mb-2"></i>
-          <p class="mb-2">Nenhum item ativo no cardápio.</p>
-          <a href="{% url 'cardapio:itemcardapio_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Cadastrar item do cardápio</a>
-        </div>
+      <div class="empty-state" style="grid-column:1/-1;">
+        {% icon "menu-card" %}
+        <span class="empty-state__title">Nenhum item ativo no cardápio.</span>
+        <a href="{% url 'cardapio:itemcardapio_create' %}" class="btn btn--primary btn--sm mt-3">{% icon "plus-lg" class="icon-sm" %}Cadastrar item do cardápio</a>
       </div>
       {% endfor %}
     </div>
-    <div class="alert alert-light border text-center py-4 d-none" id="catalogo-sem-resultado">
-      <i class="bi bi-search fs-3 text-muted d-block mb-2"></i>
-      Nenhum item encontrado para o filtro selecionado.
+    <div class="empty-state hidden" id="catalogo-sem-resultado">
+      {% icon "search" %}
+      <span class="empty-state__title">Nenhum item encontrado para o filtro selecionado.</span>
     </div>
   </div>
 
-  <div class="col-lg-4">
-    <div class="card">
-      <div class="card-header"><strong><i class="bi bi-cart me-1"></i>Carrinho</strong></div>
-      <div class="card-body">
-        <div id="carrinho-vazio" class="text-muted text-center py-3">
-          <i class="bi bi-cart-x fs-3 d-block mb-1"></i>
-          Nenhum item adicionado. Clique em "Adicionar" nos itens ao lado.
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm d-none" id="carrinho-tabela">
-            <thead><tr><th>Item</th><th>Qtd.</th><th>Subtotal</th><th></th></tr></thead>
-            <tbody id="carrinho-itens"></tbody>
-          </table>
-        </div>
-        <hr>
-        <div class="mb-2">
-          <label class="form-label">Forma de pagamento</label>
-          <select id="forma-pagamento" class="form-select" {% if not tem_forma_pagamento %}disabled{% endif %}>
-            {% for fp in formas_pagamento %}<option value="{{ fp.pk }}">{{ fp.nome }}</option>{% endfor %}
-          </select>
-          {% if not tem_forma_pagamento %}<small class="text-danger">Nenhuma forma de pagamento cadastrada.</small>{% endif %}
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Canal</label>
-          <select id="canal" class="form-select">
-            <option value="balcao">Balcão</option>
-            <option value="delivery">Delivery próprio</option>
-            <option value="ifood">iFood</option>
-            <option value="whatsapp">WhatsApp</option>
-          </select>
-        </div>
-        <div class="mb-2">
-          <label class="form-label">Desconto (R$)</label>
-          <input type="number" id="desconto" class="form-control" value="0" step="0.01" min="0">
-        </div>
-        <div class="d-flex justify-content-between fs-5 fw-bold mt-3">
-          <span>Total</span><span id="carrinho-total">R$ 0,00</span>
-        </div>
-        <button type="button" id="finalizar-venda" class="btn btn-primary w-100 mt-3" disabled
-                title="Adicione itens ao carrinho e selecione a forma de pagamento para habilitar">
-          <i class="bi bi-check-circle me-1"></i>Finalizar Venda
-        </button>
-        <small class="text-muted d-block text-center mt-1" id="finalizar-hint">Adicione itens ao carrinho para continuar.</small>
-        <div id="venda-mensagem" class="mt-2"></div>
+  <div class="card" style="height: fit-content;">
+    <div class="card__header"><strong class="flex items-center gap-2">{% icon "cart" class="icon-sm" %}Carrinho</strong></div>
+    <div class="card__body">
+      <div id="carrinho-vazio" class="empty-state empty-state--sm">
+        {% icon "cart-x" %}
+        <span class="empty-state__subtitle">Nenhum item adicionado. Clique em "Adicionar" nos itens ao lado.</span>
       </div>
+      <div class="table-wrap">
+        <table class="table table--compact hidden" id="carrinho-tabela">
+          <thead><tr><th>Item</th><th>Qtd.</th><th>Subtotal</th><th></th></tr></thead>
+          <tbody id="carrinho-itens"></tbody>
+        </table>
+      </div>
+      <hr class="divider">
+      <div class="field">
+        <label class="field__label">Cliente (opcional)</label>
+        <input type="text" id="cliente-nome" class="field__control" maxlength="150" placeholder="Nome para identificar o pedido">
+      </div>
+      <div class="field">
+        <label class="field__label">Forma de pagamento</label>
+        <select id="forma-pagamento" class="field__control" {% if not tem_forma_pagamento %}disabled{% endif %}>
+          {% for fp in formas_pagamento %}<option value="{{ fp.pk }}">{{ fp.nome }}</option>{% endfor %}
+        </select>
+        {% if not tem_forma_pagamento %}<span class="field__hint text-danger">Nenhuma forma de pagamento cadastrada.</span>{% endif %}
+      </div>
+      <div class="field">
+        <label class="field__label">Canal</label>
+        <select id="canal" class="field__control">
+          <option value="balcao">Balcão</option>
+          <option value="delivery">Delivery próprio</option>
+          <option value="ifood">iFood</option>
+          <option value="whatsapp">WhatsApp</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field__label">Desconto (R$)</label>
+        <input type="number" id="desconto" class="field__control" value="0" step="0.01" min="0">
+      </div>
+      <div class="flex justify-between items-center text-lg font-bold mt-3">
+        <span>Total</span><span id="carrinho-total">R$ 0,00</span>
+      </div>
+      <button type="button" id="finalizar-venda" class="btn btn--primary btn--block mt-4" disabled
+              title="Adicione itens ao carrinho e selecione a forma de pagamento para habilitar">
+        {% icon "check-circle" class="icon-sm" %}Finalizar Venda
+      </button>
+      <small class="text-muted block text-center mt-2" id="finalizar-hint">Adicione itens ao carrinho para continuar.</small>
+
+      <label class="field-check mt-3">
+        <input type="checkbox" class="field-check__input" id="imprimir-automatico">
+        <span class="field-check__box">{% icon "check" class="icon-xs" %}</span>
+        <span class="field-check__label">Imprimir automaticamente após finalizar</span>
+      </label>
+      <button type="button" class="btn btn--ghost btn--sm mt-1" id="btn-configurar-impressora" style="padding-left:0;">
+        {% icon "gear" class="icon-xs" %}Configurar impressora
+      </button>
+
+      <div id="venda-mensagem" class="mt-3"></div>
     </div>
   </div>
 </div>
+
+<div class="modal-overlay" id="modal-adicionais" data-modal>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-adicionais-titulo">
+    <div class="modal__header">
+      <strong id="modal-adicionais-titulo">Adicionais</strong>
+      <button type="button" class="btn-icon btn-icon--sm" data-modal-close aria-label="Fechar">{% icon "x" class="icon-sm" %}</button>
+    </div>
+    <div class="modal__body">
+      <p class="text-sm text-muted mb-3">Selecione os adicionais desejados para este item.</p>
+      <div id="modal-adicionais-lista" class="field-check-group"></div>
+      <hr class="divider">
+      <div class="flex justify-between items-center font-bold">
+        <span>Total do item</span><span id="modal-adicionais-total">R$ 0,00</span>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button type="button" class="btn btn--outline" data-modal-close>Cancelar</button>
+      <button type="button" class="btn btn--primary" id="modal-adicionais-confirmar">{% icon "plus-lg" class="icon-sm" %}Adicionar ao carrinho</button>
+    </div>
+  </div>
+</div>
+
+{{ adicionais_por_item|json_script:"adicionais-data" }}
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/impressao.js' %}"></script>
 <script>
 (function () {
   const carrinho = {};
   const temFormaPagamento = {{ tem_forma_pagamento|yesno:'true,false' }};
+  const ADICIONAIS_POR_ITEM = JSON.parse(document.getElementById('adicionais-data').textContent);
+  let proximaLinhaId = 1;
+  let itemPendente = null; // {itemId, nome, preco} — aguardando confirmação do modal de adicionais
+
+  function escapeHtml(texto) {
+    const div = document.createElement('div');
+    div.textContent = texto === null || texto === undefined ? '' : String(texto);
+    return div.innerHTML;
+  }
 
   function getCsrfToken() {
     // O cookie csrftoken é HttpOnly neste sistema (não pode ser lido via document.cookie),
     // então o token vem do campo oculto renderizado por {% csrf_token %} no próprio template.
     const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
     return input ? input.value : '';
+  }
+
+  function totalLinha(linha) {
+    const totalAdicionais = linha.adicionais.reduce(function (soma, a) { return soma + a.preco; }, 0);
+    return (linha.preco + totalAdicionais) * linha.quantidade;
+  }
+
+  function adicionarAoCarrinho(itemId, nome, preco, adicionais) {
+    if (!adicionais || adicionais.length === 0) {
+      // Item sem adicionais escolhidos: mescla quantidade na mesma linha (fluxo rápido de balcão).
+      const chave = 'item-' + itemId;
+      if (!carrinho[chave]) {
+        carrinho[chave] = { itemId: itemId, nome: nome, preco: preco, quantidade: 1, adicionais: [] };
+      } else {
+        carrinho[chave].quantidade += 1;
+      }
+    } else {
+      // Combinações diferentes de adicionais viram linhas separadas — dois clientes podem
+      // pedir o mesmo produto com adicionais diferentes, e cada combinação tem um total próprio.
+      const chave = 'linha-' + (proximaLinhaId++);
+      carrinho[chave] = { itemId: itemId, nome: nome, preco: preco, quantidade: 1, adicionais: adicionais };
+    }
+    renderCarrinho();
   }
 
   function renderCarrinho() {
@@ -172,18 +240,18 @@
     const totalSpan = document.getElementById('carrinho-total');
     const finalizarBtn = document.getElementById('finalizar-venda');
     const hint = document.getElementById('finalizar-hint');
-    const ids = Object.keys(carrinho);
+    const chaves = Object.keys(carrinho);
 
-    if (ids.length === 0) {
-      vazio.classList.remove('d-none');
-      tabela.classList.add('d-none');
+    if (chaves.length === 0) {
+      vazio.classList.remove('hidden');
+      tabela.classList.add('hidden');
       finalizarBtn.disabled = true;
       hint.textContent = 'Adicione itens ao carrinho para continuar.';
       totalSpan.textContent = 'R$ 0,00';
       return;
     }
-    vazio.classList.add('d-none');
-    tabela.classList.remove('d-none');
+    vazio.classList.add('hidden');
+    tabela.classList.remove('hidden');
 
     if (!temFormaPagamento) {
       finalizarBtn.disabled = true;
@@ -195,48 +263,111 @@
 
     itensDiv.innerHTML = '';
     let total = 0;
-    ids.forEach(function (id) {
-      const it = carrinho[id];
-      const subtotal = it.preco * it.quantidade;
+    chaves.forEach(function (chave) {
+      const linha = carrinho[chave];
+      const subtotal = totalLinha(linha);
       total += subtotal;
+      const adicionaisHtml = linha.adicionais.length
+        ? '<br><small class="text-muted">+ ' + linha.adicionais.map(function (a) { return escapeHtml(a.nome); }).join(', ') + '</small>'
+        : '';
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${it.nome}</td>
-        <td><input type="number" min="1" value="${it.quantidade}" class="form-control form-control-sm qtd-input" data-id="${id}"></td>
+      tr.innerHTML = `<td>${escapeHtml(linha.nome)}${adicionaisHtml}</td>
+        <td><input type="number" min="1" value="${linha.quantidade}" class="field__control qtd-input" style="min-height:36px;" data-chave="${chave}"></td>
         <td>R$ ${subtotal.toFixed(2)}</td>
-        <td><button class="btn btn-sm btn-outline-danger remove-item" data-id="${id}"><i class="bi bi-x-lg"></i></button></td>`;
+        <td><button type="button" class="btn btn-icon btn-icon--sm remove-item" data-chave="${chave}">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="${window.DS_SPRITE_URL}#icon-x"></use></svg>
+        </button></td>`;
       itensDiv.appendChild(tr);
     });
     const desconto = parseFloat(document.getElementById('desconto').value || '0');
     totalSpan.textContent = 'R$ ' + Math.max(total - desconto, 0).toFixed(2);
   }
 
+  // --- Seletor de adicionais (modal) ---
+
+  function itemTemAdicionais(itemId) {
+    return (ADICIONAIS_POR_ITEM[itemId] || []).length > 0;
+  }
+
+  function atualizarTotalModal(precoBase) {
+    const marcados = document.querySelectorAll('#modal-adicionais-lista input:checked');
+    let total = precoBase;
+    marcados.forEach(function (cb) { total += parseFloat(cb.dataset.preco); });
+    document.getElementById('modal-adicionais-total').textContent = 'R$ ' + total.toFixed(2);
+  }
+
+  function abrirSeletorAdicionais(itemId, nome, preco) {
+    const lista = document.getElementById('modal-adicionais-lista');
+    document.getElementById('modal-adicionais-titulo').textContent = nome;
+    lista.innerHTML = '';
+    (ADICIONAIS_POR_ITEM[itemId] || []).forEach(function (ad) {
+      const label = document.createElement('label');
+      label.className = 'field-check';
+      label.innerHTML = `<input type="checkbox" class="field-check__input" value="${ad.id}" data-preco="${ad.preco}" data-nome="${escapeHtml(ad.nome)}">
+        <span class="field-check__box"><svg class="icon icon-xs" aria-hidden="true"><use href="${window.DS_SPRITE_URL}#icon-check"></use></svg></span>
+        <span class="field-check__label flex justify-between" style="width:100%;">
+          <span>${escapeHtml(ad.nome)}</span><span>+ R$ ${parseFloat(ad.preco).toFixed(2)}</span>
+        </span>`;
+      lista.appendChild(label);
+    });
+    atualizarTotalModal(preco);
+  }
+
   document.querySelectorAll('.add-item').forEach(function (btn) {
+    const itemId = btn.dataset.id;
+    if (itemTemAdicionais(itemId)) {
+      btn.setAttribute('data-modal-open', 'modal-adicionais');
+    }
     btn.addEventListener('click', function () {
-      const id = btn.dataset.id;
+      const nome = btn.dataset.nome;
       const preco = parseFloat(btn.dataset.preco || '0');
-      if (!carrinho[id]) {
-        carrinho[id] = { nome: btn.dataset.nome, preco: preco, quantidade: 1 };
-      } else {
-        carrinho[id].quantidade += 1;
+      if (!itemTemAdicionais(itemId)) {
+        adicionarAoCarrinho(itemId, nome, preco, []);
+        return;
       }
-      renderCarrinho();
+      itemPendente = { itemId: itemId, nome: nome, preco: preco };
+      abrirSeletorAdicionais(itemId, nome, preco);
     });
   });
+
+  const listaAdicionaisEl = document.getElementById('modal-adicionais-lista');
+  if (listaAdicionaisEl) {
+    listaAdicionaisEl.addEventListener('change', function () {
+      if (itemPendente) atualizarTotalModal(itemPendente.preco);
+    });
+  }
+
+  const confirmarAdicionaisBtn = document.getElementById('modal-adicionais-confirmar');
+  if (confirmarAdicionaisBtn) {
+    confirmarAdicionaisBtn.addEventListener('click', function () {
+      if (!itemPendente) return;
+      const selecionados = Array.from(document.querySelectorAll('#modal-adicionais-lista input:checked')).map(function (cb) {
+        return { id: parseInt(cb.value, 10), nome: cb.dataset.nome, preco: parseFloat(cb.dataset.preco) };
+      });
+      adicionarAoCarrinho(itemPendente.itemId, itemPendente.nome, itemPendente.preco, selecionados);
+      itemPendente = null;
+      const modal = document.getElementById('modal-adicionais');
+      modal.classList.remove('is-open');
+      document.body.style.overflow = '';
+    });
+  }
+
+  // --- Carrinho: quantidade e remoção ---
 
   const carrinhoItensEl = document.getElementById('carrinho-itens');
   if (carrinhoItensEl) {
     carrinhoItensEl.addEventListener('input', function (e) {
       if (!e.target.classList.contains('qtd-input')) return;
-      const id = e.target.dataset.id;
+      const chave = e.target.dataset.chave;
       const qtd = parseInt(e.target.value, 10) || 1;
-      carrinho[id].quantidade = qtd;
+      carrinho[chave].quantidade = qtd;
       renderCarrinho();
     });
 
     carrinhoItensEl.addEventListener('click', function (e) {
       const btn = e.target.closest('.remove-item');
       if (!btn) return;
-      delete carrinho[btn.dataset.id];
+      delete carrinho[btn.dataset.chave];
       renderCarrinho();
     });
   }
@@ -259,11 +390,64 @@
       card.style.display = mostrar ? '' : 'none';
       if (mostrar) visiveis += 1;
     });
-    if (semResultado) semResultado.classList.toggle('d-none', visiveis !== 0);
+    if (semResultado) semResultado.classList.toggle('hidden', visiveis !== 0);
   }
 
   if (buscaInput) buscaInput.addEventListener('input', aplicarFiltros);
   if (filtroCategoria) filtroCategoria.addEventListener('change', aplicarFiltros);
+
+  // --- Impressão ---
+
+  const imprimirAutomaticoInput = document.getElementById('imprimir-automatico');
+  if (imprimirAutomaticoInput) {
+    imprimirAutomaticoInput.checked = localStorage.getItem('impressao_automatica') === '1';
+    imprimirAutomaticoInput.addEventListener('change', function () {
+      localStorage.setItem('impressao_automatica', imprimirAutomaticoInput.checked ? '1' : '0');
+    });
+  }
+
+  const configurarImpressoraBtn = document.getElementById('btn-configurar-impressora');
+  if (configurarImpressoraBtn) {
+    configurarImpressoraBtn.addEventListener('click', function () {
+      const atual = window.Impressao ? window.Impressao.urlAgente() : 'http://127.0.0.1:9123';
+      const nova = window.prompt(
+        'Endereço do agente de impressão local (rodando no PC Windows do balcão):', atual);
+      if (nova && window.Impressao) window.Impressao.definirUrlAgente(nova.trim());
+    });
+  }
+
+  function montarBotaoImprimir() {
+    return '<div class="flex gap-2 mt-2 flex-wrap items-center">' +
+      '<button type="button" class="btn btn--sm btn--outline-primary" id="btn-imprimir-pedido">' +
+      '<svg class="icon icon-sm" aria-hidden="true"><use href="' + window.DS_SPRITE_URL + '#icon-receipt"></use></svg>Imprimir pedido</button>' +
+      '<span id="status-impressao" class="text-sm"></span></div>';
+  }
+
+  function ligarBotaoImprimir(vendaId) {
+    const statusEl = document.getElementById('status-impressao');
+    const btn = document.getElementById('btn-imprimir-pedido');
+    if (!btn || !window.Impressao) return;
+
+    function tentar() {
+      statusEl.textContent = 'Imprimindo...';
+      btn.disabled = true;
+      window.Impressao.imprimirVenda(vendaId, function () {
+        btn.disabled = false;
+        statusEl.innerHTML = '<span class="text-success">Pedido impresso.</span>';
+      }, function (mensagemErro) {
+        btn.disabled = false;
+        statusEl.innerHTML = '<span class="text-danger">' + escapeHtml(mensagemErro) + '</span> ' +
+          '<button type="button" class="btn btn--sm btn--outline-danger mt-1" id="btn-tentar-novamente">Tentar novamente</button>';
+        const retryBtn = document.getElementById('btn-tentar-novamente');
+        if (retryBtn) retryBtn.addEventListener('click', tentar);
+      });
+    }
+
+    btn.addEventListener('click', tentar);
+    if (localStorage.getItem('impressao_automatica') === '1') tentar();
+  }
+
+  // --- Finalizar venda ---
 
   const finalizarBtn = document.getElementById('finalizar-venda');
   if (finalizarBtn) {
@@ -274,24 +458,30 @@
       const formaPagamentoEl = document.getElementById('forma-pagamento');
       const formaPagamentoId = formaPagamentoEl ? parseInt(formaPagamentoEl.value, 10) : NaN;
       if (!formaPagamentoId) {
-        msgDiv.innerHTML = '<div class="alert alert-danger">Selecione uma forma de pagamento válida.</div>';
+        msgDiv.innerHTML = '<div class="alert alert--danger">Selecione uma forma de pagamento válida.</div>';
         return;
       }
       if (Object.keys(carrinho).length === 0) {
-        msgDiv.innerHTML = '<div class="alert alert-danger">Adicione ao menos um item ao carrinho.</div>';
+        msgDiv.innerHTML = '<div class="alert alert--danger">Adicione ao menos um item ao carrinho.</div>';
         return;
       }
 
       finalizarBtn.disabled = true;
-      finalizarBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Registrando...';
+      finalizarBtn.classList.add('is-loading');
 
-      const itens = Object.keys(carrinho).map(function (id) {
-        return { item_cardapio_id: parseInt(id, 10), quantidade: carrinho[id].quantidade };
+      const itens = Object.keys(carrinho).map(function (chave) {
+        const linha = carrinho[chave];
+        return {
+          item_cardapio_id: parseInt(linha.itemId, 10),
+          quantidade: linha.quantidade,
+          adicionais_ids: linha.adicionais.map(function (a) { return a.id; }),
+        };
       });
       const payload = {
         forma_pagamento_id: formaPagamentoId,
         canal: document.getElementById('canal').value,
         desconto: document.getElementById('desconto').value || '0',
+        cliente_nome: document.getElementById('cliente-nome').value || '',
         itens: itens,
       };
 
@@ -309,24 +499,27 @@
         })
         .then(function (result) {
           if (result.data.ok) {
-            msgDiv.innerHTML = '<div class="alert alert-success">Venda ' + result.data.numero + ' registrada com sucesso! ' +
-              '<a href="/vendas/' + result.data.venda_id + '/" class="alert-link">Ver detalhes</a></div>';
+            msgDiv.innerHTML = '<div class="alert alert--success">Venda ' + result.data.numero + ' registrada com sucesso! ' +
+              '<a href="/vendas/' + result.data.venda_id + '/">Ver detalhes</a>' +
+              montarBotaoImprimir() + '</div>';
+            ligarBotaoImprimir(result.data.venda_id);
             Object.keys(carrinho).forEach(function (k) { delete carrinho[k]; });
+            document.getElementById('cliente-nome').value = '';
             renderCarrinho();
           } else {
-            msgDiv.innerHTML = '<div class="alert alert-danger">' + result.data.erro + '</div>';
+            msgDiv.innerHTML = '<div class="alert alert--danger">' + result.data.erro + '</div>';
           }
         })
         .catch(function (err) {
           if (err instanceof Error && err.message === 'resposta_invalida') {
-            msgDiv.innerHTML = '<div class="alert alert-danger">O servidor retornou uma resposta inesperada. Recarregue a página e tente novamente.</div>';
+            msgDiv.innerHTML = '<div class="alert alert--danger">O servidor retornou uma resposta inesperada. Recarregue a página e tente novamente.</div>';
           } else {
-            msgDiv.innerHTML = '<div class="alert alert-danger">Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.</div>';
+            msgDiv.innerHTML = '<div class="alert alert--danger">Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.</div>';
           }
         })
         .finally(function () {
+          finalizarBtn.classList.remove('is-loading');
           finalizarBtn.disabled = Object.keys(carrinho).length === 0;
-          finalizarBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Finalizar Venda';
         });
     });
   }

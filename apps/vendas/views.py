@@ -10,10 +10,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import DetailView, ListView
 
 from apps.cardapio.models import CategoriaCardapio, ItemCardapio
+from apps.cardapio.services import mapa_adicionais_por_item
 from apps.core.models import FormaPagamento
 
 from .models import Venda
-from .services import VendaJaCanceladaError, VendaVazioError, cancelar_venda, registrar_venda
+from .services import (
+    VendaJaCanceladaError, VendaVazioError, cancelar_venda, montar_dados_impressao, registrar_venda,
+)
 
 logger = logging.getLogger('hamburgueria')
 
@@ -57,6 +60,11 @@ def nova_venda(request):
         1 for item in itens_cardapio
         if not getattr(item, 'formacao_preco', None) or not item.formacao_preco.preco_praticado
     )
+    # Adicionais disponíveis por item, para o seletor de adicionais no carrinho (seção "Adicionar
+    # ao carrinho"). Só nome/preço/id — os mesmos dados já públicos na tela — nunca dados sensíveis.
+    # mapa_adicionais_por_item resolve isso com poucas consultas, independente da quantidade de
+    # itens do cardápio (ver docstring — evita 1 consulta extra por item).
+    adicionais_por_item = mapa_adicionais_por_item(itens_cardapio)
     return render(request, 'vendas/nova_venda.html', {
         'itens_cardapio': itens_cardapio,
         'formas_pagamento': formas_pagamento,
@@ -64,6 +72,7 @@ def nova_venda(request):
         'tem_itens': itens_cardapio.exists(),
         'tem_forma_pagamento': formas_pagamento.exists(),
         'itens_sem_preco': itens_sem_preco,
+        'adicionais_por_item': adicionais_por_item,
     })
 
 
@@ -97,10 +106,14 @@ def _processar_nova_venda(request):
         itens = []
         for entrada in itens_payload:
             item_cardapio = ItemCardapio.objects.get(pk=entrada['item_cardapio_id'])
+            adicionais_ids_raw = entrada.get('adicionais_ids') or []
+            if not isinstance(adicionais_ids_raw, list):
+                raise ValueError('adicionais_ids_invalido')
             itens.append({
                 'item_cardapio': item_cardapio,
                 'quantidade': int(entrada['quantidade']),
                 'observacoes': entrada.get('observacoes', ''),
+                'adicionais_ids': [int(aid) for aid in adicionais_ids_raw],
             })
 
         venda = registrar_venda(
@@ -109,6 +122,7 @@ def _processar_nova_venda(request):
             usuario=request.user if request.user.is_authenticated else None,
             itens=itens,
             desconto=desconto,
+            cliente_nome=payload.get('cliente_nome', ''),
         )
         return JsonResponse({'ok': True, 'numero': venda.numero, 'venda_id': venda.pk})
     except VendaVazioError as exc:
@@ -129,6 +143,17 @@ def _processar_nova_venda(request):
         return JsonResponse(
             {'ok': False, 'erro': 'Ocorreu um erro inesperado ao registrar a venda. Tente novamente.'}, status=500
         )
+
+
+def venda_imprimir_dados(request, pk):
+    """
+    Dados prontos para impressão de uma venda (nova ou histórica), consumidos pelo
+    JS `static/js/impressao.js`, que os repassa ao agente de impressão local (ver
+    `printer_agent/`). Não formata para ESC/POS aqui — só serializa os dados da venda.
+    Login já é exigido globalmente por `apps.core.middleware.LoginRequiredMiddleware`.
+    """
+    venda = get_object_or_404(Venda, pk=pk)
+    return JsonResponse({'ok': True, 'dados': montar_dados_impressao(venda)})
 
 
 def venda_cancelar(request, pk):

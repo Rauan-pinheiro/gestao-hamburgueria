@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CategoriaCardapio, ItemCardapio
+from .models import Adicional, CategoriaCardapio, ItemCardapio
 
 
 @admin.register(CategoriaCardapio)
@@ -15,3 +15,11 @@ class ItemCardapioAdmin(admin.ModelAdmin):
     list_filter = ('ativo', 'tipo', 'categoria')
     search_fields = ('nome',)
     list_select_related = ('categoria',)
+
+
+@admin.register(Adicional)
+class AdicionalAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'preco', 'ativo', 'ordem')
+    list_filter = ('ativo', 'categorias')
+    search_fields = ('nome',)
+    filter_horizontal = ('categorias', 'itens')

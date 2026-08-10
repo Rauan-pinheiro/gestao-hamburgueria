@@ -7,11 +7,13 @@ class ConfiguracaoGeralForm(forms.ModelForm):
     class Meta:
         model = ConfiguracaoGeral
         fields = [
+            'nome_estabelecimento',
             'custo_embalagem_padrao', 'percentual_gas_energia', 'percentual_mao_de_obra',
             'percentual_imposto_padrao', 'margem_lucro_ideal_padrao', 'margem_premium_extra_padrao',
             'alerta_aumento_preco_percentual', 'meta_faturamento_diaria', 'meta_faturamento_mensal',
         ]
         help_texts = {
+            'nome_estabelecimento': 'Aparece no cabeçalho do pedido impresso na impressora térmica. Deixe em branco para omitir.',
             'custo_embalagem_padrao': 'Valor padrão de embalagem somado ao custo de toda ficha técnica que não tiver um valor específico.',
             'percentual_gas_energia': 'Percentual aplicado sobre o custo dos ingredientes para estimar gás e energia usados no preparo.',
             'percentual_mao_de_obra': 'Percentual aplicado sobre o custo dos ingredientes para estimar a mão de obra do preparo.',

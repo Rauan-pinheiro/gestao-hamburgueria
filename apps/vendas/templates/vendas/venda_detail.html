@@ -1,55 +1,114 @@
 {% extends 'base.html' %}
+{% load static %}
+{% load ds_icons %}
 {% block title %}Venda {{ venda.numero }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <h4 class="mb-0">
-    <i class="bi bi-cart-check me-2"></i>Venda {{ venda.numero }}
-    {% if venda.status == 'cancelada' %}<span class="badge badge-vermelho ms-2">Cancelada</span>{% endif %}
-  </h4>
-  <div>
+<div class="page-header">
+  <div class="page-header__title">
+    {% icon "cart-check" %}
+    <h1 style="font-size: var(--text-xl);">
+      Venda {{ venda.numero }}
+      {% if venda.status == 'cancelada' %} <span class="badge badge--danger">Cancelada</span>{% endif %}
+    </h1>
+  </div>
+  <div class="page-header__actions">
+    <button type="button" class="btn btn--outline-primary" id="btn-reimprimir-pedido">{% icon "receipt" class="icon-sm" %}Reimprimir pedido</button>
     {% if venda.status == 'concluida' %}
-    <form method="post" action="{% url 'vendas:venda_cancelar' venda.pk %}" class="d-inline"
+    <form method="post" action="{% url 'vendas:venda_cancelar' venda.pk %}" class="inline-block"
           onsubmit="return confirm('Cancelar esta venda? O estoque baixado por ela será estornado.');">
       {% csrf_token %}
-      <button type="submit" class="btn btn-outline-danger"><i class="bi bi-x-circle me-1"></i>Cancelar venda</button>
+      <button type="submit" class="btn btn--outline-danger">{% icon "x-circle" class="icon-sm" %}Cancelar venda</button>
     </form>
     {% endif %}
-    <a href="{% url 'vendas:venda_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+    <a href="{% url 'vendas:venda_list' %}" class="btn btn--outline">{% icon "arrow-left" class="icon-sm" %}Voltar</a>
   </div>
 </div>
 
-<div class="row g-3 mb-3">
-  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Total</div><div class="stat-value">R$ {{ venda.valor_total }}</div></div></div>
-  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Custo</div><div class="stat-value">R$ {{ venda.custo_total }}</div></div></div>
-  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Comissão/taxa</div><div class="stat-value">R$ {{ venda.comissao_total }}</div></div></div>
-  <div class="col-md-3"><div class="card stat-card h-100"><div class="stat-label">Lucro líquido</div><div class="stat-value">R$ {{ venda.lucro_liquido }}</div></div></div>
+<div id="status-impressao" class="mb-3"></div>
+
+<div class="stat-grid mb-4">
+  <div class="card stat-card"><div class="stat-card__label">Total</div><div class="stat-card__value">R$ {{ venda.valor_total }}</div></div>
+  <div class="card stat-card"><div class="stat-card__label">Custo</div><div class="stat-card__value">R$ {{ venda.custo_total }}</div></div>
+  <div class="card stat-card"><div class="stat-card__label">Comissão/taxa</div><div class="stat-card__value">R$ {{ venda.comissao_total }}</div></div>
+  <div class="card stat-card"><div class="stat-card__label">Lucro líquido</div><div class="stat-card__value">R$ {{ venda.lucro_liquido }}</div></div>
 </div>
 
-<div class="card mb-3"><div class="card-body">
-  <dl class="row mb-0">
-    <dt class="col-12 col-sm-2">Data/hora</dt><dd class="col-12 col-sm-4">{{ venda.data_hora|date:'d/m/Y H:i' }}</dd>
-    <dt class="col-12 col-sm-2">Canal</dt><dd class="col-12 col-sm-4">{{ venda.get_canal_display }}</dd>
-    <dt class="col-12 col-sm-2">Pagamento</dt><dd class="col-12 col-sm-4">{{ venda.forma_pagamento }}</dd>
-    <dt class="col-12 col-sm-2">Status</dt><dd class="col-12 col-sm-4">{{ venda.get_status_display }}</dd>
-  </dl>
-</div></div>
+<div class="card mb-4">
+  <div class="list">
+    <div class="list__item"><span class="text-muted">Data/hora</span><span>{{ venda.data_hora|date:'d/m/Y H:i' }}</span></div>
+    {% if venda.cliente_nome %}<div class="list__item"><span class="text-muted">Cliente</span><span>{{ venda.cliente_nome }}</span></div>{% endif %}
+    <div class="list__item"><span class="text-muted">Canal</span><span>{{ venda.get_canal_display }}</span></div>
+    <div class="list__item"><span class="text-muted">Pagamento</span><span>{{ venda.forma_pagamento }}</span></div>
+    <div class="list__item"><span class="text-muted">Status</span><span>{{ venda.get_status_display }}</span></div>
+  </div>
+</div>
 
 <div class="card">
-  <div class="card-header"><strong>Itens</strong></div>
-  <div class="table-responsive">
-    <table class="table mb-0">
-      <thead><tr><th>Item</th><th>Qtd.</th><th>Preço unit.</th><th>Subtotal</th></tr></thead>
+  <div class="card__header"><strong>Itens</strong></div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Item</th><th>Qtd.</th><th>Preço unit.</th><th>Adicionais</th><th>Total do item</th></tr></thead>
       <tbody>
         {% for item in itens %}
         <tr>
-          <td>{{ item.nome_produto }}{% if not item.item_cardapio_id %} <span class="badge bg-secondary" title="Este produto foi excluído do cardápio depois desta venda ser cancelada">excluído do cardápio</span>{% endif %}</td>
+          <td>
+            {{ item.nome_produto }}
+            {% if not item.item_cardapio_id %}<span class="badge badge--neutral" title="Este produto foi excluído do cardápio depois desta venda ser cancelada">excluído do cardápio</span>{% endif %}
+          </td>
           <td>{{ item.quantidade }}</td>
           <td>R$ {{ item.preco_unitario }}</td>
-          <td>R$ {{ item.subtotal }}</td>
+          <td>
+            {% for adicional in item.adicionais.all %}
+              <div class="text-sm text-muted">+ {{ adicional.nome_adicional }} — R$ {{ adicional.preco_unitario }}</div>
+            {% empty %}
+              <span class="text-muted text-sm">—</span>
+            {% endfor %}
+          </td>
+          <td>R$ {{ item.valor_total_item }}</td>
         </tr>
         {% endfor %}
       </tbody>
+      <tfoot>
+        <tr><td colspan="4" class="text-end text-muted">Subtotal produtos</td><td>R$ {{ venda.subtotal }}</td></tr>
+        <tr><td colspan="4" class="text-end text-muted">Adicionais</td><td>R$ {{ venda.total_adicionais }}</td></tr>
+        <tr><td colspan="4" class="text-end text-muted">Desconto</td><td>R$ {{ venda.desconto }}</td></tr>
+        <tr><td colspan="4" class="text-end font-bold">Total</td><td class="font-bold">R$ {{ venda.valor_total }}</td></tr>
+      </tfoot>
     </table>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/impressao.js' %}"></script>
+<script>
+(function () {
+  const btn = document.getElementById('btn-reimprimir-pedido');
+  const statusEl = document.getElementById('status-impressao');
+  if (!btn || !window.Impressao) return;
+
+  function escapeHtml(texto) {
+    const div = document.createElement('div');
+    div.textContent = texto === null || texto === undefined ? '' : String(texto);
+    return div.innerHTML;
+  }
+
+  function tentar() {
+    btn.disabled = true;
+    statusEl.innerHTML = '<div class="alert alert--info">Imprimindo...</div>';
+    window.Impressao.imprimirVenda({{ venda.pk }}, function () {
+      btn.disabled = false;
+      statusEl.innerHTML = '<div class="alert alert--success">Pedido enviado para a impressora.</div>';
+    }, function (mensagemErro) {
+      btn.disabled = false;
+      statusEl.innerHTML = '<div class="alert alert--danger">' + escapeHtml(mensagemErro) +
+        ' <button type="button" class="btn btn--sm btn--outline-danger mt-2" id="btn-tentar-novamente">Tentar novamente</button></div>';
+      const retryBtn = document.getElementById('btn-tentar-novamente');
+      if (retryBtn) retryBtn.addEventListener('click', tentar);
+    });
+  }
+
+  btn.addEventListener('click', tentar);
+})();
+</script>
 {% endblock %}

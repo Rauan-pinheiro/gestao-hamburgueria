@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load ds_icons %}
+{% block title %}Adicionais{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header__title">{% icon "plus-lg" %}
+    <div>
+      <h1 style="font-size: var(--text-xl);">Adicionais</h1>
+      <p class="text-muted text-sm">Bacon, cheddar, ovo... vincule cada adicional a uma categoria e/ou a itens específicos do cardápio.</p>
+    </div>
+  </div>
+  <div class="page-header__actions">
+    <a href="{% url 'cardapio:itemcardapio_list' %}" class="btn btn--outline">{% icon "arrow-left" class="icon-sm" %}Voltar</a>
+    <a href="{% url 'cardapio:adicional_create' %}" class="btn btn--primary">{% icon "plus-lg" class="icon-sm" %}Novo Adicional</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Nome</th><th>Preço</th><th>Categorias</th><th>Itens específicos</th><th>Ordem</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for a in adicionais %}
+        <tr>
+          <td>{{ a.nome }}</td>
+          <td>R$ {{ a.preco }}</td>
+          <td>
+            {% for c in a.categorias.all %}<span class="badge badge--neutral">{{ c.nome }}</span>{% endfor %}
+            {% if not a.categorias.all %}<span class="text-muted text-sm">—</span>{% endif %}
+          </td>
+          <td>
+            {% if a.itens.all %}<span class="text-sm">{{ a.itens.all|length }} item(ns)</span>{% else %}<span class="text-muted text-sm">—</span>{% endif %}
+          </td>
+          <td>{{ a.ordem }}</td>
+          <td>{% if a.ativo %}<span class="badge badge--success">Ativo</span>{% else %}<span class="badge badge--neutral">Inativo</span>{% endif %}</td>
+          <td class="table__actions">
+            <a href="{% url 'cardapio:adicional_update' a.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Editar">{% icon "pencil" class="icon-sm" %}</a>
+            <form method="post" action="{% url 'cardapio:adicional_toggle_ativo' a.pk %}" class="inline-block">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-icon btn-icon--sm" data-tooltip="{% if a.ativo %}Inativar{% else %}Ativar{% endif %}">{% icon "toggle" class="icon-sm" %}</button>
+            </form>
+            <a href="{% url 'cardapio:adicional_delete' a.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Excluir">{% icon "trash" class="icon-sm" %}</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">
+          <div class="empty-state">
+            {% icon "plus-lg" %}
+            <span class="empty-state__title">Nenhum adicional cadastrado.</span>
+            <span class="empty-state__subtitle">Cadastre adicionais como Bacon, Cheddar ou Ovo e vincule-os a categorias ou itens do cardápio.</span>
+            <a href="{% url 'cardapio:adicional_create' %}" class="btn btn--primary btn--sm mt-3">{% icon "plus-lg" class="icon-sm" %}Novo Adicional</a>
+          </div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

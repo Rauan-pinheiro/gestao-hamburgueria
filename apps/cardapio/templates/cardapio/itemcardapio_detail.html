@@ -96,5 +96,22 @@
     </div>
   </div>
 </div>
+
+<div class="card mt-4">
+  <div class="card__body">
+    <h4 class="text-muted mb-1 flex items-center gap-2" style="font-size: var(--text-sm);">{% icon "plus-lg" %}Adicionais disponíveis</h4>
+    <p class="text-sm text-muted mb-3">Adicionais que aparecem para o cliente ao vender este item (vinculados à categoria e/ou diretamente a este item). Gerenciados na tela de Adicionais.</p>
+    {% with adicionais=item.adicionais_disponiveis %}
+    {% if adicionais %}
+      <div class="flex flex-wrap gap-2 mb-3">
+        {% for a in adicionais %}<span class="badge badge--neutral">{{ a.nome }} — R$ {{ a.preco }}</span>{% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted flex items-center gap-2 mb-3">{% icon "exclamation-circle" class="icon-sm" %}Nenhum adicional vinculado a este item ou à sua categoria ainda.</p>
+    {% endif %}
+    {% endwith %}
+    <a href="{% url 'cardapio:adicional_list' %}" class="btn btn--sm btn--outline">Gerenciar adicionais</a>
+  </div>
+</div>
 {% endwith %}
 {% endblock %}

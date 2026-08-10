@@ -18,4 +18,11 @@ urlpatterns = [
     path('categorias/<int:pk>/editar/', views.CategoriaCardapioUpdateView.as_view(), name='categoria_update'),
     path('categorias/<int:pk>/excluir/', views.CategoriaCardapioDeleteView.as_view(), name='categoria_delete'),
     path('categorias/<int:pk>/excluir-cascata/', views.categoria_excluir_cascata, name='categoria_excluir_cascata'),
+
+    path('adicionais/', views.AdicionalListView.as_view(), name='adicional_list'),
+    path('adicionais/novo/', views.AdicionalCreateView.as_view(), name='adicional_create'),
+    path('adicionais/<int:pk>/editar/', views.AdicionalUpdateView.as_view(), name='adicional_update'),
+    path('adicionais/<int:pk>/excluir/', views.AdicionalDeleteView.as_view(), name='adicional_delete'),
+    path('adicionais/<int:pk>/toggle-ativo/', views.adicional_toggle_ativo, name='adicional_toggle_ativo'),
+    path('adicionais/<int:pk>/excluir-cascata/', views.adicional_excluir_cascata, name='adicional_excluir_cascata'),
 ]

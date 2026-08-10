@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
+{% load ds_icons %}
 {% block title %}{% if object %}Editar{% else %}Nova{% endif %} Receita de Produção{% endblock %}
 {% block content %}
-<h4 class="mb-3"><i class="bi bi-cup-hot me-2"></i>{% if object %}Editar{% else %}Nova{% endif %} Receita de Produção</h4>
-<p class="text-muted small">
+<div class="page-header"><div class="page-header__title">{% icon "cup-hot" %}<h1 style="font-size: var(--text-xl);">{% if object %}Editar{% else %}Nova{% endif %} Receita de Produção</h1></div></div>
+<p class="text-muted text-sm mb-4">
   Use isto para ingredientes preparados na casa (molhos, temperos, carnes marinadas...) — o "ingrediente produzido"
   precisa já existir no Estoque e não pode ter oferta de fornecedor ativa vinculada (ele deixa de ser "comprado" e
   passa a ser "produzido"). O custo por unidade é calculado a partir dos insumos abaixo e do rendimento informado,
@@ -12,30 +13,30 @@
 
 <form method="post">
   {% csrf_token %}
-  <div class="card mb-3"><div class="card-body">
+  <div class="card mb-4"><div class="card__body">
     {{ form|crispy }}
   </div></div>
 
-  <div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div class="card mb-4">
+    <div class="card__header">
       <strong>Ingredientes usados no preparo</strong>
-      <span class="text-muted small">
+      <span class="text-muted text-sm">
         Custo total da receita: <strong id="custo-ingredientes-estimado">R$ 0,00</strong>
       </span>
     </div>
-    <div class="card-body">
+    <div class="card__body">
       {{ formset.management_form }}
       {% if formset.non_form_errors %}
-        <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+        <div class="alert alert--danger mb-3">{{ formset.non_form_errors }}</div>
       {% endif %}
-      <div class="alert alert-warning py-2 px-3 small d-none" id="aviso-custo-zerado">
-        <i class="bi bi-exclamation-triangle me-1"></i>
-        Algum ingrediente selecionado está com custo R$ 0,00 — provavelmente não tem nenhuma
-        <a href="{% url 'fornecedores:fornecedor_list' %}" class="alert-link">oferta de fornecedor vinculada</a>
-        (nem outra receita de produção). O custo desta receita fica subestimado até isso ser corrigido.
+      <div class="alert alert--warning hidden mb-3" id="aviso-custo-zerado">
+        {% icon "exclamation-triangle" %}
+        <div>Algum ingrediente selecionado está com custo R$ 0,00 — provavelmente não tem nenhuma
+        <a href="{% url 'fornecedores:fornecedor_list' %}">oferta de fornecedor vinculada</a>
+        (nem outra receita de produção). O custo desta receita fica subestimado até isso ser corrigido.</div>
       </div>
-      <div class="table-responsive">
-        <table class="table" id="itens-formset-table">
+      <div class="table-wrap">
+        <table class="table table--formset" id="itens-formset-table">
           <thead><tr><th>Ingrediente</th><th>Quantidade</th><th>Custo estimado</th><th>Observação</th><th>Remover</th></tr></thead>
           <tbody>
             {% for item_form in formset %}
@@ -47,9 +48,12 @@
               <td>{{ item_form.observacao }}</td>
               <td class="text-center">
                 {% if item_form.instance.pk %}
-                  <div class="form-check"><input type="checkbox" class="form-check-input" name="{{ item_form.DELETE.html_name }}" id="{{ item_form.DELETE.id_for_label }}"></div>
+                  <label class="field-check">
+                    <input type="checkbox" class="field-check__input" name="{{ item_form.DELETE.html_name }}" id="{{ item_form.DELETE.id_for_label }}">
+                    <span class="field-check__box">{% icon "check" class="icon-xs" %}</span>
+                  </label>
                 {% else %}
-                  <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-x-lg"></i></button>
+                  <button type="button" class="btn btn-icon btn-icon--sm remove-row">{% icon "x-lg" class="icon-sm" %}</button>
                 {% endif %}
               </td>
             </tr>
@@ -57,7 +61,7 @@
           </tbody>
         </table>
       </div>
-      <button type="button" id="add-ingrediente" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg me-1"></i>Adicionar ingrediente</button>
+      <button type="button" id="add-ingrediente" class="btn btn--sm btn--outline-primary mt-3">{% icon "plus-lg" class="icon-sm" %}Adicionar ingrediente</button>
     </div>
   </div>
 
@@ -69,14 +73,14 @@
       <td class="custo-linha text-muted">—</td>
       <td>{{ formset.empty_form.observacao }}</td>
       <td class="text-center">
-        <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-x-lg"></i></button>
+        <button type="button" class="btn btn-icon btn-icon--sm remove-row">{% icon "x-lg" class="icon-sm" %}</button>
       </td>
     </tr>
   </template>
 
-  <div class="d-flex gap-2">
-    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar</button>
-    <a href="{% url 'receitas:receitaproducao_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+  <div class="btn-group">
+    <button type="submit" class="btn btn--primary">{% icon "check" class="icon-sm" %}Salvar</button>
+    <a href="{% url 'receitas:receitaproducao_list' %}" class="btn btn--outline">Cancelar</a>
   </div>
 </form>
 {% endblock %}
@@ -139,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (totalEl) totalEl.textContent = formatarMoeda(total);
 
     const avisoEl = document.getElementById('aviso-custo-zerado');
-    if (avisoEl) avisoEl.classList.toggle('d-none', !temCustoZerado);
+    if (avisoEl) avisoEl.classList.toggle('hidden', !temCustoZerado);
   }
 
   addBtn.addEventListener('click', function () {

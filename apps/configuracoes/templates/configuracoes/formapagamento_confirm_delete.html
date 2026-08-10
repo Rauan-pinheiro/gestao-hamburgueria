@@ -1,15 +1,18 @@
 {% extends 'base.html' %}
+{% load ds_icons %}
 {% block title %}Excluir Forma de Pagamento{% endblock %}
 {% block content %}
-<h4 class="mb-3">Excluir Forma de Pagamento</h4>
-<div class="card"><div class="card-body">
-  <p>Tem certeza que deseja excluir <strong>{{ object }}</strong>?</p>
-  <p class="text-muted small">Se esta forma de pagamento já foi usada em alguma venda, a exclusão será bloqueada — use "Inativar" nesse caso.</p>
-  <form method="post">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Confirmar exclusão</button>
-    <a href="{% url 'configuracoes:forma_pagamento_list' %}" class="btn btn-outline-secondary">Cancelar</a>
-  </form>
-  {% include 'partials/_excluir_cascata.html' %}
-</div></div>
+<div class="page-header"><div class="page-header__title">{% icon "trash" %}<h1 style="font-size: var(--text-xl);">Excluir Forma de Pagamento</h1></div></div>
+<div class="card max-w-md">
+  <div class="card__body">
+    <p class="mb-2">Tem certeza que deseja excluir <strong>{{ object }}</strong>?</p>
+    <p class="text-muted text-sm mb-4">Se esta forma de pagamento já foi usada em alguma venda, a exclusão será bloqueada — use "Inativar" nesse caso.</p>
+    <form method="post" class="btn-group">
+      {% csrf_token %}
+      <button type="submit" class="btn btn--danger">{% icon "trash" class="icon-sm" %}Confirmar exclusão</button>
+      <a href="{% url 'configuracoes:forma_pagamento_list' %}" class="btn btn--outline">Cancelar</a>
+    </form>
+    {% include 'partials/_excluir_cascata.html' %}
+  </div>
+</div>
 {% endblock %}

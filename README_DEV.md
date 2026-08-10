@@ -55,7 +55,7 @@ Este arquivo é a documentação interna do desenvolvimento do projeto: contexto
 > sidebar, cabeçalhos, páginas de detalhe, gráficos e tabelas de formset. Falta a validação
 > visual final em dispositivos/navegadores reais (ver checklist abaixo).
 
-- [x] Sidebar em modo off-canvas no celular (`static/css/custom.css`, `static/js/sidebar.js`,
+- [x] Sidebar em modo off-canvas no celular (`static/css/layout.css`, `static/js/sidebar.js`,
   `templates/base.html`): abaixo de 768px a sidebar fica oculta por padrão e abre como painel
   deslizante sobre o conteúdo (com fundo escurecido, `#sidebar-backdrop`), liberando 100% da
   largura da tela. Entre 768–991px (tablets) mantém o modo "ícones" já existente.
@@ -80,6 +80,32 @@ Este arquivo é a documentação interna do desenvolvimento do projeto: contexto
 - [ ] Reavaliar, após a validação visual, se algum caso pontual precisa virar cards em vez de
   tabela com rolagem horizontal (hoje todas as tabelas já usam `.table-responsive`, que é uma
   solução aceitável, mas pode não ser a ideal em todo caso).
+
+### 5. Adicionais do cardápio + impressão térmica 🟢 concluído (10/08/2026)
+
+Duas funcionalidades novas, implementadas e testadas antes do deploy:
+
+- **Adicionais** (`apps/cardapio/models.py::Adicional`): cadastro com nome, preço,
+  ativo/inativo, vinculado a categorias e/ou itens específicos (nunca global — ver
+  `ItemCardapio.adicionais_disponiveis()`). CRUD completo em "Cardápio → Adicionais".
+  Na venda, o preço é congelado no momento da compra
+  (`vendas.ItemVendaAdicional.preco_unitario`) — alterar o preço do adicional depois
+  não muda vendas antigas (testado em `apps/vendas/tests.py`).
+- **Impressão térmica**: como o backend roda remoto/na nuvem e não tem acesso ao
+  Windows do balcão, a impressão é feita por um agente local separado —
+  `printer_agent/` (ver `printer_agent/README.md` para instalação, configuração da
+  impressora e como deixá-lo rodando em segundo plano). O fluxo é
+  Navegador → Django (dados do pedido) → `printer_agent` (no PC do balcão) → spooler
+  do Windows → impressora. A venda nunca é bloqueada por falha de impressão; sempre dá
+  para tentar de novo (inclusive depois, pela tela de detalhe da venda).
+- **Pendência futura, já documentada em `printer_agent/README.md`**: quando este
+  sistema migrar para HTTPS (ver item 2 abaixo), será necessário ajustar o agente local
+  (certificado local confiável ou manter a tela de venda num endereço HTTP interno),
+  porque navegadores bloqueiam por padrão uma página HTTPS chamando um endereço HTTP
+  (mixed content) — hoje, em HTTP, funciona normalmente.
+- `pywin32` é dependência **apenas** de `printer_agent/` (só roda no PC Windows do
+  balcão) — deliberadamente não entrou em `requirements/*.txt` do backend Django, que
+  não precisa dele e pode rodar em qualquer SO.
 
 ## Observações
 

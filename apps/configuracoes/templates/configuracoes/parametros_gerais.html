@@ -1,68 +1,71 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
+{% load ds_icons %}
 {% block title %}Parâmetros Gerais{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <div>
-    <h4 class="mb-1"><i class="bi bi-sliders me-2"></i>Parâmetros Gerais</h4>
-    <small class="text-muted">Esses valores são usados automaticamente em todas as fichas técnicas e precificações do sistema.</small>
+<div class="page-header">
+  <div class="page-header__title">
+    {% icon "sliders" %}
+    <div>
+      <h1 style="font-size: var(--text-xl);">Parâmetros Gerais</h1>
+      <p class="text-muted text-sm">Esses valores são usados automaticamente em todas as fichas técnicas e precificações do sistema.</p>
+    </div>
   </div>
-  <a href="{% url 'configuracoes:home' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+  <div class="page-header__actions">
+    <a href="{% url 'configuracoes:home' %}" class="btn btn--outline">{% icon "arrow-left" class="icon-sm" %}Voltar</a>
+  </div>
 </div>
 
-<div class="alert alert-info d-flex gap-2">
-  <i class="bi bi-info-circle fs-5"></i>
+<div class="alert alert--info mb-4">
+  {% icon "info-circle" %}
   <div>Ao alterar um valor aqui, ele passa a valer para <strong>novos cálculos</strong>. Fichas técnicas e precificações já
   existentes só refletem a mudança quando forem recalculadas (botão "Recalcular" na tela de cada item).</div>
 </div>
 
 <form method="post">
   {% csrf_token %}
-  <div class="row g-3">
-    <div class="col-lg-6">
-      <div class="card h-100">
-        <div class="card-header"><strong><i class="bi bi-box-seam me-1"></i>Custos indiretos</strong></div>
-        <div class="card-body">
-          {{ form.custo_embalagem_padrao|as_crispy_field }}
-          {{ form.percentual_gas_energia|as_crispy_field }}
-          {{ form.percentual_mao_de_obra|as_crispy_field }}
-        </div>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="card card--full">
+      <div class="card__header"><strong class="flex items-center gap-2">{% icon "receipt" class="icon-sm" %}Estabelecimento</strong></div>
+      <div class="card__body">
+        {{ form.nome_estabelecimento|as_crispy_field }}
       </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="card h-100">
-        <div class="card-header"><strong><i class="bi bi-percent me-1"></i>Impostos e margens padrão</strong></div>
-        <div class="card-body">
-          {{ form.percentual_imposto_padrao|as_crispy_field }}
-          {{ form.margem_lucro_ideal_padrao|as_crispy_field }}
-          {{ form.margem_premium_extra_padrao|as_crispy_field }}
-        </div>
+    <div class="card card--full">
+      <div class="card__header"><strong class="flex items-center gap-2">{% icon "box-seam" class="icon-sm" %}Custos indiretos</strong></div>
+      <div class="card__body">
+        {{ form.custo_embalagem_padrao|as_crispy_field }}
+        {{ form.percentual_gas_energia|as_crispy_field }}
+        {{ form.percentual_mao_de_obra|as_crispy_field }}
       </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="card h-100">
-        <div class="card-header"><strong><i class="bi bi-bell me-1"></i>Alertas</strong></div>
-        <div class="card-body">
-          {{ form.alerta_aumento_preco_percentual|as_crispy_field }}
-        </div>
+    <div class="card card--full">
+      <div class="card__header"><strong class="flex items-center gap-2">{% icon "percent" class="icon-sm" %}Impostos e margens padrão</strong></div>
+      <div class="card__body">
+        {{ form.percentual_imposto_padrao|as_crispy_field }}
+        {{ form.margem_lucro_ideal_padrao|as_crispy_field }}
+        {{ form.margem_premium_extra_padrao|as_crispy_field }}
       </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="card h-100">
-        <div class="card-header"><strong><i class="bi bi-bullseye me-1"></i>Metas</strong></div>
-        <div class="card-body">
-          {{ form.meta_faturamento_diaria|as_crispy_field }}
-          {{ form.meta_faturamento_mensal|as_crispy_field }}
-        </div>
+    <div class="card card--full">
+      <div class="card__header"><strong class="flex items-center gap-2">{% icon "bell" class="icon-sm" %}Alertas</strong></div>
+      <div class="card__body">
+        {{ form.alerta_aumento_preco_percentual|as_crispy_field }}
+      </div>
+    </div>
+
+    <div class="card card--full">
+      <div class="card__header"><strong class="flex items-center gap-2">{% icon "bullseye" class="icon-sm" %}Metas</strong></div>
+      <div class="card__body">
+        {{ form.meta_faturamento_diaria|as_crispy_field }}
+        {{ form.meta_faturamento_mensal|as_crispy_field }}
       </div>
     </div>
   </div>
 
-  <div class="mt-3">
-    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar parâmetros</button>
-  </div>
+  <button type="submit" class="btn btn--primary mt-4">{% icon "check" class="icon-sm" %}Salvar parâmetros</button>
 </form>
 {% endblock %}

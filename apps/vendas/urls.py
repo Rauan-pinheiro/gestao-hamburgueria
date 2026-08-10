@@ -9,4 +9,5 @@ urlpatterns = [
     path('nova/', views.nova_venda, name='nova_venda'),
     path('<int:pk>/', views.VendaDetailView.as_view(), name='venda_detail'),
     path('<int:pk>/cancelar/', views.venda_cancelar, name='venda_cancelar'),
+    path('<int:pk>/imprimir-dados/', views.venda_imprimir_dados, name='venda_imprimir_dados'),
 ]

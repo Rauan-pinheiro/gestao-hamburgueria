@@ -1,64 +1,59 @@
 {% extends 'base.html' %}
+{% load ds_icons %}
 {% block title %}{{ receita_producao }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <h4 class="mb-0"><i class="bi bi-cup-hot me-2"></i>{{ receita_producao.nome }}</h4>
-  <div>
-    <a href="{% url 'receitas:receitaproducao_update' receita_producao.pk %}" class="btn btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Editar</a>
-    <a href="{% url 'receitas:receitaproducao_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Voltar</a>
+<div class="page-header">
+  <div class="page-header__title">{% icon "cup-hot" %}<h1 style="font-size: var(--text-xl);">{{ receita_producao.nome }}</h1></div>
+  <div class="page-header__actions">
+    <a href="{% url 'receitas:receitaproducao_update' receita_producao.pk %}" class="btn btn--outline">{% icon "pencil" class="icon-sm" %}Editar</a>
+    <a href="{% url 'receitas:receitaproducao_list' %}" class="btn btn--outline">{% icon "arrow-left" class="icon-sm" %}Voltar</a>
   </div>
 </div>
 
 {% if ingredientes_sem_custo %}
-<div class="alert alert-warning">
-  <i class="bi bi-exclamation-triangle me-1"></i>
-  {{ ingredientes_sem_custo|length }} insumo(s) desta receita estão com custo R$ 0,00 porque não têm oferta de
-  fornecedor (nem outra receita de produção) vinculada no estoque:
-  {% for i in ingredientes_sem_custo %}<a href="{% url 'estoque:ingrediente_detail' i.pk %}">{{ i.nome }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.
-  O custo abaixo está subestimado até isso ser corrigido.
+<div class="alert alert--warning mb-4">
+  {% icon "exclamation-triangle" %}
+  <div>
+    {{ ingredientes_sem_custo|length }} insumo(s) desta receita estão com custo R$ 0,00 porque não têm oferta de
+    fornecedor (nem outra receita de produção) vinculada no estoque:
+    {% for i in ingredientes_sem_custo %}<a href="{% url 'estoque:ingrediente_detail' i.pk %}">{{ i.nome }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.
+    O custo abaixo está subestimado até isso ser corrigido.
+  </div>
 </div>
 {% endif %}
 
-<div class="row g-3 mb-3">
-  <div class="col-md-3">
-    <div class="card stat-card h-100">
-      <div class="stat-label">Ingrediente produzido</div>
-      <div class="stat-value" style="font-size:1.1rem;"><a href="{% url 'estoque:ingrediente_detail' receita_producao.ingrediente_produzido.pk %}">{{ receita_producao.ingrediente_produzido }}</a></div>
-    </div>
+<div class="stat-grid mb-4">
+  <div class="card stat-card">
+    <div class="stat-card__label">Ingrediente produzido</div>
+    <div class="stat-card__value" style="font-size:1.1rem;"><a href="{% url 'estoque:ingrediente_detail' receita_producao.ingrediente_produzido.pk %}">{{ receita_producao.ingrediente_produzido }}</a></div>
   </div>
-  <div class="col-md-3">
-    <div class="card stat-card h-100">
-      <div class="stat-label">Rendimento</div>
-      <div class="stat-value">{{ receita_producao.rendimento_quantidade }} {{ receita_producao.ingrediente_produzido.get_unidade_medida_display }}</div>
-      {% if receita_producao.ingrediente_produzido.usa_rendimento_por_porcao %}
-        <small class="text-muted">{{ receita_producao.ingrediente_produzido.rendimento_unidades }} porções por {{ receita_producao.ingrediente_produzido.get_unidade_medida_display }}</small>
-      {% endif %}
-    </div>
+  <div class="card stat-card">
+    <div class="stat-card__label">Rendimento</div>
+    <div class="stat-card__value">{{ receita_producao.rendimento_quantidade }} {{ receita_producao.ingrediente_produzido.get_unidade_medida_display }}</div>
+    {% if receita_producao.ingrediente_produzido.usa_rendimento_por_porcao %}
+      <small class="text-muted">{{ receita_producao.ingrediente_produzido.rendimento_unidades }} porções por {{ receita_producao.ingrediente_produzido.get_unidade_medida_display }}</small>
+    {% endif %}
   </div>
-  <div class="col-md-3">
-    <div class="card stat-card h-100">
-      <div class="stat-label">Custo total da receita</div>
-      <div class="stat-value">R$ {{ custo_total_producao|floatformat:2 }}</div>
-    </div>
+  <div class="card stat-card">
+    <div class="stat-card__label">Custo total da receita</div>
+    <div class="stat-card__value">R$ {{ custo_total_producao|floatformat:2 }}</div>
   </div>
-  <div class="col-md-3">
-    <div class="card stat-card h-100">
-      <div class="stat-label">Custo unitário resultante</div>
-      {% if receita_producao.ingrediente_produzido.usa_rendimento_por_porcao %}
-        <div class="stat-value">R$ {{ receita_producao.custo_por_porcao|floatformat:4 }}</div>
-        <small class="text-muted">por porção</small>
-      {% else %}
-        <div class="stat-value">R$ {{ custo_por_unidade_base_produzida|floatformat:4 }}</div>
-        <small class="text-muted">por {{ receita_producao.ingrediente_produzido.get_unidade_medida_display }}</small>
-      {% endif %}
-    </div>
+  <div class="card stat-card">
+    <div class="stat-card__label">Custo unitário resultante</div>
+    {% if receita_producao.ingrediente_produzido.usa_rendimento_por_porcao %}
+      <div class="stat-card__value">R$ {{ receita_producao.custo_por_porcao|floatformat:4 }}</div>
+      <small class="text-muted">por porção</small>
+    {% else %}
+      <div class="stat-card__value">R$ {{ custo_por_unidade_base_produzida|floatformat:4 }}</div>
+      <small class="text-muted">por {{ receita_producao.ingrediente_produzido.get_unidade_medida_display }}</small>
+    {% endif %}
   </div>
 </div>
 
-<div class="card mb-3">
-  <div class="card-header"><strong>Ingredientes usados no preparo</strong></div>
-  <div class="table-responsive">
-    <table class="table mb-0">
+<div class="card mb-4">
+  <div class="card__header"><strong>Ingredientes usados no preparo</strong></div>
+  <div class="table-wrap">
+    <table class="table">
       <thead><tr><th>Ingrediente</th><th>Quantidade</th><th>Custo unit.</th><th>Custo total</th></tr></thead>
       <tbody>
         {% for item in itens %}
@@ -72,13 +67,13 @@
               R$ {{ item.ingrediente.custo_unitario_atual }}
             {% endif %}
             {% if not item.ingrediente.custo_unitario_atual %}
-            <a href="{% url 'estoque:ingrediente_detail' item.ingrediente.pk %}" class="badge badge-vermelho text-decoration-none" title="Sem oferta de fornecedor vinculada — custo não calculado">Sem custo</a>
+            <a href="{% url 'estoque:ingrediente_detail' item.ingrediente.pk %}" class="badge badge--danger" title="Sem oferta de fornecedor vinculada — custo não calculado">Sem custo</a>
             {% endif %}
           </td>
           <td>R$ {{ item.custo_total|floatformat:4 }}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="4" class="text-center text-muted py-3">Nenhum ingrediente cadastrado nesta receita.</td></tr>
+        <tr><td colspan="4"><div class="empty-state empty-state--sm">Nenhum ingrediente cadastrado nesta receita.</div></td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -87,8 +82,8 @@
 
 {% if receita_producao.modo_preparo %}
 <div class="card">
-  <div class="card-header"><strong>Modo de preparo</strong></div>
-  <div class="card-body" style="white-space: pre-line;">{{ receita_producao.modo_preparo }}</div>
+  <div class="card__header"><strong>Modo de preparo</strong></div>
+  <div class="card__body" style="white-space: pre-line;">{{ receita_producao.modo_preparo }}</div>
 </div>
 {% endif %}
 {% endblock %}

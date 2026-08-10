@@ -1,17 +1,23 @@
 {% extends 'base.html' %}
+{% load ds_icons %}
 {% block title %}Precificação{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <div>
-    <h4 class="mb-1"><i class="bi bi-tags me-2"></i>Formação de Preços</h4>
-    <small class="text-muted">Aqui você define o preço de venda de cada item. Verde = preço saudável, amarelo = margem baixa, vermelho = abaixo do custo.</small>
+<div class="page-header">
+  <div class="page-header__title">
+    {% icon "tags" %}
+    <div>
+      <h1 style="font-size: var(--text-xl);">Formação de Preços</h1>
+      <p class="text-muted text-sm">Aqui você define o preço de venda de cada item. Verde = preço saudável, amarelo = margem baixa, vermelho = abaixo do custo.</p>
+    </div>
   </div>
-  <a href="{% url 'precificacao:formacaopreco_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Nova Precificação</a>
+  <div class="page-header__actions">
+    <a href="{% url 'precificacao:formacaopreco_create' %}" class="btn btn--primary">{% icon "plus-lg" class="icon-sm" %}Nova Precificação</a>
+  </div>
 </div>
 
 <div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
+  <div class="table-wrap">
+    <table class="table">
       <thead><tr><th>Item</th><th>Custo/porção</th><th>Mínimo</th><th>Ideal</th><th>Premium</th><th>Praticado</th><th>Status</th><th></th></tr></thead>
       <tbody>
         {% for f in formacoes %}
@@ -22,16 +28,19 @@
           <td>R$ {{ f.preco_ideal }}</td>
           <td>R$ {{ f.preco_premium }}</td>
           <td><strong>R$ {{ f.preco_praticado }}</strong></td>
-          <td><span class="badge badge-{{ f.status_margem }}">{{ f.status_margem_label }}</span></td>
-          <td class="text-end">
-            <a href="{% url 'precificacao:formacaopreco_update' f.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+          <td><span class="badge badge--{{ f.status_margem }}">{{ f.status_margem_label }}</span></td>
+          <td class="table__actions">
+            <a href="{% url 'precificacao:formacaopreco_update' f.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Editar">{% icon "pencil" class="icon-sm" %}</a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="8" class="text-center py-5">
-          <i class="bi bi-tags fs-1 text-muted d-block mb-2"></i>
-          <p class="text-muted mb-2">Nenhuma precificação cadastrada ainda.<br>Depois de ter uma ficha técnica, defina aqui o preço de venda do item.</p>
-          <a href="{% url 'precificacao:formacaopreco_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Definir primeiro preço</a>
+        <tr><td colspan="8">
+          <div class="empty-state">
+            {% icon "tags" %}
+            <span class="empty-state__title">Nenhuma precificação cadastrada ainda.</span>
+            <span class="empty-state__subtitle">Depois de ter uma ficha técnica, defina aqui o preço de venda do item.</span>
+            <a href="{% url 'precificacao:formacaopreco_create' %}" class="btn btn--primary btn--sm mt-3">{% icon "plus-lg" class="icon-sm" %}Definir primeiro preço</a>
+          </div>
         </td></tr>
         {% endfor %}
       </tbody>

@@ -1,17 +1,22 @@
 {% extends 'base.html' %}
+{% load ds_icons %}
 {% block title %}Vendas{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <h4 class="mb-0"><i class="bi bi-cart-check me-2"></i>Vendas</h4>
-  <a href="{% url 'vendas:nova_venda' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Nova Venda</a>
+<div class="page-header">
+  <div class="page-header__title">{% icon "cart-check" %}<h1 style="font-size: var(--text-xl);">Vendas</h1></div>
+  <div class="page-header__actions">
+    <a href="{% url 'vendas:nova_venda' %}" class="btn btn--primary">{% icon "plus-lg" class="icon-sm" %}Nova Venda</a>
+  </div>
 </div>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <form method="get" class="row g-2">
-      <div class="col-md-6"><input type="text" name="q" class="form-control" placeholder="Buscar por número..." value="{{ request.GET.q }}"></div>
-      <div class="col-md-3">
-        <select name="canal" class="form-select">
+<div class="card mb-4">
+  <div class="card__body">
+    <form method="get" class="filter-bar">
+      <div class="field">
+        <input type="text" name="q" class="field__control" placeholder="Buscar por número..." value="{{ request.GET.q }}">
+      </div>
+      <div class="field">
+        <select name="canal" class="field__control">
           <option value="">Todos os canais</option>
           <option value="balcao" {% if request.GET.canal == 'balcao' %}selected{% endif %}>Balcão</option>
           <option value="delivery" {% if request.GET.canal == 'delivery' %}selected{% endif %}>Delivery próprio</option>
@@ -19,14 +24,14 @@
           <option value="whatsapp" {% if request.GET.canal == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
         </select>
       </div>
-      <div class="col-md-3"><button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-search me-1"></i>Filtrar</button></div>
+      <button type="submit" class="btn btn--outline">{% icon "search" class="icon-sm" %}Filtrar</button>
     </form>
   </div>
 </div>
 
 <div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
+  <div class="table-wrap">
+    <table class="table">
       <thead><tr><th>Número</th><th>Data/hora</th><th>Canal</th><th>Pagamento</th><th>Total</th><th>Lucro líquido</th><th>Status</th></tr></thead>
       <tbody>
         {% for venda in vendas %}
@@ -37,13 +42,15 @@
           <td>{{ venda.forma_pagamento }}</td>
           <td>R$ {{ venda.valor_total }}</td>
           <td>R$ {{ venda.lucro_liquido }}</td>
-          <td>{% if venda.status == 'concluida' %}<span class="badge badge-verde">Concluída</span>{% else %}<span class="badge badge-vermelho">Cancelada</span>{% endif %}</td>
+          <td>{% if venda.status == 'concluida' %}<span class="badge badge--success">Concluída</span>{% else %}<span class="badge badge--danger">Cancelada</span>{% endif %}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="text-center py-5">
-          <i class="bi bi-cart-check fs-1 text-muted d-block mb-2"></i>
-          <p class="text-muted mb-2">Nenhuma venda registrada ainda.</p>
-          <a href="{% url 'vendas:nova_venda' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Registrar primeira venda</a>
+        <tr><td colspan="7">
+          <div class="empty-state">
+            {% icon "cart-check" %}
+            <span class="empty-state__title">Nenhuma venda registrada ainda.</span>
+            <a href="{% url 'vendas:nova_venda' %}" class="btn btn--primary btn--sm mt-3">{% icon "plus-lg" class="icon-sm" %}Registrar primeira venda</a>
+          </div>
         </td></tr>
         {% endfor %}
       </tbody>

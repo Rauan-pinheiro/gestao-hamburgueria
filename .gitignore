@@ -8,3 +8,8 @@ staticfiles/
 logs/*.log*
 .vscode/
 .idea/
+
+# Agente de impressão local (printer_agent/): config.json e o log são específicos de
+# cada computador do balcão (nome da impressora, porta), não fazem parte do código.
+printer_agent/config.json
+printer_agent/agente.log

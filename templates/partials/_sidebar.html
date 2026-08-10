@@ -19,8 +19,11 @@
 </a>
 
 <div class="sidebar__section-title">2. Cardápio</div>
-<a class="nav-link{% if app == 'cardapio' %} is-active{% endif %}" href="{% url 'cardapio:itemcardapio_list' %}">
+<a class="nav-link{% if app == 'cardapio' and 'adicional' not in request.resolver_match.url_name|default:'' %} is-active{% endif %}" href="{% url 'cardapio:itemcardapio_list' %}">
   {% icon "menu-button-wide" %}<span>Itens do Cardápio</span>
+</a>
+<a class="nav-link{% if app == 'cardapio' and 'adicional' in request.resolver_match.url_name|default:'' %} is-active{% endif %}" href="{% url 'cardapio:adicional_list' %}">
+  {% icon "plus-lg" %}<span>Adicionais</span>
 </a>
 <a class="nav-link{% if app == 'receitas' and 'receitaproducao' not in request.resolver_match.url_name|default:'' %} is-active{% endif %}" href="{% url 'receitas:receita_list' %}">
   {% icon "journal-text" %}<span>Fichas Técnicas</span>

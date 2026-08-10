@@ -15,6 +15,9 @@ class TimestampedModel(models.Model):
 class ConfiguracaoGeral(TimestampedModel):
     """Configurações de negócio usadas nos cálculos de custo/precificação. Singleton (pk=1)."""
 
+    nome_estabelecimento = models.CharField(
+        'Nome do estabelecimento', max_length=150, blank=True,
+        help_text='Aparece no cabeçalho do pedido impresso na impressora térmica.')
     custo_embalagem_padrao = models.DecimalField(
         'Custo de embalagem padrão (R$)', max_digits=10, decimal_places=2, default=0,
         validators=[MinValueValidator(0)])

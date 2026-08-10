@@ -6,9 +6,9 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from apps.core.views import SafeDeleteView, excluir_em_cascata, toggle_ativo
 
-from .forms import CategoriaCardapioForm, ItemCardapioForm
-from .models import CategoriaCardapio, ItemCardapio
-from .services import motivo_bloqueio_exclusao
+from .forms import AdicionalForm, CategoriaCardapioForm, ItemCardapioForm
+from .models import Adicional, CategoriaCardapio, ItemCardapio
+from .services import motivo_bloqueio_exclusao, motivo_bloqueio_exclusao_adicional
 
 
 class ItemCardapioListView(LoginRequiredMixin, ListView):
@@ -136,3 +136,66 @@ class CategoriaCardapioDeleteView(LoginRequiredMixin, SafeDeleteView):
 
 def categoria_excluir_cascata(request, pk):
     return excluir_em_cascata(request, CategoriaCardapio, pk, 'cardapio:categoria_list')
+
+
+class AdicionalListView(LoginRequiredMixin, ListView):
+    model = Adicional
+    template_name = 'cardapio/adicional_list.html'
+    context_object_name = 'adicionais'
+
+    def get_queryset(self):
+        return Adicional.objects.all().prefetch_related('categorias', 'itens')
+
+
+class AdicionalCreateView(LoginRequiredMixin, CreateView):
+    model = Adicional
+    form_class = AdicionalForm
+    template_name = 'cardapio/adicional_form.html'
+    success_url = reverse_lazy('cardapio:adicional_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Adicional cadastrado com sucesso.')
+        return super().form_valid(form)
+
+
+class AdicionalUpdateView(LoginRequiredMixin, UpdateView):
+    model = Adicional
+    form_class = AdicionalForm
+    template_name = 'cardapio/adicional_form.html'
+    success_url = reverse_lazy('cardapio:adicional_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Adicional atualizado.')
+        return super().form_valid(form)
+
+
+class AdicionalDeleteView(LoginRequiredMixin, SafeDeleteView):
+    model = Adicional
+    template_name = 'cardapio/adicional_confirm_delete.html'
+    success_url = reverse_lazy('cardapio:adicional_list')
+    cascata_url_name = 'cardapio:adicional_excluir_cascata'
+
+    def form_valid(self, form):
+        nome = str(self.object)
+        motivo = motivo_bloqueio_exclusao_adicional(self.object)
+        if motivo:
+            messages.error(self.request, motivo)
+            return redirect(self.get_success_url())
+        response = super().form_valid(form)
+        if self.delete_succeeded:
+            messages.success(self.request, f'Adicional "{nome}" excluído com sucesso.')
+        return response
+
+
+def adicional_toggle_ativo(request, pk):
+    return toggle_ativo(request, Adicional, pk, 'cardapio:adicional_list')
+
+
+def adicional_excluir_cascata(request, pk):
+    if request.method == 'POST' and request.user.is_superuser:
+        adicional = get_object_or_404(Adicional, pk=pk)
+        motivo = motivo_bloqueio_exclusao_adicional(adicional)
+        if motivo:
+            messages.error(request, motivo)
+            return redirect('cardapio:adicional_list')
+    return excluir_em_cascata(request, Adicional, pk, 'cardapio:adicional_list')

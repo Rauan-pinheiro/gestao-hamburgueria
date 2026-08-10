@@ -1,60 +1,67 @@
 {% extends 'base.html' %}
+{% load ds_icons %}
 {% block title %}Leia-me{% endblock %}
 
 {% block extra_css %}
 <style>
-  .leiame-toc { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
-  .leiame-toc a { display: block; padding: .2rem 0; color: var(--bs-body-color); text-decoration: none; font-size: .875rem; }
-  .leiame-toc a:hover { color: var(--primary); }
-  .leiame-toc .toc-sub { padding-left: .9rem; font-size: .8rem; opacity: .85; }
-  .leiame-secao { scroll-margin-top: 1rem; }
-  .leiame-secao + .leiame-secao { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--bs-border-color); }
+  .leiame-layout { display: grid; grid-template-columns: 1fr; gap: var(--space-5); align-items: start; }
+  .leiame-toc { position: sticky; top: var(--space-4); max-height: calc(100vh - var(--space-6)); overflow-y: auto; padding: var(--space-4); }
+  .leiame-toc a { display: block; padding: .3rem 0; color: var(--color-text-muted); font-size: var(--text-sm); }
+  .leiame-toc a:hover { color: var(--color-primary); }
+  .leiame-secao { scroll-margin-top: var(--space-4); }
+  .leiame-secao + .leiame-secao { margin-top: var(--space-8); padding-top: var(--space-6); border-top: 1px solid var(--color-border); }
+  .leiame-secao h2 { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-lg); font-family: var(--font-display); }
+  .leiame-secao h3 { margin-top: var(--space-4); font-size: var(--text-md); font-family: var(--font-display); }
+  .leiame-secao ul, .leiame-secao ol { padding-left: 1.25rem; }
+  .leiame-secao ul + h3, .leiame-secao p + h3, .leiame-secao ol + h3 { margin-top: var(--space-5); }
   .passo-numero {
-    width: 2rem; height: 2rem; border-radius: 50%; background: var(--primary); color: #fff;
+    width: 2rem; height: 2rem; border-radius: var(--radius-full); background: var(--color-primary); color: #fff;
     display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;
   }
+  .passo { display: flex; gap: var(--space-3); margin-bottom: var(--space-4); }
   html { scroll-behavior: smooth; }
+  @media (min-width: 992px) {
+    .leiame-layout { grid-template-columns: 15rem 1fr; }
+    .leiame-toc--desktop-only { display: block; }
+  }
+  .leiame-toc--desktop-only { display: none; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-  <h4 class="mb-0"><i class="bi bi-book me-2"></i>📖 Leia-me — Manual do Sistema</h4>
-</div>
+<div class="page-header"><div class="page-header__title">{% icon "book" %}<h1 style="font-size: var(--text-xl);">Leia-me — Manual do Sistema</h1></div></div>
 
-<div class="row">
-  <div class="col-lg-3 d-none d-lg-block">
-    <nav class="leiame-toc card card-body">
-      <strong class="small text-muted mb-2">SUMÁRIO</strong>
-      <a href="#introducao">1. Introdução</a>
-      <a href="#guia-passo-a-passo">2. Guia passo a passo</a>
-      <a href="#dashboard">3. Dashboard</a>
-      <a href="#cardapio">4. Cardápio</a>
-      <a href="#estoque">5. Estoque</a>
-      <a href="#vendas">6. Vendas</a>
-      <a href="#historico">7. Histórico</a>
-      <a href="#clientes">8. Clientes</a>
-      <a href="#financeiro">9. Financeiro</a>
-      <a href="#configuracoes">10. Configurações</a>
-      <a href="#faq">11. Perguntas frequentes</a>
-    </nav>
-  </div>
+<div class="leiame-layout">
+  <nav class="card leiame-toc leiame-toc--desktop-only">
+    <strong class="text-muted text-xs mb-2" style="text-transform:uppercase; letter-spacing:.05em;">Sumário</strong>
+    <a href="#introducao">1. Introdução</a>
+    <a href="#guia-passo-a-passo">2. Guia passo a passo</a>
+    <a href="#dashboard">3. Dashboard</a>
+    <a href="#cardapio">4. Cardápio</a>
+    <a href="#estoque">5. Estoque</a>
+    <a href="#vendas">6. Vendas</a>
+    <a href="#historico">7. Histórico</a>
+    <a href="#clientes">8. Clientes</a>
+    <a href="#financeiro">9. Financeiro</a>
+    <a href="#configuracoes">10. Configurações</a>
+    <a href="#faq">11. Perguntas frequentes</a>
+  </nav>
 
-  <div class="col-lg-9">
+  <div>
 
     <section id="introducao" class="leiame-secao">
-      <h3><i class="bi bi-flag me-2"></i>1. Introdução</h3>
+      <h2>{% icon "flag" %}1. Introdução</h2>
 
-      <h5 class="mt-3">Objetivo do sistema</h5>
+      <h3>Objetivo do sistema</h3>
       <p>O <strong>Hamburgueria ERP</strong> ajuda você a controlar toda a operação de uma hamburgueria (ou lanchonete
         similar) em um só lugar: <strong>fornecedores</strong> e preços de insumos, <strong>estoque</strong> de
         ingredientes, <strong>fichas técnicas</strong> (o que entra em cada lanche), <strong>precificação</strong>
         (quanto cobrar para ter lucro de verdade), <strong>cardápio</strong>, <strong>vendas</strong> e um
         <strong>dashboard</strong> com os números do negócio.</p>
 
-      <h5 class="mt-3">Fluxo geral de utilização</h5>
+      <h3>Fluxo geral de utilização</h3>
       <p>O sistema foi pensado para ser usado nesta ordem, porque cada etapa depende da anterior:</p>
-      <ol>
+      <ol class="stack-sm">
         <li><strong>Fornecedores</strong> → de quem você compra os ingredientes.</li>
         <li><strong>Estoque (ingredientes)</strong> → o que você compra e usa nas receitas.</li>
         <li><strong>Fichas técnicas (Receitas)</strong> → quanto de cada ingrediente vai em cada lanche — é isso que
@@ -64,16 +71,17 @@
         <li><strong>Vendas</strong> → o dia a dia do caixa.</li>
         <li><strong>Dashboard</strong> → acompanhamento de faturamento, lucro e alertas.</li>
       </ol>
-      <div class="alert alert-info mb-0">
-        <i class="bi bi-lightbulb me-1"></i> Se você está começando agora, o próprio
+      <div class="alert alert--info mt-4">
+        {% icon "lightbulb" %}
+        <div>Se você está começando agora, o próprio
         <a href="{% url 'dashboard:index' %}">Dashboard</a> mostra um card "Vamos configurar seu sistema" com esses
-        passos e o percentual concluído — use-o como checklist.
+        passos e o percentual concluído — use-o como checklist.</div>
       </div>
 
-      <h5 class="mt-3">Boas práticas</h5>
-      <ul>
+      <h3>Boas práticas</h3>
+      <ul class="stack-sm">
         <li><strong>Nunca exclua o que pode ser inativado.</strong> Ingredientes, itens do cardápio, fornecedores e
-          formas de pagamento têm um botão <span class="badge bg-secondary">Inativar</span> — ele some da tela de
+          formas de pagamento têm um botão <span class="badge badge--neutral">Inativar</span> — ele some da tela de
           vendas/uso, mas preserva todo o histórico de custos e vendas já realizados.</li>
         <li><strong>Cancelar venda ≠ excluir venda.</strong> Vendas nunca são apagadas do sistema — são registros
           financeiros permanentes. Veja a diferença na seção <a href="#vendas">Vendas</a>.</li>
@@ -85,124 +93,124 @@
     </section>
 
     <section id="guia-passo-a-passo" class="leiame-secao">
-      <h3><i class="bi bi-signpost-2 me-2"></i>2. Guia passo a passo (primeira vez no sistema)</h3>
+      <h2>{% icon "signpost" %}2. Guia passo a passo (primeira vez no sistema)</h2>
       <p>Siga esta ordem na primeira configuração. Cada passo explica <em>por que</em> fazer aquilo e <em>o que
         esperar</em> em seguida.</p>
 
-      <div class="d-flex gap-3 mb-3">
+      <div class="passo">
         <div class="passo-numero">1</div>
         <div>
           <strong>Acesse o sistema</strong>
-          <p class="mb-0 text-muted">Faça login com seu usuário e senha. Se você é o primeiro acesso, peça ao
+          <p class="text-muted mb-0">Faça login com seu usuário e senha. Se você é o primeiro acesso, peça ao
             administrador para criar sua conta em <code>/admin/</code> (menu do usuário, canto superior direito).</p>
         </div>
       </div>
-      <div class="d-flex gap-3 mb-3">
+      <div class="passo">
         <div class="passo-numero">2</div>
         <div>
           <strong>Configure as informações iniciais</strong>
-          <p class="mb-0 text-muted">Em <a href="{% url 'configuracoes:parametros_gerais' %}">Configurações → Parâmetros gerais</a>,
+          <p class="text-muted mb-0">Em <a href="{% url 'configuracoes:parametros_gerais' %}">Configurações → Parâmetros gerais</a>,
             informe custo de embalagem padrão, percentuais de gás/energia, mão de obra, imposto e margem de lucro
             desejada. <strong>Por quê:</strong> esses valores entram na fórmula de custo de toda ficha técnica —
             configurá-los antes evita ter que recalcular tudo depois.</p>
         </div>
       </div>
-      <div class="d-flex gap-3 mb-3">
+      <div class="passo">
         <div class="passo-numero">3</div>
         <div>
           <strong>Cadastre fornecedores</strong>
-          <p class="mb-0 text-muted">Em <a href="{% url 'fornecedores:fornecedor_list' %}">Fornecedores</a>, cadastre
+          <p class="text-muted mb-0">Em <a href="{% url 'fornecedores:fornecedor_list' %}">Fornecedores</a>, cadastre
             quem vende seus ingredientes e, dentro de cada fornecedor, os produtos que ele oferece (preço da
             embalagem, frete). <strong>Resultado esperado:</strong> o sistema já calcula o preço por grama/ml/unidade
             de cada oferta, permitindo comparar fornecedores.</p>
         </div>
       </div>
-      <div class="d-flex gap-3 mb-3">
+      <div class="passo">
         <div class="passo-numero">4</div>
         <div>
           <strong>Configure o estoque (ingredientes)</strong>
-          <p class="mb-0 text-muted">Em <a href="{% url 'estoque:ingrediente_list' %}">Estoque</a>, cadastre cada
+          <p class="text-muted mb-0">Em <a href="{% url 'estoque:ingrediente_list' %}">Estoque</a>, cadastre cada
             ingrediente (pão, carne, queijo...), sua unidade de medida e estoque mínimo/ideal. Depois registre a
             <strong>entrada</strong> inicial de estoque. <strong>Por quê:</strong> sem estoque cadastrado, o sistema
             não calcula custo de receita nem controla baixa automática nas vendas.</p>
         </div>
       </div>
-      <div class="d-flex gap-3 mb-3">
+      <div class="passo">
         <div class="passo-numero">5</div>
         <div>
           <strong>Configure formas de pagamento</strong>
-          <p class="mb-0 text-muted">Em <a href="{% url 'configuracoes:forma_pagamento_list' %}">Configurações → Formas de pagamento</a>,
+          <p class="text-muted mb-0">Em <a href="{% url 'configuracoes:forma_pagamento_list' %}">Configurações → Formas de pagamento</a>,
             cadastre Dinheiro, Pix, cartão etc. com a taxa/comissão de cada uma. <strong>Por quê:</strong> a taxa entra
             no cálculo de lucro líquido de cada venda.</p>
         </div>
       </div>
-      <div class="d-flex gap-3 mb-3">
+      <div class="passo">
         <div class="passo-numero">6</div>
         <div>
           <strong>Cadastre categorias e produtos do cardápio</strong>
-          <p class="mb-0 text-muted">Em <a href="{% url 'cardapio:itemcardapio_list' %}">Cardápio</a>, crie as
+          <p class="text-muted mb-0">Em <a href="{% url 'cardapio:itemcardapio_list' %}">Cardápio</a>, crie as
             categorias (Lanches, Bebidas, Porções...) e depois os itens, com nome, foto e tempo de preparo.
             <strong>Resultado esperado:</strong> o item aparece na tela de nova venda, mas ainda sem preço definido.</p>
         </div>
       </div>
-      <div class="d-flex gap-3 mb-3">
+      <div class="passo">
         <div class="passo-numero">7</div>
         <div>
           <strong>Monte a ficha técnica (receita) de cada item</strong>
-          <p class="mb-0 text-muted">Em <a href="{% url 'receitas:receita_list' %}">Fichas Técnicas</a>, vincule cada
+          <p class="text-muted mb-0">Em <a href="{% url 'receitas:receita_list' %}">Fichas Técnicas</a>, vincule cada
             item do cardápio a uma receita com a quantidade de cada ingrediente. <strong>Por quê:</strong> é a ficha
             técnica que faz a baixa automática de estoque a cada venda e calcula o custo real do produto.</p>
         </div>
       </div>
-      <div class="d-flex gap-3 mb-3">
+      <div class="passo">
         <div class="passo-numero">8</div>
         <div>
           <strong>Defina o preço de venda (precificação)</strong>
-          <p class="mb-0 text-muted">Em <a href="{% url 'precificacao:formacaopreco_list' %}">Precificação</a>, o
+          <p class="text-muted mb-0">Em <a href="{% url 'precificacao:formacaopreco_list' %}">Precificação</a>, o
             sistema sugere preço mínimo (sem lucro), ideal (com sua margem) e premium. Defina o
             <strong>preço praticado</strong>. <strong>Resultado esperado:</strong> o item passa a aparecer com preço
             correto na tela de vendas.</p>
         </div>
       </div>
-      <div class="d-flex gap-3 mb-3">
+      <div class="passo">
         <div class="passo-numero">9</div>
         <div>
           <strong>Cadastre clientes (opcional)</strong>
-          <p class="mb-0 text-muted">O sistema ainda <strong>não tem</strong> um módulo de cadastro de clientes — veja
+          <p class="text-muted mb-0">O sistema ainda <strong>não tem</strong> um módulo de cadastro de clientes — veja
             a seção <a href="#clientes">Clientes</a> para mais detalhes. Esta etapa fica para uma versão futura.</p>
         </div>
       </div>
-      <div class="d-flex gap-3 mb-3">
+      <div class="passo">
         <div class="passo-numero">10</div>
         <div>
           <strong>Realize uma venda de teste</strong>
-          <p class="mb-0 text-muted">Em <a href="{% url 'vendas:nova_venda' %}">Vendas → Nova venda</a>, monte um
+          <p class="text-muted mb-0">Em <a href="{% url 'vendas:nova_venda' %}">Vendas → Nova venda</a>, monte um
             carrinho, escolha a forma de pagamento e finalize. <strong>Por quê:</strong> confirma que preço, estoque e
             ficha técnica estão configurados corretamente antes de operar de verdade. Depois, cancele essa venda de
             teste (veja <a href="#vendas">Vendas</a>) e, se quiser, exclua o produto de teste do cardápio.</p>
         </div>
       </div>
-      <div class="d-flex gap-3 mb-3">
+      <div class="passo">
         <div class="passo-numero">11</div>
         <div>
           <strong>Consulte o histórico</strong>
-          <p class="mb-0 text-muted">Em <a href="{% url 'vendas:venda_list' %}">Vendas</a>, use a busca por número e
+          <p class="text-muted mb-0">Em <a href="{% url 'vendas:venda_list' %}">Vendas</a>, use a busca por número e
             o filtro por canal para encontrar vendas específicas.</p>
         </div>
       </div>
-      <div class="d-flex gap-3 mb-3">
+      <div class="passo">
         <div class="passo-numero">12</div>
         <div>
           <strong>Analise os relatórios (Dashboard)</strong>
-          <p class="mb-0 text-muted">Acompanhe faturamento, lucro, produtos mais vendidos e alertas em
+          <p class="text-muted mb-0">Acompanhe faturamento, lucro, produtos mais vendidos e alertas em
             <a href="{% url 'dashboard:index' %}">Dashboard</a> diariamente.</p>
         </div>
       </div>
-      <div class="d-flex gap-3">
+      <div class="passo mb-0">
         <div class="passo-numero">13</div>
         <div>
           <strong>Faça backup dos dados</strong>
-          <p class="mb-0 text-muted">O sistema não tem um botão de backup pela interface — peça ao responsável
+          <p class="text-muted mb-0">O sistema não tem um botão de backup pela interface — peça ao responsável
             técnico para configurar backups periódicos do banco de dados (ex: <code>pg_dump</code> agendado, se o
             ambiente usa PostgreSQL) e da pasta de mídia (fotos de produtos). <strong>Por quê:</strong> é a única
             forma de recuperar o sistema em caso de perda de dados.</p>
@@ -211,11 +219,11 @@
     </section>
 
     <section id="dashboard" class="leiame-secao">
-      <h3><i class="bi bi-speedometer2 me-2"></i>3. Dashboard</h3>
+      <h2>{% icon "speedometer" %}3. Dashboard</h2>
       <p>Tela inicial do sistema (<a href="{% url 'dashboard:index' %}">Dashboard</a>) — visão geral do negócio.</p>
 
-      <h5 class="mt-3">Indicadores (cartões no topo)</h5>
-      <ul>
+      <h3>Indicadores (cartões no topo)</h3>
+      <ul class="stack-sm">
         <li><strong>Faturamento hoje / semana / mês</strong> — soma do valor total das vendas <em>concluídas</em>
           (vendas canceladas nunca entram nesses números).</li>
         <li><strong>Lucro hoje / mensal</strong> — lucro líquido (já descontando custo de ingredientes, taxa da
@@ -223,197 +231,203 @@
         <li><strong>Ticket médio (mês)</strong> — faturamento do mês dividido pela quantidade de vendas do mês.</li>
       </ul>
 
-      <h5 class="mt-3">Gráficos</h5>
-      <ul>
+      <h3>Gráficos</h3>
+      <ul class="stack-sm">
         <li><strong>Faturamento e lucro — últimos 14 dias</strong>: evolução diária, útil para ver tendência.</li>
         <li><strong>Produtos mais vendidos (mês)</strong>: ranking por quantidade de unidades vendidas.</li>
         <li><strong>Vendas por forma de pagamento</strong>: proporção do faturamento por Dinheiro/Pix/cartão etc.</li>
       </ul>
 
-      <h5 class="mt-3">Cartões de alerta</h5>
-      <ul>
+      <h3>Cartões de alerta</h3>
+      <ul class="stack-sm">
         <li><strong>Alertas de estoque</strong>: ingredientes com estoque atual igual ou abaixo do estoque mínimo
           cadastrado. Clique no nome para ir direto à tela de movimentação e repor.</li>
         <li><strong>Alertas de aumento de preço</strong>: produtos de fornecedor cujo preço subiu mais que o
           percentual configurado em Configurações → Parâmetros gerais (padrão de fábrica: 10%).</li>
       </ul>
 
-      <h5 class="mt-3">Interpretando as informações</h5>
-      <div class="alert alert-secondary mb-0">
-        Se um número parecer "zerado" ou menor do que o esperado, confira se as vendas em questão não estão com
+      <h3>Interpretando as informações</h3>
+      <div class="alert alert--info">
+        <div>Se um número parecer "zerado" ou menor do que o esperado, confira se as vendas em questão não estão com
         <strong>status "Cancelada"</strong> — elas são propositalmente excluídas de todos os indicadores e gráficos,
-        pois não representam faturamento real.
+        pois não representam faturamento real.</div>
       </div>
     </section>
 
     <section id="cardapio" class="leiame-secao">
-      <h3><i class="bi bi-menu-button-wide me-2"></i>4. Cardápio</h3>
+      <h2>{% icon "menu-card" %}4. Cardápio</h2>
       <p>Área <a href="{% url 'cardapio:itemcardapio_list' %}">Cardápio</a>: os produtos que aparecem na tela de
         vendas.</p>
 
-      <h5 class="mt-3">Categorias</h5>
+      <h3>Categorias</h3>
       <p>Cadastre categorias (Lanches, Bebidas, Porções...) antes dos produtos, em
         <a href="{% url 'cardapio:categoria_list' %}">Cardápio → Categorias</a>. Elas controlam a ordem de exibição
         e agrupam os itens na tela de vendas.</p>
 
-      <h5 class="mt-3">Cadastrar produtos</h5>
+      <h3>Cadastrar produtos</h3>
       <p>Em <a href="{% url 'cardapio:itemcardapio_create' %}">Cardápio → Novo item</a>, informe nome, categoria,
         descrição, foto, tempo de preparo e tipo (Simples ou Combo). O produto é criado <strong>ativo</strong>, mas
         sem preço até você cadastrar a ficha técnica e a precificação.</p>
 
-      <h5 class="mt-3">Editar</h5>
+      <h3>Editar</h3>
       <p>Abra o item e clique em "Editar". Alterações não afetam vendas já registradas (elas guardam o preço e o
         custo do momento da venda, congelados).</p>
 
-      <h5 class="mt-3">Excluir</h5>
-      <div class="alert alert-warning">
-        <i class="bi bi-exclamation-triangle me-1"></i><strong>Ação irreversível.</strong> Um item só pode ser
+      <h3>Excluir</h3>
+      <div class="alert alert--warning">
+        {% icon "exclamation-triangle" %}
+        <div><strong>Ação irreversível.</strong> Um item só pode ser
         excluído se <strong>nunca esteve em uma venda concluída</strong>. Se ele já tiver vendas concluídas, a
         exclusão é bloqueada — use "Inativar" para tirá-lo da tela de vendas sem perder o histórico. Se todas as
         vendas em que ele aparece já estiverem <strong>canceladas</strong>, a exclusão é permitida normalmente: o
-        nome do produto fica congelado no histórico dessas vendas para consulta futura.
+        nome do produto fica congelado no histórico dessas vendas para consulta futura.</div>
       </div>
 
-      <h5 class="mt-3">Disponibilidade (ativo/inativo)</h5>
+      <h3>Disponibilidade (ativo/inativo)</h3>
       <p>O botão "Inativar"/"Ativar" alterna a visibilidade do item na tela de vendas sem apagar nada — é a forma
         recomendada de "remover" um produto do cardápio no dia a dia (ex: item sazonal, fora de estoque).</p>
 
-      <h5 class="mt-3">Preços</h5>
+      <h3>Preços</h3>
       <p>O preço exibido no cardápio vem da <a href="{% url 'precificacao:formacaopreco_list' %}">Precificação</a>
         (campo "Preço praticado"). Sem uma ficha técnica associada, o sistema não calcula custo e o item aparece
         como R$ 0,00 na tela de vendas.</p>
 
-      <h5 class="mt-3">Imagens</h5>
+      <h3>Imagens</h3>
       <p>Upload de foto é opcional, no formulário do item. Limite de 5MB por imagem.</p>
 
-      <h5 class="mt-3">Observações</h5>
+      <h3>Observações</h3>
       <p>Ao montar uma venda, é possível adicionar uma observação por item (ex: "sem cebola") na tela de nova venda —
         ela fica registrada naquele item da venda, sem alterar o cadastro do produto.</p>
     </section>
 
     <section id="estoque" class="leiame-secao">
-      <h3><i class="bi bi-box-seam me-2"></i>5. Estoque</h3>
+      <h2>{% icon "box-seam" %}5. Estoque</h2>
       <p>Área <a href="{% url 'estoque:ingrediente_list' %}">Estoque</a>: controle de ingredientes (matéria-prima),
         não dos produtos do cardápio.</p>
 
-      <h5 class="mt-3">Entrada de produtos</h5>
+      <h3>Entrada de produtos</h3>
       <p>Abra o ingrediente e clique em "Movimentar estoque", escolha o tipo <strong>Entrada</strong> e informe a
         quantidade (ex: chegada de mercadoria do fornecedor). Você também pode registrar lote e validade.</p>
 
-      <h5 class="mt-3">Saída</h5>
+      <h3>Saída</h3>
       <p>Na maioria dos casos a saída acontece <strong>automaticamente</strong> quando uma venda é registrada (baixa
         conforme a ficha técnica do produto vendido). Saídas manuais servem para casos fora da venda normal.</p>
 
-      <h5 class="mt-3">Movimentações</h5>
+      <h3>Movimentações</h3>
       <p>Tipos disponíveis: <strong>Entrada</strong>, <strong>Saída</strong>, <strong>Ajuste</strong> (correção para
         mais), <strong>Perda</strong>, <strong>Quebra</strong> e <strong>Inventário</strong> (define o saldo
         absoluto, útil após uma contagem física).</p>
-      <div class="alert alert-warning mb-0">
-        <i class="bi bi-exclamation-triangle me-1"></i><strong>Movimentações são imutáveis</strong> — uma vez
+      <div class="alert alert--warning">
+        {% icon "exclamation-triangle" %}
+        <div><strong>Movimentações são imutáveis</strong> — uma vez
         registrada, uma movimentação não pode ser editada ou excluída. Se você errou uma quantidade, registre uma
-        nova movimentação de ajuste para corrigir o saldo, não tente "desfazer" a anterior.
+        nova movimentação de ajuste para corrigir o saldo, não tente "desfazer" a anterior.</div>
       </div>
 
-      <h5 class="mt-3">Estoque mínimo e ideal</h5>
+      <h3>Estoque mínimo e ideal</h3>
       <p>Cadastrados no formulário do ingrediente. O <strong>estoque mínimo</strong> dispara o alerta no Dashboard
         quando o saldo atual fica igual ou abaixo dele. O <strong>estoque ideal</strong> é usado apenas para calcular
         o percentual de estoque exibido na tela do ingrediente (não gera alerta).</p>
 
-      <h5 class="mt-3">Alertas</h5>
+      <h3>Alertas</h3>
       <p>Veja todos de uma vez em <a href="{% url 'estoque:alertas' %}">Estoque → Alertas</a>, ou no cartão
         "Alertas de estoque" do Dashboard.</p>
-      <div class="alert alert-info mb-0">
-        <i class="bi bi-lightbulb me-1"></i> Por decisão de negócio, uma venda <strong>nunca é bloqueada</strong> por
+      <div class="alert alert--info">
+        {% icon "lightbulb" %}
+        <div>Por decisão de negócio, uma venda <strong>nunca é bloqueada</strong> por
         falta de estoque — o saldo pode ficar negativo pela venda, e isso só aparece como alerta depois. Já
         movimentações manuais (ajuste/saída/perda/quebra) <strong>são bloqueadas</strong> se deixariam o saldo
-        negativo.
+        negativo.</div>
       </div>
     </section>
 
     <section id="vendas" class="leiame-secao">
-      <h3><i class="bi bi-cart-check me-2"></i>6. Vendas</h3>
+      <h2>{% icon "cart-check" %}6. Vendas</h2>
 
-      <h5 class="mt-3">Criar uma venda</h5>
+      <h3>Criar uma venda</h3>
       <p>Acesse <a href="{% url 'vendas:nova_venda' %}">Vendas → Nova venda</a>. A tela mostra os itens ativos do
         cardápio; clique para adicionar ao carrinho.</p>
 
-      <h5 class="mt-3">Adicionar itens</h5>
+      <h3>Adicionar itens</h3>
       <p>Clique no produto para adicionar; ajuste a quantidade e, se quiser, escreva uma observação (ex: "sem
         cebola") por item do carrinho.</p>
 
-      <h5 class="mt-3">Descontos</h5>
+      <h3>Descontos</h3>
       <p>Informe o valor de desconto (em R$) antes de finalizar. O desconto não pode deixar o total da venda
         negativo — o sistema bloqueia esse caso com uma mensagem clara.</p>
 
-      <h5 class="mt-3">Formas de pagamento</h5>
+      <h3>Formas de pagamento</h3>
       <p>Escolha entre as formas de pagamento ativas (cadastradas em
         <a href="{% url 'configuracoes:forma_pagamento_list' %}">Configurações</a>). A taxa de cada forma entra no
         cálculo do lucro líquido da venda.</p>
 
-      <h5 class="mt-3">Finalizar venda</h5>
+      <h3>Finalizar venda</h3>
       <p>Ao confirmar, o sistema: registra a venda com um número único, dá baixa no estoque de cada ingrediente
         conforme a ficha técnica dos itens vendidos, e calcula subtotal, desconto, total, custo, comissão e lucro.</p>
 
-      <h5 class="mt-3">Cancelar venda</h5>
+      <h3>Cancelar venda</h3>
       <p>Na tela de detalhe da venda (<a href="{% url 'vendas:venda_list' %}">Vendas</a> → abrir a venda), clique em
         "Cancelar venda". O sistema <strong>estorna automaticamente</strong> o estoque baixado por ela (devolve os
         ingredientes) e marca a venda como <strong>Cancelada</strong>. Uma venda só pode ser cancelada uma vez.</p>
 
-      <h5 class="mt-3">Diferença entre cancelar e excluir</h5>
-      <div class="alert alert-warning mb-0">
-        <i class="bi bi-exclamation-triangle me-1"></i>
+      <h3>Diferença entre cancelar e excluir</h3>
+      <div class="alert alert--warning">
+        {% icon "exclamation-triangle" %}
+        <div>
         <strong>Vendas nunca são excluídas do sistema</strong> — nem mesmo por um superusuário. Isso é proposital:
         vendas são o histórico financeiro real do negócio (para fins fiscais e de auditoria). "Cancelar" é a única
         operação disponível: ela estorna o estoque e retira a venda dos indicadores financeiros (faturamento, lucro,
-        gráficos), mas o registro continua visível no histórico com o status "Cancelada" para consulta.
+        gráficos), mas o registro continua visível no histórico com o status "Cancelada" para consulta.</div>
       </div>
     </section>
 
     <section id="historico" class="leiame-secao">
-      <h3><i class="bi bi-clock-history me-2"></i>7. Histórico</h3>
+      <h2>{% icon "clock-history" %}7. Histórico</h2>
       <p>A lista de <a href="{% url 'vendas:venda_list' %}">Vendas</a> funciona como o histórico completo — inclui
         vendas concluídas e canceladas.</p>
 
-      <h5 class="mt-3">Pesquisa</h5>
+      <h3>Pesquisa</h3>
       <p>Use o campo de busca para filtrar pelo <strong>número da venda</strong>.</p>
 
-      <h5 class="mt-3">Filtros</h5>
+      <h3>Filtros</h3>
       <p>Filtre por <strong>canal</strong> (Balcão, Delivery próprio, iFood, WhatsApp).</p>
 
-      <h5 class="mt-3">Consulta de vendas</h5>
+      <h3>Consulta de vendas</h3>
       <p>Clique em uma venda na lista para ver o detalhe completo: itens vendidos, quantidade, preço unitário,
         subtotal, forma de pagamento, canal e totais (total, custo, comissão, lucro líquido).</p>
-      <div class="alert alert-secondary mb-0">
-        Se um item de uma venda cancelada aparecer com a etiqueta <span class="badge bg-secondary">excluído do
+      <div class="alert alert--info">
+        <div>Se um item de uma venda cancelada aparecer com a etiqueta <span class="badge badge--neutral">excluído do
         cardápio</span>, significa que o produto foi removido do cardápio depois que aquela venda foi cancelada — os
-        valores da venda continuam intactos, apenas o produto não existe mais para novas vendas.
+        valores da venda continuam intactos, apenas o produto não existe mais para novas vendas.</div>
       </div>
 
-      <h5 class="mt-3">Relatórios</h5>
+      <h3>Relatórios</h3>
       <p>Os relatórios consolidados (faturamento, lucro, produtos mais vendidos, formas de pagamento) ficam no
         <a href="{% url 'dashboard:index' %}">Dashboard</a> — veja a seção <a href="#dashboard">Dashboard</a>.</p>
     </section>
 
     <section id="clientes" class="leiame-secao">
-      <h3><i class="bi bi-people me-2"></i>8. Clientes</h3>
-      <div class="alert alert-secondary mb-0">
-        <i class="bi bi-info-circle me-1"></i>
+      <h2>{% icon "people" %}8. Clientes</h2>
+      <div class="alert alert--info">
+        {% icon "info-circle" %}
+        <div>
         <strong>Ainda não disponível nesta versão do sistema.</strong> Hoje as vendas não têm cadastro de cliente
         vinculado (são registradas por canal — Balcão, Delivery, iFood, WhatsApp — não por cliente). Não existem,
         portanto, telas de cadastro/edição de cliente, histórico de compras por cliente nem controle de
         inadimplência. Se isso for necessário para a sua operação, é um módulo a ser planejado e desenvolvido
-        futuramente.
+        futuramente.</div>
       </div>
     </section>
 
     <section id="financeiro" class="leiame-secao">
-      <h3><i class="bi bi-cash-stack me-2"></i>9. Financeiro</h3>
-      <div class="alert alert-secondary">
-        <i class="bi bi-info-circle me-1"></i>
+      <h2>{% icon "cash-stack" %}9. Financeiro</h2>
+      <div class="alert alert--info">
+        {% icon "info-circle" %}
+        <div>
         <strong>Não existe um módulo "Financeiro" dedicado</strong> (sem tela de despesas gerais, contas a pagar ou
-        fluxo de caixa completo). O que o sistema já oferece hoje, espalhado em outras áreas, é:
+        fluxo de caixa completo). O que o sistema já oferece hoje, espalhado em outras áreas, é:</div>
       </div>
-      <ul>
+      <ul class="stack-sm mt-3">
         <li><strong>Receitas (entradas de dinheiro)</strong>: faturamento por dia/semana/mês no
           <a href="{% url 'dashboard:index' %}">Dashboard</a>, com o detalhamento de cada venda no
           <a href="{% url 'vendas:venda_list' %}">Histórico de vendas</a>.</li>
@@ -428,18 +442,18 @@
           verde/amarelo/vermelho de saúde da margem) e metas de faturamento diária/mensal (configuráveis em
           Parâmetros gerais, ainda sem um painel de acompanhamento dedicado).</li>
       </ul>
-      <p class="mb-0"><strong>Não incluído:</strong> despesas fixas do negócio (aluguel, salários, contas), contas a
+      <p class="mb-0 mt-3"><strong>Não incluído:</strong> despesas fixas do negócio (aluguel, salários, contas), contas a
         pagar/receber e fluxo de caixa consolidado. Para isso, use uma planilha ou sistema financeiro à parte até que
         esse módulo seja desenvolvido.</p>
     </section>
 
     <section id="configuracoes" class="leiame-secao">
-      <h3><i class="bi bi-gear me-2"></i>10. Configurações</h3>
+      <h2>{% icon "gear" %}10. Configurações</h2>
       <p>Acesse em <a href="{% url 'configuracoes:home' %}">Configurações</a>.</p>
 
-      <h5 class="mt-3">Parâmetros gerais</h5>
+      <h3>Parâmetros gerais</h3>
       <p>Em <a href="{% url 'configuracoes:parametros_gerais' %}">Parâmetros gerais</a>:</p>
-      <ul>
+      <ul class="stack-sm">
         <li><strong>Custo de embalagem padrão</strong>: usado nas fichas técnicas que não têm um custo de embalagem
           específico definido.</li>
         <li><strong>Gás/energia e Mão de obra (% sobre custo de ingredientes)</strong>: rateiam custos indiretos em
@@ -451,13 +465,14 @@
           fornecedor no Dashboard.</li>
         <li><strong>Meta de faturamento diária/mensal</strong>: referência informativa para acompanhamento.</li>
       </ul>
-      <div class="alert alert-warning mb-0">
-        <i class="bi bi-exclamation-triangle me-1"></i> Alterar esses percentuais <strong>não recalcula
+      <div class="alert alert--warning mt-3">
+        {% icon "exclamation-triangle" %}
+        <div>Alterar esses percentuais <strong>não recalcula
         automaticamente</strong> preços já salvos — abra cada item em Precificação e clique em "Recalcular" para
-        aplicar os novos parâmetros.
+        aplicar os novos parâmetros.</div>
       </div>
 
-      <h5 class="mt-3">Formas de pagamento</h5>
+      <h3>Formas de pagamento</h3>
       <p>Cadastre/edite em <a href="{% url 'configuracoes:forma_pagamento_list' %}">Configurações → Formas de
         pagamento</a>: nome, taxa/comissão (%) e prazo de recebimento (dias). Use "Inativar" em vez de excluir uma
         forma de pagamento já usada em vendas — a exclusão é bloqueada nesse caso pelo mesmo motivo explicado na
@@ -465,123 +480,100 @@
     </section>
 
     <section id="faq" class="leiame-secao">
-      <h3><i class="bi bi-question-circle me-2"></i>11. Perguntas Frequentes (FAQ)</h3>
+      <h2>{% icon "question-circle" %}11. Perguntas Frequentes (FAQ)</h2>
 
-      <div class="accordion" id="faqAccordion">
-
-        <div class="accordion-item">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-              Como cadastrar um produto?
-            </button>
-          </h2>
-          <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-              Vá em <a href="{% url 'cardapio:itemcardapio_create' %}">Cardápio → Novo item</a>, preencha nome e
-              categoria e salve. Depois monte a <a href="{% url 'receitas:receita_create' %}">ficha técnica</a> e
-              defina o preço em <a href="{% url 'precificacao:formacaopreco_list' %}">Precificação</a> — sem isso o
-              produto aparece com preço R$ 0,00 na tela de vendas.
-            </div>
+      <div>
+        <div class="accordion__item" data-accordion-item>
+          <button type="button" class="accordion__trigger" data-accordion-trigger>
+            <span>Como cadastrar um produto?</span>
+            {% icon "chevron-down" %}
+          </button>
+          <div class="accordion__panel" data-accordion-panel hidden>
+            Vá em <a href="{% url 'cardapio:itemcardapio_create' %}">Cardápio → Novo item</a>, preencha nome e
+            categoria e salve. Depois monte a <a href="{% url 'receitas:receita_create' %}">ficha técnica</a> e
+            defina o preço em <a href="{% url 'precificacao:formacaopreco_list' %}">Precificação</a> — sem isso o
+            produto aparece com preço R$ 0,00 na tela de vendas.
           </div>
         </div>
 
-        <div class="accordion-item">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-              Como cancelar uma venda?
-            </button>
-          </h2>
-          <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-              Abra a venda em <a href="{% url 'vendas:venda_list' %}">Vendas</a> e clique em "Cancelar venda". O
-              estoque baixado por ela é devolvido automaticamente. Essa ação não pode ser desfeita, mas também não
-              apaga a venda — ela continua no histórico com status "Cancelada".
-            </div>
+        <div class="accordion__item" data-accordion-item>
+          <button type="button" class="accordion__trigger" data-accordion-trigger>
+            <span>Como cancelar uma venda?</span>
+            {% icon "chevron-down" %}
+          </button>
+          <div class="accordion__panel" data-accordion-panel hidden>
+            Abra a venda em <a href="{% url 'vendas:venda_list' %}">Vendas</a> e clique em "Cancelar venda". O
+            estoque baixado por ela é devolvido automaticamente. Essa ação não pode ser desfeita, mas também não
+            apaga a venda — ela continua no histórico com status "Cancelada".
           </div>
         </div>
 
-        <div class="accordion-item">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-              Como alterar um preço?
-            </button>
-          </h2>
-          <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-              Em <a href="{% url 'precificacao:formacaopreco_list' %}">Precificação</a>, abra o item e edite o
-              "Preço praticado", ou ajuste a margem de lucro desejada e clique em "Recalcular" para que o sistema
-              sugira um novo valor com base no custo atual da ficha técnica.
-            </div>
+        <div class="accordion__item" data-accordion-item>
+          <button type="button" class="accordion__trigger" data-accordion-trigger>
+            <span>Como alterar um preço?</span>
+            {% icon "chevron-down" %}
+          </button>
+          <div class="accordion__panel" data-accordion-panel hidden>
+            Em <a href="{% url 'precificacao:formacaopreco_list' %}">Precificação</a>, abra o item e edite o
+            "Preço praticado", ou ajuste a margem de lucro desejada e clique em "Recalcular" para que o sistema
+            sugira um novo valor com base no custo atual da ficha técnica.
           </div>
         </div>
 
-        <div class="accordion-item">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
-              Como corrigir um estoque?
-            </button>
-          </h2>
-          <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-              Abra o ingrediente em <a href="{% url 'estoque:ingrediente_list' %}">Estoque</a> e clique em
-              "Movimentar estoque". Use <strong>Ajuste</strong> para corrigir para mais (com motivo), ou
-              <strong>Inventário</strong> para definir o saldo exato após uma contagem física. Movimentações são
-              permanentes — não é possível editar ou excluir uma já registrada, apenas lançar uma nova para corrigir.
-            </div>
+        <div class="accordion__item" data-accordion-item>
+          <button type="button" class="accordion__trigger" data-accordion-trigger>
+            <span>Como corrigir um estoque?</span>
+            {% icon "chevron-down" %}
+          </button>
+          <div class="accordion__panel" data-accordion-panel hidden>
+            Abra o ingrediente em <a href="{% url 'estoque:ingrediente_list' %}">Estoque</a> e clique em
+            "Movimentar estoque". Use <strong>Ajuste</strong> para corrigir para mais (com motivo), ou
+            <strong>Inventário</strong> para definir o saldo exato após uma contagem física. Movimentações são
+            permanentes — não é possível editar ou excluir uma já registrada, apenas lançar uma nova para corrigir.
           </div>
         </div>
 
-        <div class="accordion-item">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
-              Como recuperar informações que eu apaguei por engano?
-            </button>
-          </h2>
-          <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-              O sistema não tem uma "lixeira" pela interface. Para vendas, isso nunca é um problema: elas não podem
-              ser excluídas, só canceladas. Para cadastros (ingrediente, item do cardápio, fornecedor...), a exclusão
-              simples é bloqueada automaticamente se houver histórico vinculado — nesses casos, prefira sempre
-              "Inativar" a excluir. Se algo foi mesmo excluído por engano, a única forma de recuperar é restaurando
-              um backup do banco de dados feito antes da exclusão — por isso backups periódicos são essenciais (veja
-              o passo 13 do <a href="#guia-passo-a-passo">Guia passo a passo</a>).
-            </div>
+        <div class="accordion__item" data-accordion-item>
+          <button type="button" class="accordion__trigger" data-accordion-trigger>
+            <span>Como recuperar informações que eu apaguei por engano?</span>
+            {% icon "chevron-down" %}
+          </button>
+          <div class="accordion__panel" data-accordion-panel hidden>
+            O sistema não tem uma "lixeira" pela interface. Para vendas, isso nunca é um problema: elas não podem
+            ser excluídas, só canceladas. Para cadastros (ingrediente, item do cardápio, fornecedor...), a exclusão
+            simples é bloqueada automaticamente se houver histórico vinculado — nesses casos, prefira sempre
+            "Inativar" a excluir. Se algo foi mesmo excluído por engano, a única forma de recuperar é restaurando
+            um backup do banco de dados feito antes da exclusão — por isso backups periódicos são essenciais (veja
+            o passo 13 do <a href="#guia-passo-a-passo">Guia passo a passo</a>).
           </div>
         </div>
 
-        <div class="accordion-item">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
-              O que fazer quando ocorrer um erro?
-            </button>
-          </h2>
-          <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-              Leia a mensagem exibida em vermelho no topo da página — o sistema tenta sempre explicar o motivo exato
-              do bloqueio e o que fazer (ex: "cancele a venda X antes"). Se aparecer uma tela de erro genérica (404 ou
-              500), anote o que você estava fazendo e informe o responsável técnico. Nenhuma ação bloqueada por
-              validação chega a alterar dados — é seguro tentar novamente depois de corrigir o apontado na mensagem.
-            </div>
+        <div class="accordion__item" data-accordion-item>
+          <button type="button" class="accordion__trigger" data-accordion-trigger>
+            <span>O que fazer quando ocorrer um erro?</span>
+            {% icon "chevron-down" %}
+          </button>
+          <div class="accordion__panel" data-accordion-panel hidden>
+            Leia a mensagem exibida em vermelho no topo da página — o sistema tenta sempre explicar o motivo exato
+            do bloqueio e o que fazer (ex: "cancele a venda X antes"). Se aparecer uma tela de erro genérica (404 ou
+            500), anote o que você estava fazendo e informe o responsável técnico. Nenhuma ação bloqueada por
+            validação chega a alterar dados — é seguro tentar novamente depois de corrigir o apontado na mensagem.
           </div>
         </div>
 
-        <div class="accordion-item">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq7">
-              Por que não consigo excluir um item do cardápio, ingrediente ou fornecedor?
-            </button>
-          </h2>
-          <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">
-              Porque ele está vinculado a um registro que faz parte do histórico do sistema (uma venda concluída, uma
-              movimentação de estoque etc.). A mensagem de erro sempre indica qual registro está causando o bloqueio.
-              Use "Inativar" para esses casos. Um superusuário tem, adicionalmente, a opção avançada "Excluir em
-              cascata" na tela de confirmação de exclusão — ela remove o registro e tudo que depende dele, exceto
-              vendas/itens de venda concluídos, que nunca são apagados automaticamente.
-            </div>
+        <div class="accordion__item" data-accordion-item>
+          <button type="button" class="accordion__trigger" data-accordion-trigger>
+            <span>Por que não consigo excluir um item do cardápio, ingrediente ou fornecedor?</span>
+            {% icon "chevron-down" %}
+          </button>
+          <div class="accordion__panel" data-accordion-panel hidden>
+            Porque ele está vinculado a um registro que faz parte do histórico do sistema (uma venda concluída, uma
+            movimentação de estoque etc.). A mensagem de erro sempre indica qual registro está causando o bloqueio.
+            Use "Inativar" para esses casos. Um superusuário tem, adicionalmente, a opção avançada "Excluir em
+            cascata" na tela de confirmação de exclusão — ela remove o registro e tudo que depende dele, exceto
+            vendas/itens de venda concluídos, que nunca são apagados automaticamente.
           </div>
         </div>
-
       </div>
     </section>
 

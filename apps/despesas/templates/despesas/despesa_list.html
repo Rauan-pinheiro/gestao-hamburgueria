@@ -1,140 +1,140 @@
 {% extends 'base.html' %}
+{% load ds_icons %}
 {% block title %}Despesas{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-  <div>
-    <h4 class="mb-1"><i class="bi bi-wallet2 me-2"></i>Despesas e Dívidas</h4>
-    <small class="text-muted">Contas fixas e variáveis da empresa: aluguel, fornecedores, salários e outras obrigações.</small>
+<div class="page-header">
+  <div class="page-header__title">
+    {% icon "wallet2" %}
+    <div>
+      <h1 style="font-size: var(--text-xl);">Despesas e Dívidas</h1>
+      <p class="text-muted text-sm">Contas fixas e variáveis da empresa: aluguel, fornecedores, salários e outras obrigações.</p>
+    </div>
   </div>
-  <div>
-    <a href="{% url 'despesas:relatorio' %}" class="btn btn-outline-secondary"><i class="bi bi-bar-chart me-1"></i>Relatórios</a>
-    <a href="{% url 'despesas:despesa_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Nova Despesa</a>
+  <div class="page-header__actions">
+    <a href="{% url 'despesas:relatorio' %}" class="btn btn--outline">{% icon "bar-chart" class="icon-sm" %}Relatórios</a>
+    <a href="{% url 'despesas:despesa_create' %}" class="btn btn--primary">{% icon "plus-lg" class="icon-sm" %}Nova Despesa</a>
   </div>
 </div>
 
-<div class="row g-3 mb-3">
-  <div class="col-md-3">
-    <div class="card stat-card h-100">
-      <div class="stat-icon mb-2" style="background:rgba(13,110,253,.12); color:#0d6efd;"><i class="bi bi-calendar3"></i></div>
-      <div class="stat-label">Total do mês</div>
-      <div class="stat-value">R$ {{ total_mes|floatformat:2 }}</div>
-    </div>
+<div class="stat-grid mb-4">
+  <div class="card stat-card">
+    <div class="stat-card__icon tone-info">{% icon "calendar" %}</div>
+    <div class="stat-card__label">Total do mês</div>
+    <div class="stat-card__value">R$ {{ total_mes|floatformat:2 }}</div>
   </div>
-  <div class="col-md-3">
-    <div class="card stat-card h-100">
-      <div class="stat-icon mb-2" style="background:rgba(47,158,68,.12); color:var(--success);"><i class="bi bi-check-circle"></i></div>
-      <div class="stat-label">Já pago (mês)</div>
-      <div class="stat-value">R$ {{ total_pago_mes|floatformat:2 }}</div>
-    </div>
+  <div class="card stat-card">
+    <div class="stat-card__icon tone-success">{% icon "check-circle" %}</div>
+    <div class="stat-card__label">Já pago (mês)</div>
+    <div class="stat-card__value">R$ {{ total_pago_mes|floatformat:2 }}</div>
   </div>
-  <div class="col-md-3">
-    <div class="card stat-card h-100">
-      <div class="stat-icon mb-2" style="background:rgba(240,140,0,.12); color:var(--warning);"><i class="bi bi-hourglass-split"></i></div>
-      <div class="stat-label">Pendente (mês)</div>
-      <div class="stat-value">R$ {{ total_pendente_mes|floatformat:2 }}</div>
-    </div>
+  <div class="card stat-card">
+    <div class="stat-card__icon tone-warning">{% icon "hourglass" %}</div>
+    <div class="stat-card__label">Pendente (mês)</div>
+    <div class="stat-card__value">R$ {{ total_pendente_mes|floatformat:2 }}</div>
   </div>
-  <div class="col-md-3">
-    <div class="card stat-card h-100">
-      <div class="stat-icon mb-2" style="background:rgba(224,49,49,.12); color:var(--danger);"><i class="bi bi-exclamation-triangle"></i></div>
-      <div class="stat-label">Em atraso ({{ qtd_atrasadas }})</div>
-      <div class="stat-value">R$ {{ total_atrasado|floatformat:2 }}</div>
-    </div>
+  <div class="card stat-card">
+    <div class="stat-card__icon tone-danger">{% icon "exclamation-triangle" %}</div>
+    <div class="stat-card__label">Em atraso ({{ qtd_atrasadas }})</div>
+    <div class="stat-card__value">R$ {{ total_atrasado|floatformat:2 }}</div>
   </div>
 </div>
 
 {% if proximos_vencimentos %}
-<div class="card mb-3">
-  <div class="card-header"><strong><i class="bi bi-bell me-1"></i>Próximos vencimentos (7 dias)</strong></div>
-  <ul class="list-group list-group-flush">
+<div class="card mb-4">
+  <div class="card__header"><strong class="flex items-center gap-2">{% icon "bell" class="icon-sm" %}Próximos vencimentos (7 dias)</strong></div>
+  <div class="list">
     {% for d in proximos_vencimentos %}
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-      <span><a href="{% url 'despesas:despesa_update' d.pk %}">{{ d.descricao }}</a> <span class="text-muted small">({{ d.get_categoria_display }})</span></span>
-      <span class="badge badge-amarelo">Vence em {{ d.data_vencimento|date:'d/m/Y' }} · R$ {{ d.valor|floatformat:2 }}</span>
-    </li>
+    <div class="list__item">
+      <span><a href="{% url 'despesas:despesa_update' d.pk %}">{{ d.descricao }}</a> <span class="text-muted text-sm">({{ d.get_categoria_display }})</span></span>
+      <span class="badge badge--warning">Vence em {{ d.data_vencimento|date:'d/m/Y' }} · R$ {{ d.valor|floatformat:2 }}</span>
+    </div>
     {% endfor %}
-  </ul>
+  </div>
 </div>
 {% endif %}
 
-<div class="card mb-3">
-  <div class="card-body">
-    <form method="get" class="row g-2">
-      <div class="col-md-3">
-        <input type="text" name="q" class="form-control" placeholder="Buscar por descrição..." value="{{ request.GET.q }}">
+<div class="card mb-4">
+  <div class="card__body">
+    <form method="get" class="filter-bar">
+      <div class="field">
+        <input type="text" name="q" class="field__control" placeholder="Buscar por descrição..." value="{{ request.GET.q }}">
       </div>
-      <div class="col-md-2">
-        <select name="categoria" class="form-select">
+      <div class="field">
+        <select name="categoria" class="field__control">
           <option value="">Todas as categorias</option>
           {% for valor, rotulo in categorias %}
           <option value="{{ valor }}" {% if request.GET.categoria == valor %}selected{% endif %}>{{ rotulo }}</option>
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-2">
-        <select name="status" class="form-select">
+      <div class="field">
+        <select name="status" class="field__control">
           <option value="">Todos os status</option>
           <option value="PENDENTE" {% if request.GET.status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
           <option value="PAGO" {% if request.GET.status == 'PAGO' %}selected{% endif %}>Pago</option>
           <option value="ATRASADO" {% if request.GET.status == 'ATRASADO' %}selected{% endif %}>Atrasado</option>
         </select>
       </div>
-      <div class="col-md-2">
-        <input type="date" name="vencimento_inicio" class="form-control" value="{{ request.GET.vencimento_inicio }}" title="Vencimento a partir de">
+      <div class="field">
+        <input type="date" name="vencimento_inicio" class="field__control" value="{{ request.GET.vencimento_inicio }}" title="Vencimento a partir de">
       </div>
-      <div class="col-md-2">
-        <input type="date" name="vencimento_fim" class="form-control" value="{{ request.GET.vencimento_fim }}" title="Vencimento até">
+      <div class="field">
+        <input type="date" name="vencimento_fim" class="field__control" value="{{ request.GET.vencimento_fim }}" title="Vencimento até">
       </div>
-      <div class="col-md-1">
-        <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-search"></i></button>
-      </div>
+      <button type="submit" class="btn btn--outline">{% icon "search" class="icon-sm" %}Filtrar</button>
     </form>
   </div>
 </div>
 
 <div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
+  <div class="table-wrap">
+    <table class="table">
       <thead><tr><th>Descrição</th><th>Categoria</th><th>Credor</th><th>Vencimento</th><th>Valor</th><th>Status</th><th></th></tr></thead>
       <tbody>
         {% for d in despesas %}
         <tr>
-          <td><a href="{% url 'despesas:despesa_update' d.pk %}">{{ d.descricao }}</a>{% if d.recorrente %} <i class="bi bi-arrow-repeat text-muted" title="Despesa recorrente ({{ d.get_periodicidade_recorrencia_display }})"></i>{% endif %}</td>
+          <td>
+            <a href="{% url 'despesas:despesa_update' d.pk %}">{{ d.descricao }}</a>
+            {% if d.recorrente %}{% icon "arrow-repeat" class="icon-xs text-muted" %}{% endif %}
+          </td>
           <td>{{ d.get_categoria_display }}</td>
           <td>{{ d.credor|default:'—' }}</td>
           <td>{{ d.data_vencimento|date:'d/m/Y' }}</td>
           <td>R$ {{ d.valor|floatformat:2 }}</td>
           <td>
             {% if d.status_efetivo == 'ATRASADO' %}
-              <span class="badge badge-vermelho"><i class="bi bi-exclamation-triangle me-1"></i>Atrasado</span>
+              <span class="badge badge--danger">{% icon "exclamation-triangle" class="icon-xs" %}Atrasado</span>
             {% elif d.status == 'PAGO' %}
-              <span class="badge badge-verde">Pago</span>
+              <span class="badge badge--success">Pago</span>
             {% else %}
-              <span class="badge badge-amarelo">Pendente</span>
+              <span class="badge badge--warning">Pendente</span>
             {% endif %}
           </td>
-          <td class="text-end">
+          <td class="table__actions">
             {% if d.status == 'PENDENTE' %}
-            <form method="post" action="{% url 'despesas:despesa_marcar_paga' d.pk %}" class="d-inline">
+            <form method="post" action="{% url 'despesas:despesa_marcar_paga' d.pk %}" class="inline-block">
               {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-outline-success" title="Marcar como paga"><i class="bi bi-check-lg"></i></button>
+              <button type="submit" class="btn btn-icon btn-icon--sm" data-tooltip="Marcar como paga">{% icon "check" class="icon-sm" %}</button>
             </form>
             {% endif %}
             {% if d.recorrente %}
-            <form method="post" action="{% url 'despesas:despesa_gerar_proxima' d.pk %}" class="d-inline">
+            <form method="post" action="{% url 'despesas:despesa_gerar_proxima' d.pk %}" class="inline-block">
               {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-outline-secondary" title="Gerar próxima ocorrência"><i class="bi bi-arrow-repeat"></i></button>
+              <button type="submit" class="btn btn-icon btn-icon--sm" data-tooltip="Gerar próxima ocorrência">{% icon "arrow-repeat" class="icon-sm" %}</button>
             </form>
             {% endif %}
-            <a href="{% url 'despesas:despesa_update' d.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
-            <a href="{% url 'despesas:despesa_delete' d.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></a>
+            <a href="{% url 'despesas:despesa_update' d.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Editar">{% icon "pencil" class="icon-sm" %}</a>
+            <a href="{% url 'despesas:despesa_delete' d.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Excluir">{% icon "trash" class="icon-sm" %}</a>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="text-center py-5">
-          <i class="bi bi-wallet2 fs-1 text-muted d-block mb-2"></i>
-          <p class="text-muted mb-2">Nenhuma despesa cadastrada ainda.<br>Cadastre aluguel, fornecedores, salários e outras contas para acompanhar seu fluxo de pagamentos.</p>
-          <a href="{% url 'despesas:despesa_create' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i>Cadastrar primeira despesa</a>
+        <tr><td colspan="7">
+          <div class="empty-state">
+            {% icon "wallet2" %}
+            <span class="empty-state__title">Nenhuma despesa cadastrada ainda.</span>
+            <span class="empty-state__subtitle">Cadastre aluguel, fornecedores, salários e outras contas para acompanhar seu fluxo de pagamentos.</span>
+            <a href="{% url 'despesas:despesa_create' %}" class="btn btn--primary btn--sm mt-3">{% icon "plus-lg" class="icon-sm" %}Cadastrar primeira despesa</a>
+          </div>
         </td></tr>
         {% endfor %}
       </tbody>
