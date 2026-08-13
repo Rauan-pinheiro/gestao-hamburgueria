@@ -7,22 +7,46 @@
   <div class="page-header__title">
     {% icon "cart-check" %}
     <h1 style="font-size: var(--text-xl);">
-      Venda {{ venda.numero }}
-      {% if venda.status == 'cancelada' %} <span class="badge badge--danger">Cancelada</span>{% endif %}
+      {% if venda.esta_aberta %}Pedido {{ venda.numero }}{% else %}Venda {{ venda.numero }}{% endif %}
+      {% if venda.esta_aberta %}<span class="badge badge--warning">Aberto</span>
+      {% elif venda.esta_cancelada %}<span class="badge badge--danger">Cancelada</span>
+      {% else %}<span class="badge badge--success">Concluída</span>{% endif %}
     </h1>
   </div>
   <div class="page-header__actions">
-    <button type="button" class="btn btn--outline-primary" id="btn-reimprimir-pedido">{% icon "receipt" class="icon-sm" %}Reimprimir pedido</button>
-    {% if venda.status == 'concluida' %}
-    <form method="post" action="{% url 'vendas:venda_cancelar' venda.pk %}" class="inline-block"
-          onsubmit="return confirm('Cancelar esta venda? O estoque baixado por ela será estornado.');">
-      {% csrf_token %}
-      <button type="submit" class="btn btn--outline-danger">{% icon "x-circle" class="icon-sm" %}Cancelar venda</button>
-    </form>
+    {% if venda.esta_aberta %}
+      <a href="{% url 'vendas:pedido_editar' venda.pk %}" class="btn btn--outline-primary">{% icon "pencil" class="icon-sm" %}Editar pedido</a>
+      <button type="button" class="btn btn--outline-primary" id="btn-imprimir-comanda">{% icon "receipt" class="icon-sm" %}Imprimir comanda</button>
+      <button type="button" class="btn btn--outline-primary" id="btn-imprimir-conta">{% icon "receipt" class="icon-sm" %}Imprimir conta</button>
+      <button type="button" class="btn btn--primary" data-modal-open="modal-finalizar-pagamento">{% icon "credit-card" class="icon-sm" %}Finalizar pagamento</button>
+      <form method="post" action="{% url 'vendas:venda_cancelar' venda.pk %}" class="inline-block"
+            onsubmit="return confirm('Deseja realmente cancelar o pedido {{ venda.numero }}? O estoque baixado por ele será estornado.');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn--outline-danger">{% icon "x-circle" class="icon-sm" %}Cancelar pedido</button>
+      </form>
+    {% else %}
+      <button type="button" class="btn btn--outline-primary" id="btn-reimprimir-pedido">{% icon "receipt" class="icon-sm" %}Reimprimir comprovante</button>
+      {% if venda.esta_concluida %}
+      <form method="post" action="{% url 'vendas:venda_cancelar' venda.pk %}" class="inline-block"
+            onsubmit="return confirm('Cancelar esta venda? O estoque baixado por ela será estornado.');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn--outline-danger">{% icon "x-circle" class="icon-sm" %}Cancelar venda</button>
+      </form>
+      {% endif %}
     {% endif %}
     <a href="{% url 'vendas:venda_list' %}" class="btn btn--outline">{% icon "arrow-left" class="icon-sm" %}Voltar</a>
   </div>
 </div>
+
+{% if venda.esta_aberta %}
+<div class="alert alert--warning mb-3">
+  {% icon "hourglass" %}
+  <div>
+    <strong>Pedido em aberto</strong> — pagamento ainda pendente. Este pedido só entra no
+    faturamento depois de finalizado em "Finalizar pagamento".
+  </div>
+</div>
+{% endif %}
 
 <div id="status-impressao" class="mb-3"></div>
 
@@ -38,8 +62,23 @@
     <div class="list__item"><span class="text-muted">Data/hora</span><span>{{ venda.data_hora|date:'d/m/Y H:i' }}</span></div>
     {% if venda.cliente_nome %}<div class="list__item"><span class="text-muted">Cliente</span><span>{{ venda.cliente_nome }}</span></div>{% endif %}
     <div class="list__item"><span class="text-muted">Canal</span><span>{{ venda.get_canal_display }}</span></div>
-    <div class="list__item"><span class="text-muted">Pagamento</span><span>{{ venda.forma_pagamento }}</span></div>
+    <div class="list__item">
+      <span class="text-muted">Pagamento</span>
+      <span>
+        {% if venda.forma_pagamento %}{{ venda.forma_pagamento }}
+        {% else %}<span class="badge badge--warning">Pendente</span>{% endif %}
+      </span>
+    </div>
     <div class="list__item"><span class="text-muted">Status</span><span>{{ venda.get_status_display }}</span></div>
+    {% if venda.esta_aberta %}
+    <div class="list__item"><span class="text-muted">Tempo em aberto</span><span>{{ venda.data_hora|timesince }}</span></div>
+    {% endif %}
+    {% if venda.data_conclusao %}
+    <div class="list__item"><span class="text-muted">Concluída em</span><span>{{ venda.data_conclusao|date:'d/m/Y H:i' }}</span></div>
+    {% endif %}
+    {% if venda.data_cancelamento %}
+    <div class="list__item"><span class="text-muted">Cancelada em</span><span>{{ venda.data_cancelamento|date:'d/m/Y H:i' }}</span></div>
+    {% endif %}
   </div>
 </div>
 
@@ -59,7 +98,9 @@
           <td>R$ {{ item.preco_unitario }}</td>
           <td>
             {% for adicional in item.adicionais.all %}
-              <div class="text-sm text-muted">+ {{ adicional.nome_adicional }} — R$ {{ adicional.preco_unitario }}</div>
+              <div class="text-sm text-muted">
+                + {% if adicional.quantidade > 1 %}{{ adicional.quantidade }}x {% endif %}{{ adicional.nome_adicional }} — R$ {{ adicional.subtotal }}
+              </div>
             {% empty %}
               <span class="text-muted text-sm">—</span>
             {% endfor %}
@@ -77,15 +118,42 @@
     </table>
   </div>
 </div>
+
+{% if venda.esta_aberta %}
+<div class="modal-overlay" id="modal-finalizar-pagamento" data-modal>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-finalizar-titulo">
+    <form method="post" action="{% url 'vendas:pedido_finalizar' venda.pk %}">
+      {% csrf_token %}
+      <div class="modal__header">
+        <strong id="modal-finalizar-titulo">Finalizar pagamento — Pedido {{ venda.numero }}</strong>
+        <button type="button" class="btn-icon btn-icon--sm" data-modal-close aria-label="Fechar">{% icon "x" class="icon-sm" %}</button>
+      </div>
+      <div class="modal__body">
+        <p class="text-sm text-muted mb-3">Total do pedido: <strong>R$ {{ venda.valor_total }}</strong></p>
+        <div class="field">
+          <label class="field__label" for="id_forma_pagamento">Forma de pagamento</label>
+          <select id="id_forma_pagamento" name="forma_pagamento_id" class="field__control" required {% if not formas_pagamento %}disabled{% endif %}>
+            <option value="">Selecione...</option>
+            {% for fp in formas_pagamento %}<option value="{{ fp.pk }}">{{ fp.nome }}</option>{% endfor %}
+          </select>
+          {% if not formas_pagamento %}<span class="field__hint text-danger">Nenhuma forma de pagamento ativa cadastrada.</span>{% endif %}
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--outline" data-modal-close>Cancelar</button>
+        <button type="submit" class="btn btn--primary" {% if not formas_pagamento %}disabled{% endif %}>{% icon "check-circle" class="icon-sm" %}Confirmar pagamento</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/impressao.js' %}"></script>
 <script>
 (function () {
-  const btn = document.getElementById('btn-reimprimir-pedido');
   const statusEl = document.getElementById('status-impressao');
-  if (!btn || !window.Impressao) return;
 
   function escapeHtml(texto) {
     const div = document.createElement('div');
@@ -93,22 +161,32 @@
     return div.innerHTML;
   }
 
-  function tentar() {
-    btn.disabled = true;
-    statusEl.innerHTML = '<div class="alert alert--info">Imprimindo...</div>';
-    window.Impressao.imprimirVenda({{ venda.pk }}, function () {
-      btn.disabled = false;
-      statusEl.innerHTML = '<div class="alert alert--success">Pedido enviado para a impressora.</div>';
-    }, function (mensagemErro) {
-      btn.disabled = false;
-      statusEl.innerHTML = '<div class="alert alert--danger">' + escapeHtml(mensagemErro) +
-        ' <button type="button" class="btn btn--sm btn--outline-danger mt-2" id="btn-tentar-novamente">Tentar novamente</button></div>';
-      const retryBtn = document.getElementById('btn-tentar-novamente');
-      if (retryBtn) retryBtn.addEventListener('click', tentar);
-    });
+  function ligar(btnId, nomeMetodoImpressao, rotuloSucesso) {
+    const btn = document.getElementById(btnId);
+    if (!btn || !window.Impressao) return;
+    const funcaoImpressao = window.Impressao[nomeMetodoImpressao];
+
+    function tentar() {
+      btn.disabled = true;
+      statusEl.innerHTML = '<div class="alert alert--info">Imprimindo...</div>';
+      funcaoImpressao({{ venda.pk }}, function () {
+        btn.disabled = false;
+        statusEl.innerHTML = '<div class="alert alert--success">' + rotuloSucesso + '</div>';
+      }, function (mensagemErro) {
+        btn.disabled = false;
+        statusEl.innerHTML = '<div class="alert alert--danger">' + escapeHtml(mensagemErro) +
+          ' <button type="button" class="btn btn--sm btn--outline-danger mt-2" id="' + btnId + '-retry">Tentar novamente</button></div>';
+        const retryBtn = document.getElementById(btnId + '-retry');
+        if (retryBtn) retryBtn.addEventListener('click', tentar);
+      });
+    }
+
+    btn.addEventListener('click', tentar);
   }
 
-  btn.addEventListener('click', tentar);
+  ligar('btn-reimprimir-pedido', 'imprimirVenda', 'Comprovante enviado para a impressora.');
+  ligar('btn-imprimir-comanda', 'imprimirComanda', 'Comanda enviada para a impressora.');
+  ligar('btn-imprimir-conta', 'imprimirConta', 'Conta enviada para a impressora.');
 })();
 </script>
 {% endblock %}

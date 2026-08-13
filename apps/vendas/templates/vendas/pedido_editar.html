@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load ds_icons %}
+{% block title %}Editar Pedido {{ venda.numero }}{% endblock %}
+{% block content %}
+{% csrf_token %}
+<div class="page-header">
+  <div class="page-header__title">
+    {% icon "pencil" %}
+    <div>
+      <h1 style="font-size: var(--text-xl);">Editar Pedido {{ venda.numero }}</h1>
+      <p class="text-muted text-sm">Adicione, remova ou altere itens do pedido. A forma de pagamento só é definida na finalização.</p>
+    </div>
+  </div>
+  <div class="page-header__actions">
+    <a href="{% url 'vendas:venda_detail' venda.pk %}" class="btn btn--outline">{% icon "arrow-left" class="icon-sm" %}Voltar ao pedido</a>
+  </div>
+</div>
+
+{% if not tem_itens %}
+<div class="alert alert--warning mb-4">
+  {% icon "exclamation-triangle" %}
+  <div><strong>Ainda não há itens ativos no cardápio.</strong> Cadastre um item do cardápio antes de editar o pedido.</div>
+</div>
+{% endif %}
+
+<div class="grid grid-detail gap-4">
+  <div class="stack">
+    <div class="card">
+      <div class="card__body">
+        <div class="grid md:grid-cols-2 gap-2">
+          <input type="text" id="busca-item" class="field__control" placeholder="Buscar item do cardápio..." {% if not tem_itens %}disabled{% endif %}>
+          <select id="filtro-categoria" class="field__control" {% if not tem_itens %}disabled{% endif %}>
+            <option value="">Todas as categorias</option>
+            {% for categoria in categorias %}
+            <option value="{{ categoria.pk }}">{{ categoria.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-auto-fit gap-3" id="catalogo">
+      {% for item in itens_cardapio %}
+      {% with preco=item.formacao_preco.preco_praticado|default:'0' %}
+      <div class="item-catalogo" data-nome="{{ item.nome|lower }}" data-categoria-id="{{ item.categoria_id|default:'' }}">
+        <div class="card card--full{% if preco == '0' %} card--accent-primary{% endif %}">
+          <div class="card__body flex flex-col">
+            <h3 class="font-semibold mb-1" style="font-size: var(--text-sm);">{{ item.nome }}</h3>
+            <small class="text-muted mb-2">{{ item.categoria|default:'Sem categoria' }}</small>
+            {% if not item.receita %}
+            <span class="badge badge--neutral mb-2" style="align-self:flex-start;" title="Item sem ficha técnica: a venda não baixará estoque de ingredientes.">
+              {% icon "journal-x" class="icon-xs" %}Sem ficha técnica
+            </span>
+            {% endif %}
+            <div class="mt-auto">
+              {% if preco == '0' %}
+                <strong class="text-warning flex items-center gap-1">{% icon "exclamation-triangle" class="icon-xs" %}Preço não definido</strong>
+              {% else %}
+                <strong>R$ {{ preco }}</strong>
+              {% endif %}
+              <button type="button" class="btn btn--primary btn--sm btn--block mt-2 add-item"
+                data-id="{{ item.pk }}" data-nome="{{ item.nome }}"
+                data-preco="{{ preco }}">
+                {% icon "plus-lg" class="icon-sm" %}Adicionar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endwith %}
+      {% empty %}
+      <div class="empty-state" style="grid-column:1/-1;">
+        {% icon "menu-card" %}
+        <span class="empty-state__title">Nenhum item ativo no cardápio.</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="empty-state hidden" id="catalogo-sem-resultado">
+      {% icon "search" %}
+      <span class="empty-state__title">Nenhum item encontrado para o filtro selecionado.</span>
+    </div>
+  </div>
+
+  <div class="card" style="height: fit-content;">
+    <div class="card__header"><strong class="flex items-center gap-2">{% icon "cart" class="icon-sm" %}Itens do pedido</strong></div>
+    <div class="card__body">
+      <div id="carrinho-vazio" class="empty-state empty-state--sm">
+        {% icon "cart-x" %}
+        <span class="empty-state__subtitle">Nenhum item no pedido. Clique em "Adicionar" nos itens ao lado.</span>
+      </div>
+      <div class="table-wrap">
+        <table class="table table--compact hidden" id="carrinho-tabela">
+          <thead><tr><th>Item</th><th>Qtd.</th><th>Subtotal</th><th></th></tr></thead>
+          <tbody id="carrinho-itens"></tbody>
+        </table>
+      </div>
+      <hr class="divider">
+      <div class="field">
+        <label class="field__label">Cliente (opcional)</label>
+        <input type="text" id="cliente-nome" class="field__control" maxlength="150" value="{{ venda.cliente_nome }}" placeholder="Nome para identificar o pedido">
+      </div>
+      <div class="field">
+        <label class="field__label">Desconto (R$)</label>
+        <input type="number" id="desconto" class="field__control" value="{{ venda.desconto }}" step="0.01" min="0">
+      </div>
+      <div class="flex justify-between items-center text-lg font-bold mt-3">
+        <span>Total</span><span id="carrinho-total">R$ 0,00</span>
+      </div>
+      <button type="button" id="salvar-pedido" class="btn btn--primary btn--block mt-4" disabled
+              title="Adicione ao menos um item para salvar">
+        {% icon "check-circle" class="icon-sm" %}Salvar alterações
+      </button>
+      <small class="text-muted block text-center mt-2" id="salvar-hint">Adicione itens ao pedido para continuar.</small>
+
+      <div id="pedido-mensagem" class="mt-3"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-adicionais" data-modal>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-adicionais-titulo">
+    <div class="modal__header">
+      <strong id="modal-adicionais-titulo">Adicionais</strong>
+      <button type="button" class="btn-icon btn-icon--sm" data-modal-close aria-label="Fechar">{% icon "x" class="icon-sm" %}</button>
+    </div>
+    <div class="modal__body">
+      <p class="text-sm text-muted mb-3">Selecione os adicionais desejados para este item.</p>
+      <div id="modal-adicionais-lista" class="field-check-group"></div>
+      <hr class="divider">
+      <div class="flex justify-between items-center font-bold">
+        <span>Total do item</span><span id="modal-adicionais-total">R$ 0,00</span>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button type="button" class="btn btn--outline" data-modal-close>Cancelar</button>
+      <button type="button" class="btn btn--primary" id="modal-adicionais-confirmar">{% icon "plus-lg" class="icon-sm" %}Adicionar</button>
+    </div>
+  </div>
+</div>
+
+{{ adicionais_por_item|json_script:"adicionais-data" }}
+{{ itens_atuais|json_script:"itens-atuais-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/carrinho.js' %}"></script>
+<script>
+(function () {
+  const ADICIONAIS_POR_ITEM = JSON.parse(document.getElementById('adicionais-data').textContent);
+  const ITENS_ATUAIS = JSON.parse(document.getElementById('itens-atuais-data').textContent);
+  const salvarBtn = document.getElementById('salvar-pedido');
+  const hint = document.getElementById('salvar-hint');
+
+  function getCsrfToken() {
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return input ? input.value : '';
+  }
+
+  const itensIniciais = ITENS_ATUAIS.map(function (it) {
+    return {
+      itemId: it.item_cardapio_id, nome: it.nome, preco: it.preco, quantidade: it.quantidade,
+      adicionais: (it.adicionais || []).map(function (a) { return { id: a.id, nome: a.nome, preco: parseFloat(a.preco) }; }),
+    };
+  });
+
+  const carrinho = window.Carrinho.init({
+    adicionaisPorItem: ADICIONAIS_POR_ITEM,
+    itensIniciais: itensIniciais,
+    aoAtualizar: function (estado) {
+      salvarBtn.disabled = estado.vazio;
+      hint.textContent = estado.vazio ? 'Adicione itens ao pedido para continuar.' : '';
+    },
+  });
+
+  salvarBtn.addEventListener('click', function () {
+    const msgDiv = document.getElementById('pedido-mensagem');
+    msgDiv.innerHTML = '';
+    if (carrinho.estaVazio()) {
+      msgDiv.innerHTML = '<div class="alert alert--danger">O pedido precisa ter ao menos um item.</div>';
+      return;
+    }
+
+    salvarBtn.disabled = true;
+    salvarBtn.classList.add('is-loading');
+
+    const payload = {
+      desconto: document.getElementById('desconto').value || '0',
+      cliente_nome: document.getElementById('cliente-nome').value || '',
+      itens: carrinho.obterItensPayload(),
+    };
+
+    fetch(window.location.pathname, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+      body: JSON.stringify(payload),
+    })
+      .then(function (r) {
+        return r.json()
+          .catch(function () { throw new Error('resposta_invalida'); })
+          .then(function (data) { return { status: r.status, data: data }; });
+      })
+      .then(function (result) {
+        if (result.data.ok) {
+          window.location.href = '/vendas/' + result.data.venda_id + '/';
+        } else {
+          msgDiv.innerHTML = '<div class="alert alert--danger">' + result.data.erro + '</div>';
+        }
+      })
+      .catch(function (err) {
+        if (err instanceof Error && err.message === 'resposta_invalida') {
+          msgDiv.innerHTML = '<div class="alert alert--danger">O servidor retornou uma resposta inesperada. Recarregue a página e tente novamente.</div>';
+        } else {
+          msgDiv.innerHTML = '<div class="alert alert--danger">Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.</div>';
+        }
+      })
+      .finally(function () {
+        salvarBtn.classList.remove('is-loading');
+        salvarBtn.disabled = carrinho.estaVazio();
+      });
+  });
+})();
+</script>
+{% endblock %}

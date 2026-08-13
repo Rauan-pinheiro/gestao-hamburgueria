@@ -19,7 +19,12 @@ class ItemCardapioAdmin(admin.ModelAdmin):
 
 @admin.register(Adicional)
 class AdicionalAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'preco', 'ativo', 'ordem')
+    list_display = ('nome', 'preco', 'ingrediente', 'custo_unitario_exibicao', 'ativo', 'ordem')
     list_filter = ('ativo', 'categorias')
     search_fields = ('nome',)
+    autocomplete_fields = ('ingrediente',)
     filter_horizontal = ('categorias', 'itens')
+
+    @admin.display(description='Custo unitário (R$)')
+    def custo_unitario_exibicao(self, obj):
+        return f'{obj.custo_unitario():.4f}' if obj.ingrediente_id else '—'

@@ -61,10 +61,13 @@ def _linha_centralizada(texto, largura):
     return [linha.center(largura) for linha in linhas]
 
 
-def _linha_adicional(nome, preco, largura):
-    """'  + Bacon ................ R$ 3,00' — indentado, para diferenciar do item pai."""
+def _linha_adicional(nome, preco, largura, quantidade=1):
+    """'  + 2x Bacon ................ R$ 6,00' — indentado, para diferenciar do item pai.
+    O prefixo "2x " só aparece quando o adicional foi escolhido mais de uma vez (ver
+    `ItemVendaAdicional.quantidade`); `preco` já vem como o subtotal daquele adicional
+    (unitário × quantidade escolhida × quantidade do item — ver `montar_dados_impressao`)."""
     prefixo = '  + '
-    rotulo = prefixo + nome
+    rotulo = prefixo + (f'{quantidade}x ' if quantidade and quantidade > 1 else '') + nome
     valor_texto = _moeda(preco)
     linhas_rotulo = textwrap.wrap(rotulo, width=largura, subsequent_indent=prefixo) or [prefixo]
     ultima = linhas_rotulo[-1]
@@ -76,16 +79,52 @@ def _linha_adicional(nome, preco, largura):
     return linhas_rotulo
 
 
+def _linha_adicional_sem_preco(nome, largura, quantidade=1):
+    """'  + 2x Bacon' — mesma indentação de `_linha_adicional`, mas sem valor (usado na comanda
+    de produção, onde a cozinha não precisa ver preço, só precisa saber quantos)."""
+    prefixo = '  + '
+    rotulo = prefixo + (f'{quantidade}x ' if quantidade and quantidade > 1 else '') + nome
+    return textwrap.wrap(rotulo, width=largura, subsequent_indent=prefixo) or [prefixo]
+
+
+TIPOS_VALIDOS = ('comanda', 'conta', 'comprovante')
+
+
 def montar_texto_recibo(dados, largura=LARGURA_58MM):
     """
-    Monta o corpo do recibo como texto simples (str), já quebrado em linhas na largura
-    pedida. `dados` é o dict de `montar_dados_impressao` — ver docstring do módulo.
+    Monta o corpo do documento impresso como texto simples (str), já quebrado em linhas na
+    largura pedida. `dados` é o dict de `apps.vendas.services.montar_dados_impressao` — ver
+    docstring do módulo.
+
+    `dados.get('tipo')` escolhe o layout — três documentos diferentes a partir dos MESMOS dados,
+    sem duplicar a lógica de impressão nem o `agent.py`/`impressora_windows.py` (que não sabem
+    nada sobre `tipo`, só repassam bytes para o spooler):
+
+      - 'comprovante' (default — inclusive quando `dados` não tem a chave 'tipo' nenhuma,
+        mantendo compatibilidade com qualquer chamador antigo): recibo completo, com preços e
+        forma de pagamento — o documento de sempre, usado tanto ao finalizar quanto ao
+        reimprimir uma venda já concluída.
+      - 'comanda': via de produção para a cozinha — só nome/quantidade/adicionais, SEM nenhum
+        valor em R$ (a cozinha não precisa saber preço).
+      - 'conta': prévia para o cliente, com todos os preços, mas terminando em
+        "PAGAMENTO PENDENTE" enquanto o pedido está ABERTO (nunca dá a entender que já foi pago).
     """
+    tipo = dados.get('tipo') or 'comprovante'
+    if tipo not in TIPOS_VALIDOS:
+        tipo = 'comprovante'
+
     linhas = []
     separador = '-' * largura
 
     if dados.get('estabelecimento'):
         linhas += _linha_centralizada(dados['estabelecimento'].upper(), largura)
+        linhas.append(separador)
+
+    if tipo == 'comanda':
+        linhas += _linha_centralizada('COMANDA - PRODUÇÃO', largura)
+        linhas.append(separador)
+    elif tipo == 'conta':
+        linhas += _linha_centralizada('CONTA DO CLIENTE', largura)
         linhas.append(separador)
 
     if dados.get('numero'):
@@ -105,10 +144,24 @@ def montar_texto_recibo(dados, largura=LARGURA_58MM):
         quantidade = item.get('quantidade', 1)
         nome = item.get('nome', 'Item')
         rotulo = f'{quantidade}x {nome}'
-        valor_texto = _moeda(item.get('subtotal'))
-        linhas += _linha_rotulo_valor(rotulo, valor_texto, largura)
-        for adicional in item.get('adicionais') or []:
-            linhas += _linha_adicional(adicional.get('nome', 'Adicional'), adicional.get('preco'), largura)
+        if tipo == 'comanda':
+            linhas += textwrap.wrap(rotulo, width=largura) or ['']
+            for adicional in item.get('adicionais') or []:
+                linhas += _linha_adicional_sem_preco(
+                    adicional.get('nome', 'Adicional'), largura, quantidade=adicional.get('quantidade', 1))
+        else:
+            valor_texto = _moeda(item.get('subtotal'))
+            linhas += _linha_rotulo_valor(rotulo, valor_texto, largura)
+            for adicional in item.get('adicionais') or []:
+                linhas += _linha_adicional(
+                    adicional.get('nome', 'Adicional'), adicional.get('preco'), largura,
+                    quantidade=adicional.get('quantidade', 1))
+
+    if tipo == 'comanda':
+        # Comanda de produção: acaba aqui, sem bloco financeiro nenhum.
+        linhas.append(separador)
+        linhas += _linha_centralizada('Enviar para produção', largura)
+        return '\n'.join(linhas)
 
     linhas.append(separador)
     linhas += _linha_rotulo_valor('SUBTOTAL:', _moeda(dados.get('subtotal')), largura)
@@ -121,9 +174,18 @@ def montar_texto_recibo(dados, largura=LARGURA_58MM):
     if dados.get('forma_pagamento'):
         linhas.append(separador)
         linhas += _linha_rotulo_valor('PAGAMENTO:', dados['forma_pagamento'], largura)
+        if tipo == 'comprovante' and dados.get('status_codigo') == 'concluida':
+            linhas.append(f"STATUS: {(dados.get('status') or 'CONCLUÍDO').upper()}")
 
     linhas.append(separador)
-    linhas += _linha_centralizada('Obrigado pela preferência!', largura)
+    if tipo == 'conta':
+        linhas += _linha_centralizada('CONTA / PRÉVIA', largura)
+        if dados.get('status_codigo') == 'aberto':
+            linhas += _linha_centralizada('PAGAMENTO PENDENTE', largura)
+        else:
+            linhas += _linha_centralizada('PAGAMENTO CONFIRMADO', largura)
+    else:
+        linhas += _linha_centralizada('Obrigado pela preferência!', largura)
 
     return '\n'.join(linhas)
 

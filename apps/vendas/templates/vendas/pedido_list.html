@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load ds_icons %}
+{% block title %}Pedidos Abertos{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-header__title">
+    {% icon "clock-history" %}
+    <div>
+      <h1 style="font-size: var(--text-xl);">Pedidos Abertos</h1>
+      <p class="text-muted text-sm">Pedidos lançados que ainda aguardam pagamento. Não entram no faturamento até serem finalizados.</p>
+    </div>
+  </div>
+  <div class="page-header__actions">
+    <a href="{% url 'vendas:nova_venda' %}" class="btn btn--primary">{% icon "plus-lg" class="icon-sm" %}Novo pedido</a>
+    <a href="{% url 'vendas:venda_list' %}" class="btn btn--outline">{% icon "cart-check" class="icon-sm" %}Vendas</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Pedido</th><th>Cliente</th><th>Data/hora</th><th>Itens</th><th>Total</th><th>Status</th><th>Tempo em aberto</th></tr></thead>
+      <tbody>
+        {% for pedido in pedidos %}
+        <tr>
+          <td><a href="{% url 'vendas:venda_detail' pedido.pk %}">{{ pedido.numero }}</a></td>
+          <td>{{ pedido.cliente_nome|default:'—' }}</td>
+          <td>{{ pedido.data_hora|date:'d/m/Y H:i' }}</td>
+          <td>{{ pedido.qtd_itens|default:0 }}</td>
+          <td>R$ {{ pedido.valor_total }}</td>
+          <td><span class="badge badge--warning">Aberto</span></td>
+          <td>{{ pedido.data_hora|timesince }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">
+          <div class="empty-state">
+            {% icon "clock-history" %}
+            <span class="empty-state__title">Nenhum pedido em aberto no momento.</span>
+            <a href="{% url 'vendas:nova_venda' %}" class="btn btn--primary btn--sm mt-3">{% icon "plus-lg" class="icon-sm" %}Abrir novo pedido</a>
+          </div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

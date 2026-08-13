@@ -13,21 +13,34 @@ class Venda(models.Model):
         ('whatsapp', 'WhatsApp'),
     ]
     STATUS_CHOICES = [
+        ('aberto', 'Aberto'),
         ('concluida', 'Concluída'),
         ('cancelada', 'Cancelada'),
     ]
 
     numero = models.CharField('Número', max_length=20, unique=True, editable=False)
     data_hora = models.DateTimeField('Data/hora', default=timezone.now, db_index=True)
+    # Opcional: só é preenchida na finalização do pagamento (ver apps.vendas.services.finalizar_pedido).
+    # Uma Venda criada pelo fluxo antigo (registrar_venda) ou já finalizada sempre tem valor aqui;
+    # só fica nula enquanto status='aberto'.
     forma_pagamento = models.ForeignKey(
-        'core.FormaPagamento', on_delete=models.PROTECT, verbose_name='Forma de pagamento')
+        'core.FormaPagamento', on_delete=models.PROTECT, verbose_name='Forma de pagamento',
+        null=True, blank=True)
     canal = models.CharField('Canal', max_length=10, choices=CANAL_CHOICES, default='balcao')
+    # default='concluida' preserva o significado das vendas já existentes no banco (criadas antes
+    # do conceito de pedido em aberto existir) e mantém o fluxo antigo de "Nova Venda" (finalizar
+    # na hora) funcionando sem qualquer alteração — só quem passa por abrir_pedido() nasce 'aberto'.
     status = models.CharField('Status', max_length=10, choices=STATUS_CHOICES, default='concluida')
     usuario = models.ForeignKey(
         'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Usuário')
     cliente_nome = models.CharField(
         'Cliente', max_length=150, blank=True,
         help_text='Opcional. Usado apenas para identificação no pedido e na impressão da comanda.')
+    # Preenchidos pelos services (finalizar_pedido/cancelar_venda), nunca editados manualmente —
+    # ver apps.vendas.admin (readonly) e apps.vendas.services.
+    data_conclusao = models.DateTimeField(
+        'Data/hora da conclusão do pagamento', null=True, blank=True, editable=False)
+    data_cancelamento = models.DateTimeField('Data/hora do cancelamento', null=True, blank=True, editable=False)
 
     subtotal = models.DecimalField(
         'Subtotal produtos (R$)', max_digits=10, decimal_places=2, default=0, editable=False)
@@ -48,6 +61,18 @@ class Venda(models.Model):
 
     def __str__(self):
         return f'Venda {self.numero}'
+
+    @property
+    def esta_aberta(self):
+        return self.status == 'aberto'
+
+    @property
+    def esta_concluida(self):
+        return self.status == 'concluida'
+
+    @property
+    def esta_cancelada(self):
+        return self.status == 'cancelada'
 
     def save(self, *args, **kwargs):
         if not self.numero:
@@ -83,6 +108,12 @@ class ItemVenda(models.Model):
     subtotal_adicionais = models.DecimalField(
         'Subtotal de adicionais (R$)', max_digits=10, decimal_places=2, default=0, editable=False)
     custo_subtotal = models.DecimalField('Custo subtotal (R$)', max_digits=10, decimal_places=2, editable=False)
+    # Mesma lógica de `subtotal_adicionais`, só que em custo: soma dos ItemVendaAdicional.custo_subtotal
+    # deste item. Mantido separado de `custo_subtotal` (só produto) pelo mesmo motivo — não alterar o
+    # significado de um campo já usado — e somado a ele em `Venda.custo_total` (ver
+    # apps.vendas.services._lancar_itens).
+    custo_subtotal_adicionais = models.DecimalField(
+        'Custo subtotal de adicionais (R$)', max_digits=10, decimal_places=2, default=0, editable=False)
     observacoes = models.CharField('Observações', max_length=255, blank=True)
 
     class Meta:
@@ -101,13 +132,24 @@ class ItemVenda(models.Model):
         """Produto + adicionais, ambos já congelados no momento da venda."""
         return self.subtotal + self.subtotal_adicionais
 
+    def custo_total_item(self):
+        """Custo do produto + custo dos adicionais, ambos já congelados no momento da venda."""
+        return self.custo_subtotal + self.custo_subtotal_adicionais
+
 
 class ItemVendaAdicional(models.Model):
     """
-    Adicional escolhido para um item da venda, com o preço praticado NAQUELE MOMENTO
-    congelado em `preco_unitario` — se o preço do Adicional mudar depois, esta linha
-    (e portanto o histórico da venda) não muda. Mesmo padrão de "nome congelado" usado
-    em `ItemVenda.nome_produto_excluido` para sobreviver à exclusão do adicional.
+    Adicional escolhido para um item da venda, com o preço E o custo praticados NAQUELE
+    MOMENTO congelados em `preco_unitario`/`custo_unitario` — se o preço ou o ingrediente do
+    Adicional mudarem depois, esta linha (e portanto o histórico e os relatórios da venda) não
+    muda. Mesmo padrão de "nome congelado" usado em `ItemVenda.nome_produto_excluido` para
+    sobreviver à exclusão do adicional.
+
+    `quantidade` é quantas vezes ESTE adicional foi escolhido para uma unidade do item (ex.:
+    "Bacon x2" vira uma única linha com quantidade=2, em vez de duas linhas de "Bacon x1") — ver
+    `apps.vendas.services._resolver_adicionais`. O multiplicador final de estoque/preço/custo é
+    sempre quantidade (deste adicional) × quantidade do `ItemVenda` (quantas unidades do produto
+    foram pedidas).
     """
     item_venda = models.ForeignKey(ItemVenda, on_delete=models.CASCADE, related_name='adicionais', verbose_name='Item da venda')
     adicional = models.ForeignKey(
@@ -116,15 +158,24 @@ class ItemVendaAdicional(models.Model):
     nome_adicional_excluido = models.CharField(
         'Nome do adicional (congelado)', max_length=100, blank=True,
         help_text='Preenchido automaticamente quando o adicional é excluído após a venda ser cancelada.')
+    quantidade = models.PositiveIntegerField(
+        'Quantidade', default=1, validators=[MinValueValidator(1)],
+        help_text='Quantas vezes este adicional foi escolhido por unidade do item (ex.: 2 = "Bacon x2").')
     preco_unitario = models.DecimalField('Preço unitário no momento da venda (R$)', max_digits=10, decimal_places=2, editable=False)
     subtotal = models.DecimalField('Subtotal (R$)', max_digits=10, decimal_places=2, editable=False)
+    # Custo (não preço) de UMA unidade do adicional, congelado a partir de `Adicional.custo_unitario()`
+    # no momento da venda — ver apps.vendas.services._resolver_adicionais. Independente de preco_unitario.
+    custo_unitario = models.DecimalField(
+        'Custo unitário no momento da venda (R$)', max_digits=10, decimal_places=4, default=0, editable=False)
+    custo_subtotal = models.DecimalField('Custo subtotal (R$)', max_digits=10, decimal_places=2, default=0, editable=False)
 
     class Meta:
         verbose_name = 'Adicional do Item de Venda'
         verbose_name_plural = 'Adicionais do Item de Venda'
 
     def __str__(self):
-        return f'{self.nome_adicional()} — R$ {self.preco_unitario}'
+        sufixo = f' x{self.quantidade}' if self.quantidade > 1 else ''
+        return f'{self.nome_adicional()}{sufixo} — R$ {self.preco_unitario}'
 
     def nome_adicional(self):
         if self.adicional_id:

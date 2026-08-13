@@ -76,7 +76,9 @@ def get_setup_status():
             'chave': 'vendas',
             'titulo': 'Registrar sua primeira venda',
             'descricao': 'Depois disso, o dashboard começa a mostrar faturamento e lucro.',
-            'feito': Venda.objects.exists(),
+            # status='concluida': um pedido em aberto (ver apps.vendas.services.abrir_pedido)
+            # ainda não é uma venda de verdade — não deve marcar este passo como concluído.
+            'feito': Venda.objects.filter(status='concluida').exists(),
             'url': 'vendas:nova_venda',
             'url_ver': 'vendas:venda_list',
         },

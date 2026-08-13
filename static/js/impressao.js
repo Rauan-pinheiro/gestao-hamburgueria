@@ -33,8 +33,8 @@
     localStorage.setItem('impressora_agente_url', url);
   }
 
-  function buscarDados(vendaId) {
-    return fetch('/vendas/' + vendaId + '/imprimir-dados/', {
+  function buscarDados(vendaId, tipo) {
+    return fetch('/vendas/' + vendaId + '/imprimir-dados/?tipo=' + encodeURIComponent(tipo), {
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
     })
       .then(function (r) { return r.json(); })
@@ -74,15 +74,35 @@
     return (erro && erro.message) || MENSAGEM_PADRAO;
   }
 
-  function imprimirVenda(vendaId, aoConcluir, aoFalhar) {
-    buscarDados(vendaId)
+  function _imprimir(vendaId, tipo, aoConcluir, aoFalhar) {
+    buscarDados(vendaId, tipo)
       .then(enviarParaAgente)
       .then(function () { if (aoConcluir) aoConcluir(); })
       .catch(function (erro) { if (aoFalhar) aoFalhar(mensagemAmigavel(erro)); });
   }
 
+  // Comprovante completo (com preços e forma de pagamento) — o documento de sempre, usado para
+  // "Imprimir pedido"/"Reimprimir pedido". Assinatura e comportamento inalterados de propósito:
+  // todo código existente que já chama isso continua funcionando sem nenhuma mudança.
+  function imprimirVenda(vendaId, aoConcluir, aoFalhar) {
+    _imprimir(vendaId, 'comprovante', aoConcluir, aoFalhar);
+  }
+
+  // Comanda de produção (cozinha) — sem preços. Ver printer_agent/formatador.py.
+  function imprimirComanda(vendaId, aoConcluir, aoFalhar) {
+    _imprimir(vendaId, 'comanda', aoConcluir, aoFalhar);
+  }
+
+  // Conta/prévia para o cliente — com preços, sinalizando "PAGAMENTO PENDENTE" enquanto o
+  // pedido estiver ABERTO. Ver printer_agent/formatador.py.
+  function imprimirConta(vendaId, aoConcluir, aoFalhar) {
+    _imprimir(vendaId, 'conta', aoConcluir, aoFalhar);
+  }
+
   window.Impressao = {
     imprimirVenda: imprimirVenda,
+    imprimirComanda: imprimirComanda,
+    imprimirConta: imprimirConta,
     urlAgente: urlAgente,
     definirUrlAgente: definirUrlAgente,
   };

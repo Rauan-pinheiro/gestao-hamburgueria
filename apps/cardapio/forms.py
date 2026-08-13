@@ -51,12 +51,19 @@ class ItemCardapioForm(forms.ModelForm):
 class AdicionalForm(forms.ModelForm):
     class Meta:
         model = Adicional
-        fields = ['nome', 'preco', 'ativo', 'ordem', 'categorias', 'itens']
+        fields = [
+            'nome', 'preco', 'ingrediente', 'quantidade_ingrediente', 'ativo', 'ordem', 'categorias', 'itens',
+        ]
         widgets = {
             'categorias': forms.CheckboxSelectMultiple,
         }
         help_texts = {
-            'preco': 'Valor cobrado por unidade do adicional. Vendas já registradas não mudam se este valor for alterado depois.',
+            'preco': 'Valor cobrado por unidade do adicional. Vendas já registradas não mudam se este valor for alterado depois. '
+                     'Independente do custo do ingrediente abaixo.',
+            'ingrediente': 'Opcional. Ingrediente do estoque baixado a cada unidade vendida deste adicional, além do que a '
+                            'ficha técnica do produto já baixa. Deixe em branco se este adicional não controla estoque próprio.',
+            'quantidade_ingrediente': 'Quantidade do ingrediente acima consumida por unidade do adicional, na mesma unidade '
+                                       'de medida cadastrada nele (ex.: ingrediente em kg → 26 g de bacon = 0,026 kg).',
             'ativo': 'Adicionais inativos não aparecem mais na tela de "Nova Venda", mas continuam no histórico.',
             'categorias': 'O adicional aparece automaticamente em todos os itens ativos destas categorias.',
             'itens': 'Além das categorias acima, disponibiliza este adicional também nestes itens específicos (mesmo que sejam de outra categoria).',
@@ -67,7 +74,9 @@ class AdicionalForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['categorias'].queryset = CategoriaCardapio.objects.all()
         self.fields['itens'].queryset = ItemCardapio.objects.all().select_related('categoria')
-        ativar_busca(self, 'itens')
+        self.fields['ingrediente'].required = False
+        self.fields['quantidade_ingrediente'].required = False
+        ativar_busca(self, 'itens', 'ingrediente')
 
     def clean_preco(self):
         preco = self.cleaned_data.get('preco')

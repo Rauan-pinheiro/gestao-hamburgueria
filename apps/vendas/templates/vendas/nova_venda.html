@@ -9,7 +9,11 @@
     {% icon "cart-plus" %}
     <div>
       <h1 style="font-size: var(--text-xl);">Nova Venda</h1>
-      <p class="text-muted text-sm">Clique nos itens para adicionar ao carrinho, escolha a forma de pagamento e finalize.</p>
+      <p class="text-muted text-sm">
+        Clique nos itens para adicionar ao carrinho. <strong>Finalizar Venda</strong> registra o pagamento na hora;
+        <strong>Abrir pedido</strong> lança o pedido sem pagamento — fica em
+        <a href="{% url 'vendas:pedido_list' %}">Pedidos Abertos</a> até você finalizar o pagamento depois.
+      </p>
     </div>
   </div>
 </div>
@@ -147,6 +151,10 @@
               title="Adicione itens ao carrinho e selecione a forma de pagamento para habilitar">
         {% icon "check-circle" class="icon-sm" %}Finalizar Venda
       </button>
+      <button type="button" id="abrir-pedido" class="btn btn--outline-primary btn--block mt-2" disabled
+              title="Adicione itens ao carrinho para habilitar">
+        {% icon "clock-history" class="icon-sm" %}Abrir pedido (pagar depois)
+      </button>
       <small class="text-muted block text-center mt-2" id="finalizar-hint">Adicione itens ao carrinho para continuar.</small>
 
       <label class="field-check mt-3">
@@ -189,19 +197,14 @@
 
 {% block extra_js %}
 <script src="{% static 'js/impressao.js' %}"></script>
+<script src="{% static 'js/carrinho.js' %}"></script>
 <script>
 (function () {
-  const carrinho = {};
   const temFormaPagamento = {{ tem_forma_pagamento|yesno:'true,false' }};
   const ADICIONAIS_POR_ITEM = JSON.parse(document.getElementById('adicionais-data').textContent);
-  let proximaLinhaId = 1;
-  let itemPendente = null; // {itemId, nome, preco} — aguardando confirmação do modal de adicionais
-
-  function escapeHtml(texto) {
-    const div = document.createElement('div');
-    div.textContent = texto === null || texto === undefined ? '' : String(texto);
-    return div.innerHTML;
-  }
+  const finalizarBtn = document.getElementById('finalizar-venda');
+  const abrirBtn = document.getElementById('abrir-pedido');
+  const hint = document.getElementById('finalizar-hint');
 
   function getCsrfToken() {
     // O cookie csrftoken é HttpOnly neste sistema (não pode ser lido via document.cookie),
@@ -210,191 +213,31 @@
     return input ? input.value : '';
   }
 
-  function totalLinha(linha) {
-    const totalAdicionais = linha.adicionais.reduce(function (soma, a) { return soma + a.preco; }, 0);
-    return (linha.preco + totalAdicionais) * linha.quantidade;
+  function escapeHtml(texto) {
+    const div = document.createElement('div');
+    div.textContent = texto === null || texto === undefined ? '' : String(texto);
+    return div.innerHTML;
   }
 
-  function adicionarAoCarrinho(itemId, nome, preco, adicionais) {
-    if (!adicionais || adicionais.length === 0) {
-      // Item sem adicionais escolhidos: mescla quantidade na mesma linha (fluxo rápido de balcão).
-      const chave = 'item-' + itemId;
-      if (!carrinho[chave]) {
-        carrinho[chave] = { itemId: itemId, nome: nome, preco: preco, quantidade: 1, adicionais: [] };
-      } else {
-        carrinho[chave].quantidade += 1;
-      }
-    } else {
-      // Combinações diferentes de adicionais viram linhas separadas — dois clientes podem
-      // pedir o mesmo produto com adicionais diferentes, e cada combinação tem um total próprio.
-      const chave = 'linha-' + (proximaLinhaId++);
-      carrinho[chave] = { itemId: itemId, nome: nome, preco: preco, quantidade: 1, adicionais: adicionais };
-    }
-    renderCarrinho();
-  }
-
-  function renderCarrinho() {
-    const itensDiv = document.getElementById('carrinho-itens');
-    const vazio = document.getElementById('carrinho-vazio');
-    const tabela = document.getElementById('carrinho-tabela');
-    const totalSpan = document.getElementById('carrinho-total');
-    const finalizarBtn = document.getElementById('finalizar-venda');
-    const hint = document.getElementById('finalizar-hint');
-    const chaves = Object.keys(carrinho);
-
-    if (chaves.length === 0) {
-      vazio.classList.remove('hidden');
-      tabela.classList.add('hidden');
-      finalizarBtn.disabled = true;
-      hint.textContent = 'Adicione itens ao carrinho para continuar.';
-      totalSpan.textContent = 'R$ 0,00';
-      return;
-    }
-    vazio.classList.add('hidden');
-    tabela.classList.remove('hidden');
-
-    if (!temFormaPagamento) {
-      finalizarBtn.disabled = true;
-      hint.textContent = 'Cadastre uma forma de pagamento para conseguir finalizar.';
-    } else {
-      finalizarBtn.disabled = false;
-      hint.textContent = '';
-    }
-
-    itensDiv.innerHTML = '';
-    let total = 0;
-    chaves.forEach(function (chave) {
-      const linha = carrinho[chave];
-      const subtotal = totalLinha(linha);
-      total += subtotal;
-      const adicionaisHtml = linha.adicionais.length
-        ? '<br><small class="text-muted">+ ' + linha.adicionais.map(function (a) { return escapeHtml(a.nome); }).join(', ') + '</small>'
-        : '';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${escapeHtml(linha.nome)}${adicionaisHtml}</td>
-        <td><input type="number" min="1" value="${linha.quantidade}" class="field__control qtd-input" style="min-height:36px;" data-chave="${chave}"></td>
-        <td>R$ ${subtotal.toFixed(2)}</td>
-        <td><button type="button" class="btn btn-icon btn-icon--sm remove-item" data-chave="${chave}">
-          <svg class="icon icon-sm" aria-hidden="true"><use href="${window.DS_SPRITE_URL}#icon-x"></use></svg>
-        </button></td>`;
-      itensDiv.appendChild(tr);
-    });
-    const desconto = parseFloat(document.getElementById('desconto').value || '0');
-    totalSpan.textContent = 'R$ ' + Math.max(total - desconto, 0).toFixed(2);
-  }
-
-  // --- Seletor de adicionais (modal) ---
-
-  function itemTemAdicionais(itemId) {
-    return (ADICIONAIS_POR_ITEM[itemId] || []).length > 0;
-  }
-
-  function atualizarTotalModal(precoBase) {
-    const marcados = document.querySelectorAll('#modal-adicionais-lista input:checked');
-    let total = precoBase;
-    marcados.forEach(function (cb) { total += parseFloat(cb.dataset.preco); });
-    document.getElementById('modal-adicionais-total').textContent = 'R$ ' + total.toFixed(2);
-  }
-
-  function abrirSeletorAdicionais(itemId, nome, preco) {
-    const lista = document.getElementById('modal-adicionais-lista');
-    document.getElementById('modal-adicionais-titulo').textContent = nome;
-    lista.innerHTML = '';
-    (ADICIONAIS_POR_ITEM[itemId] || []).forEach(function (ad) {
-      const label = document.createElement('label');
-      label.className = 'field-check';
-      label.innerHTML = `<input type="checkbox" class="field-check__input" value="${ad.id}" data-preco="${ad.preco}" data-nome="${escapeHtml(ad.nome)}">
-        <span class="field-check__box"><svg class="icon icon-xs" aria-hidden="true"><use href="${window.DS_SPRITE_URL}#icon-check"></use></svg></span>
-        <span class="field-check__label flex justify-between" style="width:100%;">
-          <span>${escapeHtml(ad.nome)}</span><span>+ R$ ${parseFloat(ad.preco).toFixed(2)}</span>
-        </span>`;
-      lista.appendChild(label);
-    });
-    atualizarTotalModal(preco);
-  }
-
-  document.querySelectorAll('.add-item').forEach(function (btn) {
-    const itemId = btn.dataset.id;
-    if (itemTemAdicionais(itemId)) {
-      btn.setAttribute('data-modal-open', 'modal-adicionais');
-    }
-    btn.addEventListener('click', function () {
-      const nome = btn.dataset.nome;
-      const preco = parseFloat(btn.dataset.preco || '0');
-      if (!itemTemAdicionais(itemId)) {
-        adicionarAoCarrinho(itemId, nome, preco, []);
+  const carrinho = window.Carrinho.init({
+    adicionaisPorItem: ADICIONAIS_POR_ITEM,
+    aoAtualizar: function (estado) {
+      if (estado.vazio) {
+        finalizarBtn.disabled = true;
+        abrirBtn.disabled = true;
+        hint.textContent = 'Adicione itens ao carrinho para continuar.';
         return;
       }
-      itemPendente = { itemId: itemId, nome: nome, preco: preco };
-      abrirSeletorAdicionais(itemId, nome, preco);
-    });
+      abrirBtn.disabled = false;
+      if (!temFormaPagamento) {
+        finalizarBtn.disabled = true;
+        hint.textContent = 'Cadastre uma forma de pagamento para conseguir finalizar (ainda dá para abrir o pedido sem pagar agora).';
+      } else {
+        finalizarBtn.disabled = false;
+        hint.textContent = '';
+      }
+    },
   });
-
-  const listaAdicionaisEl = document.getElementById('modal-adicionais-lista');
-  if (listaAdicionaisEl) {
-    listaAdicionaisEl.addEventListener('change', function () {
-      if (itemPendente) atualizarTotalModal(itemPendente.preco);
-    });
-  }
-
-  const confirmarAdicionaisBtn = document.getElementById('modal-adicionais-confirmar');
-  if (confirmarAdicionaisBtn) {
-    confirmarAdicionaisBtn.addEventListener('click', function () {
-      if (!itemPendente) return;
-      const selecionados = Array.from(document.querySelectorAll('#modal-adicionais-lista input:checked')).map(function (cb) {
-        return { id: parseInt(cb.value, 10), nome: cb.dataset.nome, preco: parseFloat(cb.dataset.preco) };
-      });
-      adicionarAoCarrinho(itemPendente.itemId, itemPendente.nome, itemPendente.preco, selecionados);
-      itemPendente = null;
-      const modal = document.getElementById('modal-adicionais');
-      modal.classList.remove('is-open');
-      document.body.style.overflow = '';
-    });
-  }
-
-  // --- Carrinho: quantidade e remoção ---
-
-  const carrinhoItensEl = document.getElementById('carrinho-itens');
-  if (carrinhoItensEl) {
-    carrinhoItensEl.addEventListener('input', function (e) {
-      if (!e.target.classList.contains('qtd-input')) return;
-      const chave = e.target.dataset.chave;
-      const qtd = parseInt(e.target.value, 10) || 1;
-      carrinho[chave].quantidade = qtd;
-      renderCarrinho();
-    });
-
-    carrinhoItensEl.addEventListener('click', function (e) {
-      const btn = e.target.closest('.remove-item');
-      if (!btn) return;
-      delete carrinho[btn.dataset.chave];
-      renderCarrinho();
-    });
-  }
-
-  const descontoInput = document.getElementById('desconto');
-  if (descontoInput) descontoInput.addEventListener('input', renderCarrinho);
-
-  const buscaInput = document.getElementById('busca-item');
-  const filtroCategoria = document.getElementById('filtro-categoria');
-  const semResultado = document.getElementById('catalogo-sem-resultado');
-
-  function aplicarFiltros() {
-    const termo = buscaInput ? buscaInput.value.toLowerCase() : '';
-    const categoriaId = filtroCategoria ? filtroCategoria.value : '';
-    let visiveis = 0;
-    document.querySelectorAll('.item-catalogo').forEach(function (card) {
-      const nomeOk = card.dataset.nome.includes(termo);
-      const categoriaOk = !categoriaId || card.dataset.categoriaId === categoriaId;
-      const mostrar = nomeOk && categoriaOk;
-      card.style.display = mostrar ? '' : 'none';
-      if (mostrar) visiveis += 1;
-    });
-    if (semResultado) semResultado.classList.toggle('hidden', visiveis !== 0);
-  }
-
-  if (buscaInput) buscaInput.addEventListener('input', aplicarFiltros);
-  if (filtroCategoria) filtroCategoria.addEventListener('change', aplicarFiltros);
 
   // --- Impressão ---
 
@@ -416,22 +259,24 @@
     });
   }
 
-  function montarBotaoImprimir() {
+  function montarBotaoImprimir(aberto) {
+    const rotulo = aberto ? 'Imprimir comanda' : 'Imprimir comprovante';
     return '<div class="flex gap-2 mt-2 flex-wrap items-center">' +
       '<button type="button" class="btn btn--sm btn--outline-primary" id="btn-imprimir-pedido">' +
-      '<svg class="icon icon-sm" aria-hidden="true"><use href="' + window.DS_SPRITE_URL + '#icon-receipt"></use></svg>Imprimir pedido</button>' +
+      '<svg class="icon icon-sm" aria-hidden="true"><use href="' + window.DS_SPRITE_URL + '#icon-receipt"></use></svg>' + rotulo + '</button>' +
       '<span id="status-impressao" class="text-sm"></span></div>';
   }
 
-  function ligarBotaoImprimir(vendaId) {
+  function ligarBotaoImprimir(vendaId, aberto) {
     const statusEl = document.getElementById('status-impressao');
     const btn = document.getElementById('btn-imprimir-pedido');
     if (!btn || !window.Impressao) return;
+    const imprimir = aberto ? window.Impressao.imprimirComanda : window.Impressao.imprimirVenda;
 
     function tentar() {
       statusEl.textContent = 'Imprimindo...';
       btn.disabled = true;
-      window.Impressao.imprimirVenda(vendaId, function () {
+      imprimir(vendaId, function () {
         btn.disabled = false;
         statusEl.innerHTML = '<span class="text-success">Pedido impresso.</span>';
       }, function (mensagemErro) {
@@ -447,84 +292,85 @@
     if (localStorage.getItem('impressao_automatica') === '1') tentar();
   }
 
-  // --- Finalizar venda ---
+  // --- Finalizar venda / Abrir pedido ---
 
-  const finalizarBtn = document.getElementById('finalizar-venda');
-  if (finalizarBtn) {
-    finalizarBtn.addEventListener('click', function () {
-      const msgDiv = document.getElementById('venda-mensagem');
-      msgDiv.innerHTML = '';
+  function enviarPedido(acao, botao) {
+    const msgDiv = document.getElementById('venda-mensagem');
+    msgDiv.innerHTML = '';
 
+    let formaPagamentoId = null;
+    if (acao === 'finalizar') {
       const formaPagamentoEl = document.getElementById('forma-pagamento');
-      const formaPagamentoId = formaPagamentoEl ? parseInt(formaPagamentoEl.value, 10) : NaN;
+      formaPagamentoId = formaPagamentoEl ? parseInt(formaPagamentoEl.value, 10) : NaN;
       if (!formaPagamentoId) {
         msgDiv.innerHTML = '<div class="alert alert--danger">Selecione uma forma de pagamento válida.</div>';
         return;
       }
-      if (Object.keys(carrinho).length === 0) {
-        msgDiv.innerHTML = '<div class="alert alert--danger">Adicione ao menos um item ao carrinho.</div>';
-        return;
-      }
+    }
+    if (carrinho.estaVazio()) {
+      msgDiv.innerHTML = '<div class="alert alert--danger">Adicione ao menos um item ao carrinho.</div>';
+      return;
+    }
 
-      finalizarBtn.disabled = true;
-      finalizarBtn.classList.add('is-loading');
+    botao.disabled = true;
+    botao.classList.add('is-loading');
 
-      const itens = Object.keys(carrinho).map(function (chave) {
-        const linha = carrinho[chave];
-        return {
-          item_cardapio_id: parseInt(linha.itemId, 10),
-          quantidade: linha.quantidade,
-          adicionais_ids: linha.adicionais.map(function (a) { return a.id; }),
-        };
-      });
-      const payload = {
-        forma_pagamento_id: formaPagamentoId,
-        canal: document.getElementById('canal').value,
-        desconto: document.getElementById('desconto').value || '0',
-        cliente_nome: document.getElementById('cliente-nome').value || '',
-        itens: itens,
-      };
+    const payload = {
+      acao: acao,
+      canal: document.getElementById('canal').value,
+      desconto: document.getElementById('desconto').value || '0',
+      cliente_nome: document.getElementById('cliente-nome').value || '',
+      itens: carrinho.obterItensPayload(),
+    };
+    if (acao === 'finalizar') payload.forma_pagamento_id = formaPagamentoId;
 
-      fetch(window.location.pathname, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-        body: JSON.stringify(payload),
+    fetch(window.location.pathname, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+      body: JSON.stringify(payload),
+    })
+      .then(function (r) {
+        return r.json()
+          .catch(function () {
+            throw new Error('resposta_invalida');
+          })
+          .then(function (data) { return { status: r.status, data: data }; });
       })
-        .then(function (r) {
-          return r.json()
-            .catch(function () {
-              throw new Error('resposta_invalida');
-            })
-            .then(function (data) { return { status: r.status, data: data }; });
-        })
-        .then(function (result) {
-          if (result.data.ok) {
-            msgDiv.innerHTML = '<div class="alert alert--success">Venda ' + result.data.numero + ' registrada com sucesso! ' +
-              '<a href="/vendas/' + result.data.venda_id + '/">Ver detalhes</a>' +
-              montarBotaoImprimir() + '</div>';
-            ligarBotaoImprimir(result.data.venda_id);
-            Object.keys(carrinho).forEach(function (k) { delete carrinho[k]; });
-            document.getElementById('cliente-nome').value = '';
-            renderCarrinho();
-          } else {
-            msgDiv.innerHTML = '<div class="alert alert--danger">' + result.data.erro + '</div>';
-          }
-        })
-        .catch(function (err) {
-          if (err instanceof Error && err.message === 'resposta_invalida') {
-            msgDiv.innerHTML = '<div class="alert alert--danger">O servidor retornou uma resposta inesperada. Recarregue a página e tente novamente.</div>';
-          } else {
-            msgDiv.innerHTML = '<div class="alert alert--danger">Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.</div>';
-          }
-        })
-        .finally(function () {
-          finalizarBtn.classList.remove('is-loading');
-          finalizarBtn.disabled = Object.keys(carrinho).length === 0;
-        });
-    });
+      .then(function (result) {
+        if (result.data.ok) {
+          const aberto = !!result.data.aberto;
+          const mensagem = aberto
+            ? 'Pedido ' + result.data.numero + ' aberto com sucesso! Pagamento pendente. '
+            : 'Venda ' + result.data.numero + ' registrada com sucesso! ';
+          const linkPedidosAbertos = aberto
+            ? ' · <a href="{% url 'vendas:pedido_list' %}">Ver Pedidos Abertos</a>'
+            : '';
+          msgDiv.innerHTML = '<div class="alert alert--success">' + mensagem +
+            '<a href="/vendas/' + result.data.venda_id + '/">Ver detalhes</a>' + linkPedidosAbertos +
+            montarBotaoImprimir(aberto) + '</div>';
+          ligarBotaoImprimir(result.data.venda_id, aberto);
+          carrinho.limpar();
+          document.getElementById('cliente-nome').value = '';
+        } else {
+          msgDiv.innerHTML = '<div class="alert alert--danger">' + result.data.erro + '</div>';
+        }
+      })
+      .catch(function (err) {
+        if (err instanceof Error && err.message === 'resposta_invalida') {
+          msgDiv.innerHTML = '<div class="alert alert--danger">O servidor retornou uma resposta inesperada. Recarregue a página e tente novamente.</div>';
+        } else {
+          msgDiv.innerHTML = '<div class="alert alert--danger">Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.</div>';
+        }
+      })
+      .finally(function () {
+        botao.classList.remove('is-loading');
+        finalizarBtn.disabled = carrinho.estaVazio() || !temFormaPagamento;
+        abrirBtn.disabled = carrinho.estaVazio();
+      });
   }
 
-  renderCarrinho();
+  if (finalizarBtn) finalizarBtn.addEventListener('click', function () { enviarPedido('finalizar', finalizarBtn); });
+  if (abrirBtn) abrirBtn.addEventListener('click', function () { enviarPedido('abrir', abrirBtn); });
 })();
 </script>
 {% endblock %}

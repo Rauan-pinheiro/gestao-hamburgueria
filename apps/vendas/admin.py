@@ -15,7 +15,8 @@ class ItemVendaInline(admin.TabularInline):
     model = ItemVenda
     extra = 0
     readonly_fields = (
-        'preco_unitario', 'custo_unitario', 'subtotal', 'subtotal_adicionais', 'custo_subtotal', 'adicionais_resumo',
+        'preco_unitario', 'custo_unitario', 'subtotal', 'subtotal_adicionais',
+        'custo_subtotal', 'custo_subtotal_adicionais', 'adicionais_resumo',
     )
     can_delete = False
 
@@ -26,7 +27,10 @@ class ItemVendaInline(admin.TabularInline):
     def adicionais_resumo(self, obj):
         if not obj.pk:
             return '—'
-        nomes = [f'{a.nome_adicional()} (R$ {a.preco_unitario})' for a in obj.adicionais.all()]
+        nomes = [
+            f'{a.nome_adicional()}{" x" + str(a.quantidade) if a.quantidade > 1 else ""} (R$ {a.subtotal})'
+            for a in obj.adicionais.all()
+        ]
         return ', '.join(nomes) if nomes else '—'
 
 
@@ -41,11 +45,13 @@ class VendaAdmin(admin.ModelAdmin):
     date_hierarchy = 'data_hora'
     inlines = [ItemVendaInline]
     list_select_related = ('forma_pagamento', 'usuario')
-    # status é readonly: cancelamento só pode acontecer pelo botão "Cancelar venda" (estorna
-    # o estoque). Editar o campo direto no admin deixaria o estoque baixado sem estorno.
+    # status é readonly: abertura/edição/finalização/cancelamento só podem acontecer pelos
+    # fluxos de negócio em apps.vendas.services (abrir_pedido/editar_pedido_aberto/
+    # finalizar_pedido/cancelar_venda). Editar o campo direto no admin deixaria estoque e
+    # forma de pagamento fora de sincronia com o status.
     readonly_fields = (
         'numero', 'status', 'subtotal', 'total_adicionais', 'valor_total', 'custo_total',
-        'comissao_total', 'lucro_bruto', 'lucro_liquido',
+        'comissao_total', 'lucro_bruto', 'lucro_liquido', 'data_conclusao', 'data_cancelamento',
     )
 
     def has_delete_permission(self, request, obj=None):

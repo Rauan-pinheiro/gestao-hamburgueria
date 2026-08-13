@@ -88,6 +88,19 @@ class MontarTextoReciboTests(unittest.TestCase):
             self.assertIn(palavra, texto)
         self.assertIn('R$ 60.00', texto)
 
+    def test_adicional_escolhido_mais_de_uma_vez_mostra_quantidade(self):
+        pedido = _pedido_com_adicionais()
+        pedido['itens'][0]['adicionais'] = [{'nome': 'Bacon', 'preco': '6.00', 'quantidade': 2}]
+        texto = montar_texto_recibo(pedido, largura=LARGURA_58MM)
+        self.assertIn('2x Bacon', texto)
+
+    def test_adicional_escolhido_uma_vez_nao_mostra_prefixo_de_quantidade(self):
+        pedido = _pedido_com_adicionais()
+        pedido['itens'][0]['adicionais'] = [{'nome': 'Bacon', 'preco': '3.00', 'quantidade': 1}]
+        texto = montar_texto_recibo(pedido, largura=LARGURA_58MM)
+        self.assertNotIn('1x Bacon', texto)
+        self.assertIn('Bacon', texto)
+
     def test_adicional_com_nome_longo_nao_e_cortado(self):
         pedido = _pedido_com_adicionais()
         nome_longo_adicional = 'Molho especial da casa com pimenta biquinho artesanal'
@@ -121,6 +134,82 @@ class MontarTextoReciboTests(unittest.TestCase):
         texto = montar_texto_recibo(pedido, largura=LARGURA_58MM)
         self.assertIn('DESCONTO', texto)
         self.assertIn('R$ 2.00', texto)
+
+
+class MontarTextoReciboTipoComandaTests(unittest.TestCase):
+    """Comanda de produção: nunca mostra valores em R$ — a cozinha não precisa saber preço."""
+
+    def test_comanda_nao_tem_precos(self):
+        pedido = _pedido_com_adicionais()
+        pedido['tipo'] = 'comanda'
+        texto = montar_texto_recibo(pedido, largura=LARGURA_58MM)
+        self.assertNotIn('R$', texto)
+        self.assertNotIn('SUBTOTAL', texto)
+        self.assertNotIn('TOTAL', texto)
+
+    def test_comanda_lista_itens_e_adicionais(self):
+        pedido = _pedido_com_adicionais()
+        pedido['tipo'] = 'comanda'
+        texto = montar_texto_recibo(pedido, largura=LARGURA_58MM)
+        self.assertIn('X-Bacon', texto)
+        self.assertIn('Batata Frita', texto)
+        self.assertIn('Bacon', texto)
+        self.assertIn('Cheddar', texto)
+
+    def test_comanda_nao_mostra_forma_de_pagamento(self):
+        pedido = _pedido_simples()
+        pedido['tipo'] = 'comanda'
+        texto = montar_texto_recibo(pedido, largura=LARGURA_58MM)
+        self.assertNotIn('PAGAMENTO', texto)
+
+
+class MontarTextoReciboTipoContaTests(unittest.TestCase):
+    """Conta do cliente: mantém os preços, mas nunca pode parecer que já foi paga enquanto o
+    pedido está ABERTO."""
+
+    def test_conta_de_pedido_aberto_mostra_pagamento_pendente(self):
+        pedido = _pedido_simples()
+        pedido['tipo'] = 'conta'
+        pedido['status_codigo'] = 'aberto'
+        pedido['forma_pagamento'] = ''  # pedido aberto ainda não tem forma de pagamento definida
+        texto = montar_texto_recibo(pedido, largura=LARGURA_58MM)
+        self.assertIn('PAGAMENTO PENDENTE', texto)
+        self.assertIn('R$ 12.00', texto)  # preços continuam aparecendo na conta
+
+    def test_conta_de_pedido_aberto_nao_afirma_pagamento_confirmado(self):
+        pedido = _pedido_simples()
+        pedido['tipo'] = 'conta'
+        pedido['status_codigo'] = 'aberto'
+        pedido['forma_pagamento'] = ''
+        texto = montar_texto_recibo(pedido, largura=LARGURA_58MM)
+        self.assertNotIn('PAGAMENTO CONFIRMADO', texto)
+
+    def test_conta_de_venda_concluida_mostra_pagamento_confirmado(self):
+        pedido = _pedido_simples()
+        pedido['tipo'] = 'conta'
+        pedido['status_codigo'] = 'concluida'
+        texto = montar_texto_recibo(pedido, largura=LARGURA_58MM)
+        self.assertIn('PAGAMENTO CONFIRMADO', texto)
+
+
+class MontarTextoReciboTipoComprovanteTests(unittest.TestCase):
+    """Comprovante final: precisa mostrar claramente a forma de pagamento e o status."""
+
+    def test_comprovante_default_sem_chave_tipo_funciona_como_antes(self):
+        # Nenhum chamador existente manda 'tipo' — o comportamento tem que continuar idêntico.
+        texto = montar_texto_recibo(_pedido_simples(), largura=LARGURA_58MM)
+        self.assertIn('Obrigado pela preferência!', texto)
+        self.assertIn('Pix', texto)
+
+    def test_comprovante_de_venda_concluida_mostra_status(self):
+        pedido = _pedido_simples()
+        pedido['tipo'] = 'comprovante'
+        pedido['status_codigo'] = 'concluida'
+        pedido['status'] = 'Concluída'
+        texto = montar_texto_recibo(pedido, largura=LARGURA_58MM)
+        self.assertIn('STATUS: CONCLUÍDA', texto)
+        self.assertIn('PAGAMENTO:', texto)
+        self.assertIn('Pix', texto)
 
 
 class MontarBytesImpressaoTests(unittest.TestCase):

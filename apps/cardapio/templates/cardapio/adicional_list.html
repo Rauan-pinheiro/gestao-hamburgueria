@@ -18,12 +18,20 @@
 <div class="card">
   <div class="table-wrap">
     <table class="table">
-      <thead><tr><th>Nome</th><th>Preço</th><th>Categorias</th><th>Itens específicos</th><th>Ordem</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Nome</th><th>Preço</th><th>Ingrediente / custo</th><th>Categorias</th><th>Itens específicos</th><th>Ordem</th><th>Status</th><th></th></tr></thead>
       <tbody>
         {% for a in adicionais %}
         <tr>
           <td>{{ a.nome }}</td>
           <td>R$ {{ a.preco }}</td>
+          <td>
+            {% if a.ingrediente %}
+              <span class="text-sm">{{ a.ingrediente.nome }} ({{ a.quantidade_ingrediente }} {{ a.ingrediente.get_unidade_medida_display }})</span>
+              <br><span class="text-muted text-sm">custo R$ {{ a.custo_unitario|floatformat:4 }}</span>
+            {% else %}
+              <span class="text-muted text-sm">—</span>
+            {% endif %}
+          </td>
           <td>
             {% for c in a.categorias.all %}<span class="badge badge--neutral">{{ c.nome }}</span>{% endfor %}
             {% if not a.categorias.all %}<span class="text-muted text-sm">—</span>{% endif %}
@@ -43,7 +51,7 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7">
+        <tr><td colspan="8">
           <div class="empty-state">
             {% icon "plus-lg" %}
             <span class="empty-state__title">Nenhum adicional cadastrado.</span>

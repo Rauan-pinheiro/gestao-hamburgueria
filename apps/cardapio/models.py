@@ -1,3 +1,6 @@
+from decimal import Decimal
+
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
@@ -83,7 +86,10 @@ class Adicional(TimestampedModel):
     """
 
     nome = models.CharField('Nome', max_length=100)
-    preco = models.DecimalField('Preço (R$)', max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    preco = models.DecimalField(
+        'Preço de venda (R$)', max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)],
+        help_text='Valor cobrado do cliente por unidade do adicional. É independente do custo do '
+                   'ingrediente abaixo — mudar o custo do ingrediente nunca altera este preço automaticamente.')
     ativo = models.BooleanField('Ativo', default=True, db_index=True)
     ordem = models.PositiveIntegerField('Ordem de exibição', default=0)
     categorias = models.ManyToManyField(
@@ -92,6 +98,25 @@ class Adicional(TimestampedModel):
     itens = models.ManyToManyField(
         ItemCardapio, blank=True, related_name='adicionais_especificos', verbose_name='Itens específicos',
         help_text='Disponibiliza o adicional também nestes itens específicos, mesmo que sejam de outra categoria.')
+    # Ligação com o estoque: quando preenchidos, cada unidade deste adicional vendida baixa
+    # `quantidade_ingrediente` de `ingrediente`, ALÉM do que a ficha técnica do produto já baixa
+    # (ver apps.vendas.services._lancar_itens) — nunca substitui a baixa da receita, soma a ela.
+    # Ambos opcionais e nulos por padrão para não quebrar adicionais já cadastrados antes desta
+    # funcionalidade existir (um adicional sem ingrediente vinculado simplesmente não baixa
+    # estoque próprio nem tem custo, exatamente como era o comportamento de todos os adicionais
+    # antes desta mudança).
+    ingrediente = models.ForeignKey(
+        'estoque.Ingrediente', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='usos_em_adicionais', verbose_name='Ingrediente do estoque',
+        help_text='Ingrediente baixado do estoque a cada unidade vendida deste adicional. Deixe em branco '
+                   'para um adicional que não controla estoque próprio (ex.: "Ponto da carne").')
+    quantidade_ingrediente = models.DecimalField(
+        'Quantidade consumida por unidade', max_digits=10, decimal_places=3, null=True, blank=True,
+        validators=[MinValueValidator(Decimal('0.001'), message='A quantidade deve ser maior que zero.')],
+        help_text='Quanto do ingrediente acima é consumido a cada unidade deste adicional, NA MESMA unidade '
+                   'de medida cadastrada no ingrediente (ex.: ingrediente em kg → informe em kg: 26 g de '
+                   'bacon = 0,026 kg). Somado ao que a receita do produto já consome desse ingrediente — '
+                   'nunca substitui.')
 
     objects = AdicionalQuerySet.as_manager()
 
@@ -102,3 +127,24 @@ class Adicional(TimestampedModel):
 
     def __str__(self):
         return self.nome
+
+    def clean(self):
+        if self.ingrediente_id and not self.quantidade_ingrediente:
+            raise ValidationError({
+                'quantidade_ingrediente': 'Informe a quantidade consumida deste ingrediente por unidade do adicional.',
+            })
+        if self.quantidade_ingrediente and not self.ingrediente_id:
+            raise ValidationError({'ingrediente': 'Selecione o ingrediente vinculado a essa quantidade.'})
+
+    def custo_unitario(self):
+        """
+        Custo (R$) de UMA unidade deste adicional, a partir do custo ATUAL do ingrediente
+        vinculado — mesma fonte de custo já usada pela Ficha Técnica (ver
+        `Ingrediente.custo_para_quantidade`, usado por `ItemReceita.custo_total` em
+        apps/receitas/models.py), para não criar uma segunda metodologia de cálculo de custo.
+        Totalmente independente de `preco` (o valor cobrado do cliente é definido manualmente
+        no cadastro e nunca é recalculado a partir deste custo).
+        """
+        if not self.ingrediente_id or not self.quantidade_ingrediente:
+            return Decimal('0')
+        return self.ingrediente.custo_para_quantidade(self.quantidade_ingrediente)

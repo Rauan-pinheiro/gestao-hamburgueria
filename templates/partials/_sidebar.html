@@ -33,8 +33,11 @@
 </a>
 
 <div class="sidebar__section-title">3. Operação</div>
-<a class="nav-link{% if app == 'vendas' %} is-active{% endif %}" href="{% url 'vendas:venda_list' %}">
+<a class="nav-link{% if app == 'vendas' and request.resolver_match.url_name != 'pedido_list' %} is-active{% endif %}" href="{% url 'vendas:venda_list' %}">
   {% icon "cart-check" %}<span>Vendas</span>
+</a>
+<a class="nav-link{% if app == 'vendas' and request.resolver_match.url_name == 'pedido_list' %} is-active{% endif %}" href="{% url 'vendas:pedido_list' %}">
+  {% icon "clock-history" %}<span>Pedidos Abertos</span>
 </a>
 
 <div class="sidebar__section-title">4. Financeiro</div>

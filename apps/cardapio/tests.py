@@ -1,12 +1,14 @@
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
 from apps.core.models import FormaPagamento
+from apps.estoque.models import Ingrediente
 from apps.usuarios.models import Usuario
 
-from .forms import ItemCardapioForm
+from .forms import AdicionalForm, ItemCardapioForm
 from .models import Adicional, CategoriaCardapio, ItemCardapio
 from .services import mapa_adicionais_por_item, motivo_bloqueio_exclusao_adicional
 
@@ -218,3 +220,73 @@ class AdicionalCrudViewTests(TestCase):
         response = self.client.get(reverse('cardapio:itemcardapio_detail', args=[item.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Bacon')
+
+
+class AdicionalIngredienteVinculoTests(TestCase):
+    """
+    Cobre o vínculo Adicional -> Ingrediente/quantidade usado para a baixa de estoque e o
+    cálculo de custo dos adicionais (ver apps.vendas.services._lancar_itens). Um adicional
+    sem ingrediente vinculado continua se comportando exatamente como antes desta
+    funcionalidade existir: sem custo, sem baixa de estoque própria.
+    """
+
+    def setUp(self):
+        self.ingrediente = Ingrediente.objects.create(
+            nome='Bacon', unidade_medida='kg', estoque_atual=Decimal('1.000'),
+            custo_unitario_atual=Decimal('0.0500'),  # R$/g -> R$ 50,00/kg
+        )
+
+    def test_custo_unitario_zero_sem_ingrediente_vinculado(self):
+        adicional = Adicional.objects.create(nome='Bacon', preco=Decimal('3.00'))
+        self.assertEqual(adicional.custo_unitario(), Decimal('0'))
+
+    def test_custo_unitario_calculado_a_partir_do_custo_atual_do_ingrediente(self):
+        adicional = Adicional.objects.create(
+            nome='Bacon', preco=Decimal('3.00'), ingrediente=self.ingrediente,
+            quantidade_ingrediente=Decimal('0.026'),
+        )
+        # 26 g x R$0,05/g = R$ 1,30 — mesma fonte de custo usada pela Ficha Técnica
+        # (Ingrediente.custo_para_quantidade), nunca uma segunda metodologia.
+        self.assertEqual(adicional.custo_unitario(), self.ingrediente.custo_para_quantidade(Decimal('0.026')))
+        self.assertEqual(adicional.custo_unitario(), Decimal('1.3000'))
+
+    def test_preco_de_venda_nao_e_recalculado_quando_custo_do_ingrediente_muda(self):
+        adicional = Adicional.objects.create(
+            nome='Bacon', preco=Decimal('3.00'), ingrediente=self.ingrediente,
+            quantidade_ingrediente=Decimal('0.026'),
+        )
+        self.ingrediente.custo_unitario_atual = Decimal('999.0000')
+        self.ingrediente.save(update_fields=['custo_unitario_atual'])
+        adicional.refresh_from_db()
+        self.assertEqual(adicional.preco, Decimal('3.00'))  # preço cadastrado não muda sozinho
+
+    def test_ingrediente_sem_quantidade_e_invalido(self):
+        adicional = Adicional(nome='Bacon', preco=Decimal('3.00'), ingrediente=self.ingrediente)
+        with self.assertRaises(ValidationError):
+            adicional.full_clean()
+
+    def test_quantidade_sem_ingrediente_e_invalido(self):
+        adicional = Adicional(nome='Bacon', preco=Decimal('3.00'), quantidade_ingrediente=Decimal('0.026'))
+        with self.assertRaises(ValidationError):
+            adicional.full_clean()
+
+    def test_adicional_sem_ingrediente_e_valido(self):
+        adicional = Adicional(nome='Ponto da carne', preco=Decimal('0'))
+        adicional.full_clean()  # não levanta
+
+    def test_form_aceita_ingrediente_e_quantidade(self):
+        form = AdicionalForm(data={
+            'nome': 'Bacon', 'preco': '3.00', 'ativo': 'on', 'ordem': 0,
+            'ingrediente': self.ingrediente.pk, 'quantidade_ingrediente': '0.026',
+            'categorias': [], 'itens': [],
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        adicional = form.save()
+        self.assertEqual(adicional.ingrediente_id, self.ingrediente.pk)
+        self.assertEqual(adicional.quantidade_ingrediente, Decimal('0.026'))
+
+    def test_form_sem_ingrediente_continua_opcional(self):
+        form = AdicionalForm(data={
+            'nome': 'Bacon', 'preco': '3.00', 'ativo': 'on', 'ordem': 0, 'categorias': [], 'itens': [],
+        })
+        self.assertTrue(form.is_valid(), form.errors)
