@@ -85,7 +85,13 @@ window.Carrinho = (function () {
           : '';
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${escapeHtml(linha.nome)}${adicionaisHtml}</td>
-          <td><input type="number" min="1" value="${linha.quantidade}" class="field__control qtd-input" style="min-height:36px;" data-chave="${chave}"></td>
+          <td>
+            <div class="qtd-stepper-inline">
+              <button type="button" class="btn btn-icon btn-icon--sm qtd-menos" data-chave="${chave}" aria-label="Diminuir quantidade de ${escapeHtml(linha.nome)}">−</button>
+              <input type="number" min="1" value="${linha.quantidade}" class="field__control qtd-input" data-chave="${chave}">
+              <button type="button" class="btn btn-icon btn-icon--sm qtd-mais" data-chave="${chave}" aria-label="Aumentar quantidade de ${escapeHtml(linha.nome)}">+</button>
+            </div>
+          </td>
           <td>R$ ${subtotal.toFixed(2)}</td>
           <td><button type="button" class="btn btn-icon btn-icon--sm remove-item" data-chave="${chave}">
             <svg class="icon icon-sm" aria-hidden="true"><use href="${window.DS_SPRITE_URL}#icon-x"></use></svg>
@@ -214,9 +220,27 @@ window.Carrinho = (function () {
       });
 
       carrinhoItensEl.addEventListener('click', function (e) {
-        const btn = e.target.closest('.remove-item');
-        if (!btn) return;
-        delete carrinho[btn.dataset.chave];
+        const removeBtn = e.target.closest('.remove-item');
+        if (removeBtn) {
+          delete carrinho[removeBtn.dataset.chave];
+          renderCarrinho();
+          return;
+        }
+        // Stepper +/- ao lado do campo de quantidade — toque rápido no balcão, sem precisar
+        // abrir teclado numérico só pra mudar de 1 pra 2 unidades (o campo continua editável
+        // por digitação direta também, pra quem prefere teclado físico).
+        const menosBtn = e.target.closest('.qtd-menos');
+        const maisBtn = e.target.closest('.qtd-mais');
+        if (!menosBtn && !maisBtn) return;
+        const chave = (menosBtn || maisBtn).dataset.chave;
+        const linha = carrinho[chave];
+        if (!linha) return;
+        const novaQuantidade = linha.quantidade + (maisBtn ? 1 : -1);
+        if (novaQuantidade < 1) {
+          delete carrinho[chave];
+        } else {
+          linha.quantidade = novaQuantidade;
+        }
         renderCarrinho();
       });
     }

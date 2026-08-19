@@ -1,0 +1,61 @@
+/* Páginas: Nova Venda / Editar Pedido — otimizadas pra velocidade sob pressão de
+   tempo (balcão), com telas estreitas (tablet/celular) tratadas como caminho
+   principal, não só "também funciona". */
+@layer pages {
+
+  /* Stepper de quantidade no carrinho — alternativa em toque ao input numérico puro
+     (que exige abrir teclado na tela pra mudar de 1 pra 2 unidades). O input continua
+     editável por digitação direta, pra quem usa teclado físico. */
+  .qtd-stepper-inline {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+  }
+  .qtd-stepper-inline .qtd-input {
+    min-height: 36px;
+    width: 3rem;
+    padding: 0 .25rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Barra de total fixa (só < 992px, mesmo breakpoint em que o carrinho deixa de
+     ficar ao lado do catálogo e passa pra baixo dele — ver utilities.css
+     .grid-detail). Mantém o total sempre visível sem precisar rolar até o carrinho;
+     tocar nela leva direto pro card do carrinho (onde ficam as ações de verdade:
+     forma de pagamento, finalizar, abrir pedido/salvar). */
+  .mobile-total-bar { display: none; }
+  .mobile-total-bar-spacer { display: none; }
+
+  @media (max-width: 991px) {
+    .mobile-total-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      width: 100%;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: var(--shell-bottomnav-h);
+      z-index: var(--z-bottomnav);
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-surface);
+      border: none;
+      border-top: 1px solid var(--color-border);
+      box-shadow: var(--shadow-lg);
+      cursor: pointer;
+      font: inherit;
+      color: var(--color-text);
+      text-align: left;
+    }
+    .mobile-total-bar__info { display: flex; flex-direction: column; line-height: 1.25; }
+    .mobile-total-bar__label { font-size: var(--text-xs); color: var(--color-text-muted); }
+    .mobile-total-bar__valor { font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); font-variant-numeric: tabular-nums; }
+    .mobile-total-bar__action { display: flex; align-items: center; gap: .35rem; font-size: var(--text-sm); font-weight: 600; color: var(--color-primary); flex-shrink: 0; }
+
+    /* Compensa a altura da barra fixa, senão o fim do card do carrinho (checkbox de
+       impressão automática, mensagens de erro) fica escondido atrás dela. */
+    .mobile-total-bar-spacer { display: block; height: 4.75rem; }
+  }
+}

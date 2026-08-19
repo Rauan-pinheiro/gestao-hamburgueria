@@ -2,6 +2,7 @@
 {% load static %}
 {% load ds_icons %}
 {% block title %}Editar Pedido {{ venda.numero }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/vendas.css' %}">{% endblock %}
 {% block content %}
 {% csrf_token %}
 <div class="page-header">
@@ -29,7 +30,7 @@
     <div class="card">
       <div class="card__body">
         <div class="grid md:grid-cols-2 gap-2">
-          <input type="text" id="busca-item" class="field__control" placeholder="Buscar item do cardápio..." {% if not tem_itens %}disabled{% endif %}>
+          <input type="text" id="busca-item" class="field__control" placeholder="Buscar item do cardápio... (atalho: /)" {% if not tem_itens %}disabled{% endif %}>
           <select id="filtro-categoria" class="field__control" {% if not tem_itens %}disabled{% endif %}>
             <option value="">Todas as categorias</option>
             {% for categoria in categorias %}
@@ -56,7 +57,7 @@
     </div>
   </div>
 
-  <div class="card" style="height: fit-content;">
+  <div class="card" style="height: fit-content;" id="carrinho-card">
     <div class="card__header"><strong class="flex items-center gap-2">{% icon "cart" class="icon-sm" %}Itens do pedido</strong></div>
     <div class="card__body">
       <div id="carrinho-vazio" class="empty-state empty-state--sm">
@@ -91,6 +92,15 @@
     </div>
   </div>
 </div>
+
+<button type="button" class="mobile-total-bar" id="mobile-total-bar" aria-label="Ver itens do pedido">
+  <span class="mobile-total-bar__info">
+    <span class="mobile-total-bar__label">Total do pedido</span>
+    <span class="mobile-total-bar__valor" id="mobile-total-valor">R$ 0,00</span>
+  </span>
+  <span class="mobile-total-bar__action">{% icon "cart" class="icon-sm" %}Ver itens</span>
+</button>
+<div class="mobile-total-bar-spacer"></div>
 
 <div class="modal-overlay" id="modal-adicionais" data-modal>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-adicionais-titulo">
@@ -138,13 +148,39 @@
     };
   });
 
+  const mobileTotalValor = document.getElementById('mobile-total-valor');
+
   const carrinho = window.Carrinho.init({
     adicionaisPorItem: ADICIONAIS_POR_ITEM,
     itensIniciais: itensIniciais,
     aoAtualizar: function (estado) {
+      if (mobileTotalValor) mobileTotalValor.textContent = document.getElementById('carrinho-total').textContent;
       salvarBtn.disabled = estado.vazio;
       hint.textContent = estado.vazio ? 'Adicione itens ao pedido para continuar.' : '';
     },
+  });
+
+  // --- Barra fixa de total (mobile) — toque leva direto pro card de itens do pedido. ---
+  const mobileTotalBar = document.getElementById('mobile-total-bar');
+  const carrinhoCard = document.getElementById('carrinho-card');
+  if (mobileTotalBar && carrinhoCard) {
+    mobileTotalBar.addEventListener('click', function () {
+      carrinhoCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  // --- Atalhos de teclado (bônus pra teclado físico, não interfere em touch). ---
+  document.addEventListener('keydown', function (e) {
+    const buscaInput = document.getElementById('busca-item');
+    const alvoEhCampoDeTexto = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+
+    if (e.key === '/' && !alvoEhCampoDeTexto && buscaInput && !buscaInput.disabled) {
+      e.preventDefault();
+      buscaInput.focus();
+    } else if (e.key === 'Enter' && e.ctrlKey && salvarBtn && !salvarBtn.disabled) {
+      e.preventDefault();
+      salvarBtn.click();
+    }
   });
 
   salvarBtn.addEventListener('click', function () {
