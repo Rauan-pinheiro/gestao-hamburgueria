@@ -1,10 +1,12 @@
 from django import forms
+from django.forms import BaseInlineFormSet, inlineformset_factory
 from django.urls import reverse_lazy
 from django.utils.safestring import mark_safe
 
 from apps.core.forms import ativar_busca
+from apps.estoque.models import Ingrediente
 
-from .models import Adicional, CategoriaCardapio, ItemCardapio
+from .models import Adicional, CategoriaCardapio, ComboComponente, ItemCardapio
 
 
 class CategoriaCardapioForm(forms.ModelForm):
@@ -18,7 +20,7 @@ class ItemCardapioForm(forms.ModelForm):
         model = ItemCardapio
         fields = [
             'nome', 'categoria', 'descricao', 'foto', 'tempo_preparo_minutos',
-            'tipo', 'ativo', 'destaque', 'ordem',
+            'tipo', 'produto_revenda', 'ativo', 'destaque', 'ordem',
         ]
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 3}),
@@ -46,6 +48,16 @@ class ItemCardapioForm(forms.ModelForm):
                 f'<a href="{reverse_lazy("cardapio:categoria_create")}" target="_blank">Cadastre uma categoria</a> '
                 'e depois volte a esta tela (o campo é opcional, não bloqueia o salvamento).'
             )
+
+        # Só ingredientes tipo='revenda' fazem sentido aqui (ver ItemCardapio.clean()) — o
+        # <select> já nasce filtrado em vez do usuário descobrir o erro só ao salvar.
+        # required=False no form: a obrigatoriedade é condicional ao tipo escolhido (só
+        # quando tipo='revenda'), então quem valida isso de verdade é ItemCardapio.clean()
+        # (chamado por full_clean() no fluxo normal do ModelForm) — mesmo padrão já usado
+        # em AdicionalForm para 'ingrediente'.
+        self.fields['produto_revenda'].queryset = Ingrediente.objects.filter(tipo='revenda')
+        self.fields['produto_revenda'].required = False
+        ativar_busca(self, 'produto_revenda')
 
 
 class AdicionalForm(forms.ModelForm):
@@ -75,6 +87,9 @@ class AdicionalForm(forms.ModelForm):
         self.fields['categorias'].queryset = CategoriaCardapio.objects.all()
         self.fields['itens'].queryset = ItemCardapio.objects.all().select_related('categoria')
         self.fields['ingrediente'].required = False
+        # Revenda nunca é ingrediente de adicional (ver Adicional.clean()) — filtrado aqui
+        # pra não oferecer uma opção que só falharia ao salvar.
+        self.fields['ingrediente'].queryset = Ingrediente.objects.exclude(tipo='revenda')
         self.fields['quantidade_ingrediente'].required = False
         ativar_busca(self, 'itens', 'ingrediente')
 
@@ -83,3 +98,53 @@ class AdicionalForm(forms.ModelForm):
         if preco is not None and preco < 0:
             raise forms.ValidationError('O preço do adicional não pode ser negativo.')
         return preco
+
+
+class ComboComponenteForm(forms.ModelForm):
+    class Meta:
+        model = ComboComponente
+        fields = ['componente', 'quantidade']
+        widgets = {
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'min': 1}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Excluir tipo='combo' resolve as duas regras de ComboComponente.clean() de uma vez:
+        # nunca oferece outro combo como opção (sem combo aninhado) E, como o próprio combo
+        # sendo editado é tipo='combo', ele nunca aparece na própria lista (sem autocontenção)
+        # — nenhuma das duas checagens precisa ser reimplementada aqui no form.
+        self.fields['componente'].queryset = ItemCardapio.objects.exclude(tipo='combo').select_related('categoria')
+        ativar_busca(self, 'componente')
+
+
+class BaseComboComponenteFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+
+        componentes_vistos = set()
+        formularios_validos = 0
+        for form in self.forms:
+            if not hasattr(form, 'cleaned_data'):
+                continue
+            dados = form.cleaned_data
+            if not dados or dados.get('DELETE'):
+                continue
+            componente = dados.get('componente')
+            if not componente:
+                continue
+            if componente.pk in componentes_vistos:
+                raise forms.ValidationError('O mesmo item não pode ser adicionado duas vezes no combo.')
+            componentes_vistos.add(componente.pk)
+            formularios_validos += 1
+
+        if formularios_validos == 0:
+            raise forms.ValidationError('Adicione pelo menos um item ao combo.')
+
+
+ComboComponenteFormSet = inlineformset_factory(
+    ItemCardapio, ComboComponente, fk_name='combo', form=ComboComponenteForm,
+    formset=BaseComboComponenteFormSet, extra=1, can_delete=True,
+)

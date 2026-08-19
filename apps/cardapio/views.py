@@ -1,12 +1,13 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from apps.core.views import SafeDeleteView, excluir_em_cascata, toggle_ativo
 
-from .forms import AdicionalForm, CategoriaCardapioForm, ItemCardapioForm
+from .forms import AdicionalForm, CategoriaCardapioForm, ComboComponenteFormSet, ItemCardapioForm
 from .models import Adicional, CategoriaCardapio, ItemCardapio
 from .services import motivo_bloqueio_exclusao, motivo_bloqueio_exclusao_adicional
 
@@ -39,33 +40,66 @@ class ItemCardapioDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'item'
 
     def get_queryset(self):
-        return ItemCardapio.objects.select_related('categoria', 'receita', 'formacao_preco')
+        return ItemCardapio.objects.select_related(
+            'categoria', 'receita', 'formacao_preco', 'produto_revenda'
+        ).prefetch_related('componentes__componente')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['origem_custo_pronta'] = self.object.tem_origem_de_custo()
+        return ctx
 
 
-class ItemCardapioCreateView(LoginRequiredMixin, CreateView):
+class ItemCardapioFormSetMixin:
+    """
+    Compartilhado por criação e edição de ItemCardapio: quando `tipo='combo'`, salva
+    também os componentes (`ComboComponente`) numa única transação — mesmo padrão de
+    `apps.receitas.views.ReceitaFormSetMixin` para não deixar um combo salvo sem
+    componente nenhum se o formset for inválido. Para os outros tipos (produzido/revenda)
+    o formset é ignorado na validação (ele simplesmente não se aplica) e qualquer
+    componente órfão de uma troca de tipo anterior é limpo.
+    """
     model = ItemCardapio
     form_class = ItemCardapioForm
     template_name = 'cardapio/itemcardapio_form.html'
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        if self.request.POST:
+            ctx['componente_formset'] = ComboComponenteFormSet(self.request.POST, instance=self.object)
+        else:
+            ctx['componente_formset'] = ComboComponenteFormSet(instance=self.object)
+        return ctx
+
     def form_valid(self, form):
-        messages.success(self.request, 'Item do cardápio cadastrado com sucesso.')
-        return super().form_valid(form)
+        ctx = self.get_context_data()
+        formset = ctx['componente_formset']
+        with transaction.atomic():
+            self.object = form.save()
+            formset.instance = self.object
+            if self.object.tipo == 'combo':
+                if not formset.is_valid():
+                    transaction.set_rollback(True)
+                    return self.render_to_response(self.get_context_data(form=form))
+                formset.save()
+            else:
+                # Item deixou de ser (ou nunca foi) combo — nenhum ComboComponente faz
+                # sentido apontando pra ele; limpa em vez de deixar configuração órfã.
+                self.object.componentes.all().delete()
+
+        messages.success(self.request, self.mensagem_sucesso)
+        return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse_lazy('cardapio:itemcardapio_detail', args=[self.object.pk])
 
 
-class ItemCardapioUpdateView(LoginRequiredMixin, UpdateView):
-    model = ItemCardapio
-    form_class = ItemCardapioForm
-    template_name = 'cardapio/itemcardapio_form.html'
+class ItemCardapioCreateView(LoginRequiredMixin, ItemCardapioFormSetMixin, CreateView):
+    mensagem_sucesso = 'Item do cardápio cadastrado com sucesso.'
 
-    def form_valid(self, form):
-        messages.success(self.request, 'Item do cardápio atualizado.')
-        return super().form_valid(form)
 
-    def get_success_url(self):
-        return reverse_lazy('cardapio:itemcardapio_detail', args=[self.object.pk])
+class ItemCardapioUpdateView(LoginRequiredMixin, ItemCardapioFormSetMixin, UpdateView):
+    mensagem_sucesso = 'Item do cardápio atualizado.'
 
 
 class ItemCardapioDeleteView(LoginRequiredMixin, SafeDeleteView):

@@ -48,9 +48,9 @@
           <div class="card__body flex flex-col">
             <h3 class="font-semibold mb-1" style="font-size: var(--text-sm);">{{ item.nome }}</h3>
             <small class="text-muted mb-2">{{ item.categoria|default:'Sem categoria' }}</small>
-            {% if not item.receita %}
-            <span class="badge badge--neutral mb-2" style="align-self:flex-start;" title="Item sem ficha técnica: a venda não baixará estoque de ingredientes.">
-              {% icon "journal-x" class="icon-xs" %}Sem ficha técnica
+            {% if not item.tem_origem_de_custo %}
+            <span class="badge badge--neutral mb-2" style="align-self:flex-start;" title="Item sem ficha técnica/produto de revenda/componentes (depende do tipo): a venda não baixará estoque.">
+              {% icon "journal-x" class="icon-xs" %}Sem origem de custo/estoque
             </span>
             {% endif %}
             <div class="mt-auto">

@@ -19,8 +19,9 @@
 {% if not custo_por_porcao %}
 <div class="alert alert--warning mb-4">
   {% icon "exclamation-triangle" %}
-  <div>Este item ainda não tem <strong>ficha técnica</strong> (ou o custo dela é zero). O cálculo de preço parte do custo
-  da receita — cadastre a ficha técnica primeiro para ter uma sugestão de preço confiável.</div>
+  <div>Este item ainda não tem custo definido (ou o custo é zero) — pode ser ficha técnica, produto de revenda
+  vinculado ou componentes do combo, dependendo do tipo do item. Cadastre a origem do custo primeiro,
+  na tela do próprio item, para ter uma sugestão de preço confiável.</div>
 </div>
 {% endif %}
 

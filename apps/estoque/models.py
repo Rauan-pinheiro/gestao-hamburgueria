@@ -38,11 +38,21 @@ class Ingrediente(TimestampedModel):
         ('l', 'Litro (l)'),
         ('un', 'Unidade (un)'),
     ]
+    TIPO_CHOICES = [
+        ('materia_prima', 'Matéria-prima'),
+        ('revenda', 'Produto de revenda'),
+    ]
 
     nome = models.CharField('Nome', max_length=150)
     categoria = models.ForeignKey(
         CategoriaIngrediente, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='ingredientes', verbose_name='Categoria')
+    tipo = models.CharField(
+        'Tipo', max_length=15, choices=TIPO_CHOICES, default='materia_prima', db_index=True,
+        help_text='Matéria-prima: usado em fichas técnicas, receitas de produção e adicionais '
+                   '(ex.: pão, carne, bacon). Produto de revenda: comprado pronto e vendido inteiro, '
+                   'sem ficha técnica (ex.: Coca-Cola, água) — vinculado direto a um item do cardápio '
+                   'do tipo "Revenda", nunca usado dentro de uma receita.')
     unidade_medida = models.CharField('Unidade de medida', max_length=5, choices=UNIDADE_MEDIDA_CHOICES)
     estoque_atual = models.DecimalField('Estoque atual', max_digits=10, decimal_places=3, default=0, editable=False)
     estoque_minimo = models.DecimalField(

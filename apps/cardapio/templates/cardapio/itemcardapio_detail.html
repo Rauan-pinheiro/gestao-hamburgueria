@@ -34,8 +34,10 @@
   <div class="card__body">
     <div class="flex items-center gap-4 flex-wrap">
       <div class="flex items-center gap-2">
-        {% if receita %}{% icon "check-circle" class="text-success" %}{% else %}{% icon "circle" class="text-muted" %}{% endif %}
-        <span class="{% if not receita %}text-muted{% endif %}">1. Ficha técnica</span>
+        {% if origem_custo_pronta %}{% icon "check-circle" class="text-success" %}{% else %}{% icon "circle" class="text-muted" %}{% endif %}
+        <span class="{% if not origem_custo_pronta %}text-muted{% endif %}">
+          1. {% if item.tipo == 'revenda' %}Produto de revenda vinculado{% elif item.tipo == 'combo' %}Componentes do combo{% else %}Ficha técnica{% endif %}
+        </span>
       </div>
       {% icon "arrow-right" class="text-muted" %}
       <div class="flex items-center gap-2">
@@ -44,8 +46,8 @@
       </div>
       {% icon "arrow-right" class="text-muted" %}
       <div class="flex items-center gap-2">
-        {% if item.ativo and receita and formacao %}{% icon "check-circle" class="text-success" %}{% else %}{% icon "circle" class="text-muted" %}{% endif %}
-        <span class="{% if not item.ativo or not receita or not formacao %}text-muted{% endif %}">3. Pronto para vender</span>
+        {% if item.ativo and origem_custo_pronta and formacao %}{% icon "check-circle" class="text-success" %}{% else %}{% icon "circle" class="text-muted" %}{% endif %}
+        <span class="{% if not item.ativo or not origem_custo_pronta or not formacao %}text-muted{% endif %}">3. Pronto para vender</span>
       </div>
     </div>
   </div>
@@ -69,14 +71,40 @@
 
   <div class="card card--full">
     <div class="card__body">
-      <h4 class="text-muted mb-1 flex items-center gap-2" style="font-size: var(--text-sm);">{% icon "journal-text" %}Ficha Técnica</h4>
-      <p class="text-sm text-muted mb-3">Quais ingredientes (e quanto de cada) compõem este item. É a partir daqui que o custo é calculado.</p>
-      {% if receita %}
-        <p class="mb-2">Custo por porção: <strong>R$ {{ receita.custo_por_porcao|floatformat:2 }}</strong></p>
-        <a href="{% url 'receitas:receita_detail' receita.pk %}" class="btn btn--sm btn--outline">Ver/editar ficha técnica</a>
+      {% if item.tipo == 'revenda' %}
+        <h4 class="text-muted mb-1 flex items-center gap-2" style="font-size: var(--text-sm);">{% icon "box-seam" %}Produto de Revenda</h4>
+        <p class="text-sm text-muted mb-3">Produto comprado pronto e revendido inteiro — sem ficha técnica. Custo e estoque vêm direto do ingrediente vinculado.</p>
+        {% if item.produto_revenda %}
+          <p class="mb-1">Vinculado a: <strong>{{ item.produto_revenda.nome }}</strong></p>
+          <p class="mb-2">Custo unitário: <strong>R$ {{ item.custo_unitario|floatformat:2 }}</strong></p>
+          <a href="{% url 'estoque:ingrediente_detail' item.produto_revenda.pk %}" class="btn btn--sm btn--outline">Ver produto no estoque</a>
+        {% else %}
+          <p class="text-muted flex items-center gap-2 mb-3">{% icon "exclamation-circle" class="icon-sm" %}Ainda sem produto de revenda vinculado — sem ele, o preço não pode ser sugerido automaticamente.</p>
+          <a href="{% url 'cardapio:itemcardapio_update' item.pk %}" class="btn btn--sm btn--primary">Vincular produto de revenda</a>
+        {% endif %}
+      {% elif item.tipo == 'combo' %}
+        <h4 class="text-muted mb-1 flex items-center gap-2" style="font-size: var(--text-sm);">{% icon "grid" %}Componentes do Combo</h4>
+        <p class="text-sm text-muted mb-3">Itens do cardápio que compõem este combo. O custo é a soma automática dos componentes; o preço é definido à parte.</p>
+        {% if item.componentes.all %}
+          <ul class="mb-2" style="padding-left: 1.25em;">
+            {% for c in item.componentes.all %}<li>{{ c.quantidade }}x {{ c.componente.nome }}</li>{% endfor %}
+          </ul>
+          <p class="mb-2">Custo total: <strong>R$ {{ item.custo_unitario|floatformat:2 }}</strong></p>
+          <a href="{% url 'cardapio:itemcardapio_update' item.pk %}" class="btn btn--sm btn--outline">Editar componentes</a>
+        {% else %}
+          <p class="text-muted flex items-center gap-2 mb-3">{% icon "exclamation-circle" class="icon-sm" %}Ainda sem componentes — sem eles, o preço não pode ser sugerido automaticamente.</p>
+          <a href="{% url 'cardapio:itemcardapio_update' item.pk %}" class="btn btn--sm btn--primary">Adicionar componentes</a>
+        {% endif %}
       {% else %}
-        <p class="text-muted flex items-center gap-2 mb-3">{% icon "exclamation-circle" class="icon-sm" %}Ainda sem ficha técnica — sem ela, o preço não pode ser sugerido automaticamente.</p>
-        <a href="{% url 'receitas:receita_create' %}?item_cardapio={{ item.pk }}" class="btn btn--sm btn--primary">Criar ficha técnica</a>
+        <h4 class="text-muted mb-1 flex items-center gap-2" style="font-size: var(--text-sm);">{% icon "journal-text" %}Ficha Técnica</h4>
+        <p class="text-sm text-muted mb-3">Quais ingredientes (e quanto de cada) compõem este item. É a partir daqui que o custo é calculado.</p>
+        {% if receita %}
+          <p class="mb-2">Custo por porção: <strong>R$ {{ receita.custo_por_porcao|floatformat:2 }}</strong></p>
+          <a href="{% url 'receitas:receita_detail' receita.pk %}" class="btn btn--sm btn--outline">Ver/editar ficha técnica</a>
+        {% else %}
+          <p class="text-muted flex items-center gap-2 mb-3">{% icon "exclamation-circle" class="icon-sm" %}Ainda sem ficha técnica — sem ela, o preço não pode ser sugerido automaticamente.</p>
+          <a href="{% url 'receitas:receita_create' %}?item_cardapio={{ item.pk }}" class="btn btn--sm btn--primary">Criar ficha técnica</a>
+        {% endif %}
       {% endif %}
     </div>
   </div>

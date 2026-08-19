@@ -5,9 +5,10 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.cardapio.models import Adicional, CategoriaCardapio, ItemCardapio
+from apps.cardapio.models import Adicional, CategoriaCardapio, ComboComponente, ItemCardapio
 from apps.core.models import FormaPagamento
 from apps.estoque.models import Ingrediente
+from apps.precificacao.models import FormacaoPreco
 from apps.receitas.models import ItemReceita, Receita
 from apps.usuarios.models import Usuario
 
@@ -759,3 +760,115 @@ class AdicionalComIngredienteEstoqueECustoTests(TestCase):
         self.bacon_estoque.refresh_from_db()
         self.assertEqual(self.bacon_estoque.estoque_atual, Decimal('0.974'))  # só a receita baixou
         self.assertEqual(venda.itens.first().custo_subtotal_adicionais, Decimal('0'))
+
+
+class VendaDeItemRevendaTests(TestCase):
+    """
+    Cobre o novo tipo 'revenda' no fluxo real de venda: baixa de estoque direto do
+    Ingrediente vinculado (sem ficha técnica) e custo/preço congelados normalmente —
+    mesmo motor de `_lancar_itens`, agora delegando para
+    `ItemCardapio.custo_unitario()`/`itens_para_baixa_estoque()` (ver apps/vendas/services.py).
+    """
+
+    def setUp(self):
+        self.usuario = Usuario.objects.create_user(username='operador', password='senha-teste-123')
+        self.forma_pagamento = FormaPagamento.objects.create(nome='Dinheiro Teste', taxa_percentual=Decimal('0'))
+        self.categoria = CategoriaCardapio.objects.create(nome='Bebidas', ordem=1)
+        self.coca_ingrediente = Ingrediente.objects.create(
+            nome='Coca-Cola lata', unidade_medida='un', tipo='revenda',
+            estoque_atual=Decimal('10'), custo_unitario_atual=Decimal('3.5000'))
+        self.coca = ItemCardapio.objects.create(
+            nome='Coca-Cola', categoria=self.categoria, tipo='revenda', produto_revenda=self.coca_ingrediente)
+        FormacaoPreco.objects.create(item_cardapio=self.coca, preco_praticado=Decimal('6.00'))
+
+    def test_venda_baixa_uma_unidade_por_coca_vendida_sem_ficha_tecnica(self):
+        venda = registrar_venda(
+            forma_pagamento=self.forma_pagamento, canal='balcao', usuario=self.usuario,
+            itens=[{'item_cardapio': self.coca, 'quantidade': 3}],
+        )
+        self.coca_ingrediente.refresh_from_db()
+        self.assertEqual(self.coca_ingrediente.estoque_atual, Decimal('7'))  # 10 - 3
+
+        item_venda = venda.itens.first()
+        self.assertEqual(item_venda.custo_unitario, Decimal('3.5000'))
+        self.assertEqual(item_venda.preco_unitario, Decimal('6.00'))
+        self.assertEqual(venda.valor_total, Decimal('18.00'))
+        self.assertEqual(venda.custo_total, Decimal('10.50'))  # 3 x R$3,50
+        self.assertEqual(venda.lucro_bruto, Decimal('7.50'))
+
+    def test_cancelamento_de_venda_com_revenda_estorna_estoque(self):
+        venda = registrar_venda(
+            forma_pagamento=self.forma_pagamento, canal='balcao', usuario=self.usuario,
+            itens=[{'item_cardapio': self.coca, 'quantidade': 2}],
+        )
+        self.coca_ingrediente.refresh_from_db()
+        self.assertEqual(self.coca_ingrediente.estoque_atual, Decimal('8'))
+
+        cancelar_venda(venda=venda, usuario=self.usuario)
+        self.coca_ingrediente.refresh_from_db()
+        self.assertEqual(self.coca_ingrediente.estoque_atual, Decimal('10'))  # estornado
+
+
+class VendaDeComboTests(TestCase):
+    """
+    Cobre o tipo 'combo': a venda precisa baixar o estoque de TODOS os componentes
+    (produzido + revenda, cada um com sua própria regra) e o custo do combo é a soma
+    automática, mesmo o preço sendo definido manualmente (ver ComboComponente em
+    apps/cardapio/models.py).
+    """
+
+    def setUp(self):
+        self.usuario = Usuario.objects.create_user(username='operador', password='senha-teste-123')
+        self.forma_pagamento = FormaPagamento.objects.create(nome='Dinheiro Teste', taxa_percentual=Decimal('0'))
+        self.categoria = CategoriaCardapio.objects.create(nome='Combos', ordem=1)
+
+        self.pao = Ingrediente.objects.create(
+            nome='Pão', unidade_medida='g', tipo='materia_prima',
+            estoque_atual=Decimal('1000'), custo_unitario_atual=Decimal('0.0200'))
+        self.hamburguer = ItemCardapio.objects.create(nome='X-Burger', categoria=self.categoria, tipo='produzido')
+        receita = Receita.objects.create(nome='Ficha X-Burger', item_cardapio=self.hamburguer)
+        ItemReceita.objects.create(receita=receita, ingrediente=self.pao, quantidade=Decimal('100'))
+
+        self.coca_ingrediente = Ingrediente.objects.create(
+            nome='Coca-Cola lata', unidade_medida='un', tipo='revenda',
+            estoque_atual=Decimal('10'), custo_unitario_atual=Decimal('3.5000'))
+        self.coca = ItemCardapio.objects.create(
+            nome='Coca-Cola', categoria=self.categoria, tipo='revenda', produto_revenda=self.coca_ingrediente)
+
+        self.combo = ItemCardapio.objects.create(nome='Combo X-Burger', categoria=self.categoria, tipo='combo')
+        ComboComponente.objects.create(combo=self.combo, componente=self.hamburguer, quantidade=1)
+        ComboComponente.objects.create(combo=self.combo, componente=self.coca, quantidade=1)
+        FormacaoPreco.objects.create(item_cardapio=self.combo, preco_praticado=Decimal('10.00'))
+
+    def test_venda_de_combo_baixa_estoque_de_todos_os_componentes(self):
+        registrar_venda(
+            forma_pagamento=self.forma_pagamento, canal='balcao', usuario=self.usuario,
+            itens=[{'item_cardapio': self.combo, 'quantidade': 2}],
+        )
+        self.pao.refresh_from_db()
+        self.coca_ingrediente.refresh_from_db()
+        # 2 combos x 1 hambúrguer x 100g de pão = 200g; 2 combos x 1 coca = 2 unidades.
+        self.assertEqual(self.pao.estoque_atual, Decimal('800'))  # 1000 - 200
+        self.assertEqual(self.coca_ingrediente.estoque_atual, Decimal('8'))  # 10 - 2
+
+    def test_venda_de_combo_congela_custo_como_soma_dos_componentes(self):
+        venda = registrar_venda(
+            forma_pagamento=self.forma_pagamento, canal='balcao', usuario=self.usuario,
+            itens=[{'item_cardapio': self.combo, 'quantidade': 1}],
+        )
+        # Hambúrguer: 100g x R$0,02/g = R$2,00. Coca: R$3,50. Total: R$5,50.
+        self.assertEqual(venda.itens.first().custo_unitario, Decimal('5.5000'))
+        self.assertEqual(venda.custo_total, Decimal('5.5000'))
+        self.assertEqual(venda.valor_total, Decimal('10.00'))
+        self.assertEqual(venda.lucro_bruto, Decimal('4.5000'))
+
+    def test_cancelamento_de_combo_estorna_estoque_de_todos_os_componentes(self):
+        venda = registrar_venda(
+            forma_pagamento=self.forma_pagamento, canal='balcao', usuario=self.usuario,
+            itens=[{'item_cardapio': self.combo, 'quantidade': 1}],
+        )
+        cancelar_venda(venda=venda, usuario=self.usuario)
+        self.pao.refresh_from_db()
+        self.coca_ingrediente.refresh_from_db()
+        self.assertEqual(self.pao.estoque_atual, Decimal('1000'))
+        self.assertEqual(self.coca_ingrediente.estoque_atual, Decimal('10'))

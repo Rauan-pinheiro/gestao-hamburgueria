@@ -77,6 +77,10 @@ class ItemReceitaForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Ingrediente tipo='revenda' (comprado pronto pra vender inteiro, ex.: Coca-Cola)
+        # nunca pode entrar numa ficha técnica (ver ItemReceita.clean()) — filtrado aqui
+        # pra não deixar o usuário escolher algo que só falharia ao salvar.
+        self.fields['ingrediente'].queryset = self.fields['ingrediente'].queryset.exclude(tipo='revenda')
         _popular_widget_de_custo(self.fields['ingrediente'].widget)
 
 
@@ -150,8 +154,10 @@ class ReceitaProducaoForm(forms.ModelForm):
         ativar_busca(self, 'ingrediente_produzido')
         # Só faz sentido escolher, como "ingrediente produzido", algo que ainda não é
         # comprado de fornecedor nem já é produzido por outra receita — evita o usuário
-        # descobrir o conflito só depois de preencher a receita inteira.
-        qs = self.fields['ingrediente_produzido'].queryset.filter(ativo=True)
+        # descobrir o conflito só depois de preencher a receita inteira. tipo='revenda'
+        # também é excluído: produto de revenda é comprado pronto, nunca produzido
+        # internamente (ver ReceitaProducao.clean()).
+        qs = self.fields['ingrediente_produzido'].queryset.filter(ativo=True).exclude(tipo='revenda')
         ids_com_oferta_ativa = set(
             qs.filter(ofertas__ativo=True, ofertas__disponivel=True, ofertas__fornecedor__ativo=True)
             .values_list('pk', flat=True)
@@ -176,6 +182,8 @@ class ItemReceitaProducaoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Mesma restrição de ItemReceitaForm: revenda nunca é insumo (ver ItemReceitaProducao.clean()).
+        self.fields['ingrediente'].queryset = self.fields['ingrediente'].queryset.exclude(tipo='revenda')
         _popular_widget_de_custo(self.fields['ingrediente'].widget)
 
 

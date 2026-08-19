@@ -78,7 +78,7 @@ def nova_venda(request):
     if request.method == 'POST':
         return _processar_nova_venda(request)
 
-    itens_cardapio = ItemCardapio.objects.ativos().select_related('categoria', 'formacao_preco', 'receita')
+    itens_cardapio = ItemCardapio.objects.ativos().select_related('categoria', 'formacao_preco', 'receita', 'produto_revenda').prefetch_related('componentes__componente')
     formas_pagamento = FormaPagamento.objects.filter(ativo=True)
     categorias = CategoriaCardapio.objects.filter(ativo=True)
     itens_sem_preco = sum(
@@ -210,7 +210,7 @@ def pedido_editar(request, pk):
     if request.method == 'POST':
         return _processar_pedido_editar(request, venda)
 
-    itens_cardapio = ItemCardapio.objects.ativos().select_related('categoria', 'formacao_preco', 'receita')
+    itens_cardapio = ItemCardapio.objects.ativos().select_related('categoria', 'formacao_preco', 'receita', 'produto_revenda').prefetch_related('componentes__componente')
     categorias = CategoriaCardapio.objects.filter(ativo=True)
     adicionais_por_item = mapa_adicionais_por_item(itens_cardapio)
 

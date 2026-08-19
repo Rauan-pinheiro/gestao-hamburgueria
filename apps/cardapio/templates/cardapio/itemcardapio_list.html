@@ -46,9 +46,10 @@
     <div class="card__body">
       <h4 class="mb-1" style="font-size: var(--text-md);"><a href="{% url 'cardapio:itemcardapio_detail' item.pk %}">{{ item.nome }}</a></h4>
       <p class="text-muted text-sm mb-2">{{ item.categoria|default:'Sem categoria' }}</p>
-      <div class="flex gap-2 mb-3">
+      <div class="flex gap-2 mb-3 flex-wrap">
         {% if item.ativo %}<span class="badge badge--success">Ativo</span>{% else %}<span class="badge badge--neutral">Inativo</span>{% endif %}
         {% if item.destaque %}<span class="badge badge--warning">Destaque</span>{% endif %}
+        <span class="badge badge--neutral">{{ item.get_tipo_display }}</span>
       </div>
       <div class="btn-group">
         <a href="{% url 'cardapio:itemcardapio_update' item.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Editar">{% icon "pencil" class="icon-sm" %}</a>

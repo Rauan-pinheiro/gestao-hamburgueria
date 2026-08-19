@@ -264,9 +264,12 @@ guardar os backups (ver TODO #2).
 
 ```
 Fornecedor ─┬─< OfertaFornecedor >─┬─ Ingrediente ─┬─< ItemReceita >─┬─ Receita ── ItemCardapio ── CategoriaCardapio
-            └─< HistoricoPreco     │               │                 │
-                                    │               └─< ItemReceitaProducao >─ ReceitaProducao
-                                    └─< MovimentacaoEstoque (ledger imutável, nunca editado/apagado)
+            └─< HistoricoPreco     │  (tipo:       │                 │                │
+                                    │  materia_prima│                 │                ├─ FormacaoPreco (preço)
+                                    │  ou revenda)  └─< ItemReceitaProducao >─ ReceitaProducao
+                                    │                                                  │
+                                    ├─< MovimentacaoEstoque (ledger imutável)          ├─(tipo='revenda')→ produto_revenda ─▶ Ingrediente
+                                    └────────────────────────────────────────────────▶ (tipo='combo')→ ComboComponente >─ ItemCardapio (componente)
 
 Venda ─< ItemVenda >─ ItemCardapio (PROTECT — nunca apagado se usado numa venda)
   │        └─< ItemVendaAdicional >─ Adicional (PROTECT, preço congelado no momento da venda)
@@ -274,14 +277,37 @@ Venda ─< ItemVenda >─ ItemCardapio (PROTECT — nunca apagado se usado numa 
   └─< MovimentacaoEstoque (venda=...) >─ Ingrediente
 ```
 
-## 7. Cardápio (categorias, itens e adicionais)
+## 7. Cardápio (categorias, itens, tipos e adicionais)
 
 - **`CategoriaCardapio`**: agrupador simples (nome + ordem de exibição + ativo).
-- **`ItemCardapio`**: um produto vendável (ex.: "X-Bacon"). Liga-se opcionalmente a
-  uma `Receita` (ficha técnica — de onde vem o custo) e a uma `FormacaoPreco`
-  (precificação — de onde vem o preço praticado). Um item sem ficha técnica não baixa
-  estoque ao ser vendido (fica sinalizado na tela de "Nova Venda"); um item sem
-  `FormacaoPreco` é vendido a R$ 0,00 (também sinalizado).
+- **`ItemCardapio`**: um produto vendável (ex.: "X-Bacon"). Tem um `tipo`, que decide de
+  onde vêm custo e baixa de estoque — nunca mais de uma fonte por item, e a decisão fica
+  centralizada em `ItemCardapio.custo_unitario()`/`itens_para_baixa_estoque()`
+  (reaproveitados por `FormacaoPreco` e por `apps.vendas.services._lancar_itens`, para não
+  duplicar a regra "qual é o custo deste item" em mais de um lugar):
+  - **`produzido`** (default): tem uma `Receita` (ficha técnica) opcional — sem ela, custo
+    é R$ 0,00 e a venda não baixa estoque (sinalizado na tela de "Nova Venda").
+  - **`revenda`**: produto comprado pronto e vendido inteiro (ex.: Coca-Cola, água) — sem
+    ficha técnica. Aponta direto para um `estoque.Ingrediente` com `tipo='revenda'`
+    (campo `produto_revenda`), reaproveitando toda a infraestrutura de custo/estoque que
+    `Ingrediente` já tem (`ProdutoFornecedor`, `HistoricoPreco`, `MovimentacaoEstoque`) em
+    vez de duplicar um segundo model de estoque só para revenda. Custo = só o valor de
+    aquisição — **nunca** aplica gás/energia/mão de obra/embalagem (isso só existe para
+    `produzido`, via `Receita.custo_indiretos()`).
+  - **`combo`**: composto por outros itens do cardápio (nunca outro combo — profundidade
+    máxima de 1, ver `ComboComponente.clean()`) através de `ComboComponente` (`combo`,
+    `componente`, `quantidade`). Preço é sempre definido manualmente em `FormacaoPreco`
+    (nunca a soma automática dos componentes); custo e baixa de estoque, sim, são a soma
+    automática — cada componente contribuindo com sua própria regra (produzido ou
+    revenda).
+  - Liga-se opcionalmente a uma `FormacaoPreco` (precificação — de onde vem o preço
+    praticado, igual para os três tipos); um item sem `FormacaoPreco` é vendido a
+    R$ 0,00 (sinalizado).
+- **`estoque.Ingrediente.tipo`** (`materia_prima`/`revenda`) separa o que pode ser usado
+  dentro de ficha técnica/receita de produção/adicional (`materia_prima`) do que só pode
+  ser vendido inteiro via `ItemCardapio.produto_revenda` (`revenda`) — nunca os dois ao
+  mesmo tempo; validado em `ItemReceita.clean()`, `ItemReceitaProducao.clean()`,
+  `ReceitaProducao.clean()`, `Adicional.clean()` e `ItemCardapio.clean()`.
 - **`Adicional`**: nome + preço + ativo. **Nunca é global** — só fica disponível para
   um `ItemCardapio` se estiver vinculado à categoria do item e/ou ao item
   especificamente (`ItemCardapio.adicionais_disponiveis()`, estrutura híbrida
@@ -748,6 +774,61 @@ efetivamente paga — ver [seção 8](#8-fluxo-de-vendas) para o fluxo completo.
   add/remove/quantidade/adicionais —, finalizar com cada forma de pagamento,
   cancelar, e as regras de bloqueio de transição de status) + 8 novos em
   `printer_agent/test_formatador.py` para os três tipos de impressão.
+
+### 7. Reestruturação: produto de revenda + combo 🟢 concluído (19/08/2026)
+
+Motivação completa (auditoria, decisões de modelagem e prompt original) preservada fora
+deste README; resumo do que mudou — ver [seção 7](#7-cardápio-categorias-itens-tipos-e-adicionais)
+para o modelo final.
+
+- **Problema resolvido**: até aqui, todo item de cardápio vendável exigia uma `Receita`
+  (ficha técnica) pra ter custo e baixar estoque — o que não fazia sentido pra produto
+  comprado pronto e revendido inteiro (ex.: Coca-Cola) nem pra combo.
+- **Modelo**: `estoque.Ingrediente.tipo` (`materia_prima`/`revenda`, default
+  `materia_prima` — nenhum dado existente muda de significado). `cardapio.ItemCardapio.tipo`
+  ganhou `revenda` e `produzido` (renomeado de `simples`, migração de dados
+  `apps/cardapio/migrations/0006_...py` migra `simples`→`produzido` com `RunPython`
+  reversível) + novo campo `produto_revenda` (FK para `Ingrediente`, `on_delete=PROTECT`).
+  Novo model `cardapio.ComboComponente` (`combo`, `componente`, `quantidade`) — combo
+  aninhado é proibido por `clean()` (`componente.tipo != 'combo'`), sem precisar
+  reimplementar a proteção contra ciclo que `ReceitaProducao` já tem para outro caso.
+- **Centralização de cálculo**: `ItemCardapio.custo_unitario()` e
+  `.itens_para_baixa_estoque(quantidade)` são a ÚNICA fonte de "qual é o custo/baixa de
+  estoque deste item" — `FormacaoPreco.custo_por_porcao()` e
+  `apps.vendas.services._lancar_itens` só chamam esses métodos, nunca decidem por tipo
+  sozinhos. Isso significa que precificação de revenda **nunca** aplica
+  gás/energia/mão de obra/embalagem (só existe em `Receita.custo_indiretos()`, que só
+  entra na conta de itens `produzido`) — regra central do prompt original ("nunca
+  misturar custo de produção com custo de revenda"), garantida estruturalmente, não por
+  convenção.
+- **Validações de integridade**: `Ingrediente.tipo='revenda'` nunca pode ser usado em
+  `ItemReceita`, `ItemReceitaProducao`, `ReceitaProducao.ingrediente_produzido` nem
+  `Adicional` (bloqueado em `clean()` dos quatro models, e os `querysets` dos formulários
+  já filtram essas opções fora do `<select>` antes mesmo de tentar salvar).
+- **Telas**: cadastro de Item do Cardápio ganhou o campo `produto_revenda` (mostrado só
+  quando `tipo='revenda'`) e um formset embutido de componentes do combo (mostrado só
+  quando `tipo='combo'`, mesmo padrão de formset de `Receita`/`ReceitaProducao` — ver
+  `apps.cardapio.views.ItemCardapioFormSetMixin`); trocar o tipo de um item que já foi
+  combo limpa os componentes órfãos automaticamente. Estoque ganhou filtro/coluna/badge
+  de tipo. Tela de "Nova Venda"/"Editar Pedido" trocou o aviso "Sem ficha técnica" (que
+  ficaria errado pra revenda/combo) por "Sem origem de custo/estoque"
+  (`ItemCardapio.tem_origem_de_custo()`).
+- **Testes**: ~50 testes novos entre `apps/estoque`, `apps/cardapio`, `apps/receitas`,
+  `apps/precificacao` e `apps/vendas` (modelo, formulário e fluxo real de view+POST),
+  cobrindo os três tipos isoladamente e combo com componente de revenda dentro. Suíte
+  completa do projeto: 192 testes, 0 falhas.
+- **Backlog explicitamente fora deste ciclo** (decidido junto com o pedido de
+  refatoração, não esquecido):
+  - **Compras**: fluxo formal "fornecedor + itens + frete + desconto → confirma → baixa
+    tudo de uma vez com custo médio". Hoje entrada de estoque continua manual
+    (`MovimentacaoEstoque` tipo `ENTRADA` lançada na tela do ingrediente).
+  - **Embalagem como item de estoque**: hoje é só um valor R$ fixo em
+    `Receita.custo_embalagem_especifico` (ou o padrão de `ConfiguracaoGeral`), não um
+    item de estoque com baixa própria.
+  - **Unidade de consumo separada da unidade de estoque**: `Ingrediente.rendimento_unidades`
+    cobre o caso real conhecido (alface/cebola comprada inteira, usada em porções);
+    generalizar isso para qualquer conversão arbitrária fica para quando aparecer um
+    caso que esse campo não cubra.
 
 ## Observações
 

@@ -11,7 +11,7 @@
     </div>
   </div>
   <div class="page-header__actions">
-    <form method="post" action="{% url 'precificacao:recalcular_preco' formacao.pk %}" class="inline-block" title="Recalcula preço mínimo/ideal/premium usando o custo atual da ficha técnica e a margem configurada.">
+    <form method="post" action="{% url 'precificacao:recalcular_preco' formacao.pk %}" class="inline-block" title="Recalcula preço mínimo/ideal/premium usando o custo atual do item (ficha técnica, produto de revenda ou componentes do combo) e a margem configurada.">
       {% csrf_token %}
       <button type="submit" class="btn btn--outline">{% icon "arrow-repeat" class="icon-sm" %}Recalcular</button>
     </form>

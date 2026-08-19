@@ -67,3 +67,21 @@ class IngredienteFormBuscaDinamicaTests(TestCase):
         form = IngredienteForm()
         self.assertIn('js-select-search', form.fields['categoria'].widget.attrs.get('class', ''))
         self.assertIn('js-select-search', form.fields['fornecedor_preferencial'].widget.attrs.get('class', ''))
+
+
+class IngredienteTipoTests(TestCase):
+    """
+    `Ingrediente.tipo` distingue matéria-prima (usável em fichas técnicas/receitas de
+    produção/adicionais) de produto de revenda (comprado pronto, vendido inteiro via
+    `ItemCardapio.produto_revenda` — ver apps/cardapio/models.py). Ingredientes já
+    cadastrados antes deste campo existir continuam se comportando como matéria-prima
+    (default), sem precisar de nenhuma ação manual.
+    """
+
+    def test_tipo_padrao_e_materia_prima(self):
+        ingrediente = Ingrediente.objects.create(nome='Pão brioche', unidade_medida='un')
+        self.assertEqual(ingrediente.tipo, 'materia_prima')
+
+    def test_ingrediente_pode_ser_cadastrado_como_revenda(self):
+        ingrediente = Ingrediente.objects.create(nome='Coca-Cola lata', unidade_medida='un', tipo='revenda')
+        self.assertEqual(ingrediente.tipo, 'revenda')

@@ -30,6 +30,14 @@
           {% endfor %}
         </select>
       </div>
+      <div class="field">
+        <select name="tipo" class="field__control">
+          <option value="">Todos os tipos</option>
+          {% for valor, rotulo in tipos %}
+          <option value="{{ valor }}" {% if request.GET.tipo == valor %}selected{% endif %}>{{ rotulo }}</option>
+          {% endfor %}
+        </select>
+      </div>
       <label class="field-check filter-bar__check">
         <input type="checkbox" class="field-check__input" name="abaixo_minimo" value="1" {% if request.GET.abaixo_minimo == '1' %}checked{% endif %}>
         <span class="field-check__box">{% icon "check" class="icon-xs" %}</span>
@@ -43,11 +51,12 @@
 <div class="card">
   <div class="table-wrap">
     <table class="table">
-      <thead><tr><th>Ingrediente</th><th>Categoria</th><th>Estoque</th><th>Mínimo</th><th>Custo unit.</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Ingrediente</th><th>Tipo</th><th>Categoria</th><th>Estoque</th><th>Mínimo</th><th>Custo unit.</th><th>Status</th><th></th></tr></thead>
       <tbody>
         {% for ing in ingredientes %}
         <tr>
           <td><a href="{% url 'estoque:ingrediente_detail' ing.pk %}">{{ ing.nome }}</a></td>
+          <td><span class="badge badge--neutral">{{ ing.get_tipo_display }}</span></td>
           <td>{{ ing.categoria|default:'—' }}</td>
           <td>{{ ing.estoque_atual }} {{ ing.get_unidade_medida_display }}</td>
           <td>{{ ing.estoque_minimo }} {{ ing.get_unidade_medida_display }}</td>
@@ -65,7 +74,7 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7">
+        <tr><td colspan="8">
           <div class="empty-state">
             {% icon "box-seam" %}
             <span class="empty-state__title">Nenhum ingrediente cadastrado ainda.</span>

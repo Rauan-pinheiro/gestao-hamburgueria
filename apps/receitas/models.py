@@ -87,6 +87,16 @@ class ItemReceita(models.Model):
     def __str__(self):
         return f'{self.quantidade} {self.ingrediente.unidade_medida} de {self.ingrediente.nome}'
 
+    def clean(self):
+        if self.ingrediente_id and self.ingrediente.tipo == 'revenda':
+            raise ValidationError({
+                'ingrediente': (
+                    f'"{self.ingrediente}" é um produto de revenda (comprado pronto, vendido inteiro) — '
+                    'não pode ser usado como ingrediente de uma ficha técnica. Produtos de revenda vão '
+                    'direto para um item do cardápio do tipo "Revenda", sem ficha técnica.'
+                )
+            })
+
     def custo_total(self):
         # A conversão de unidade (kg/l -> unidade-base) e o rendimento por porção (quando
         # aplicável) ficam centralizados em Ingrediente.custo_para_quantidade() — é o mesmo
@@ -142,6 +152,13 @@ class ReceitaProducao(TimestampedModel):
                     f'"{self.ingrediente_produzido}" já tem oferta(s) de fornecedor ativa(s) — um ingrediente '
                     'não pode ser comprado e produzido internamente ao mesmo tempo. Inative as ofertas de '
                     'fornecedor desse ingrediente antes de criar a receita de produção.'
+                )
+            })
+        if self.ingrediente_produzido_id and self.ingrediente_produzido.tipo == 'revenda':
+            raise ValidationError({
+                'ingrediente_produzido': (
+                    f'"{self.ingrediente_produzido}" é um produto de revenda (comprado pronto) — não pode '
+                    'ter uma Receita de Produção. Só matéria-prima pode ser produzida internamente.'
                 )
             })
 
@@ -210,6 +227,13 @@ class ItemReceitaProducao(models.Model):
         ):
             raise ValidationError({
                 'ingrediente': 'Uma receita de produção não pode usar o próprio ingrediente que produz como insumo.'
+            })
+        if self.ingrediente_id and self.ingrediente.tipo == 'revenda':
+            raise ValidationError({
+                'ingrediente': (
+                    f'"{self.ingrediente}" é um produto de revenda (comprado pronto, vendido inteiro) — '
+                    'não pode ser usado como insumo de uma receita de produção.'
+                )
             })
 
     def custo_total(self):

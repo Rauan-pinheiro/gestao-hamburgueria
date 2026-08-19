@@ -4,7 +4,7 @@
 {% block title %}{{ ingrediente }}{% endblock %}
 {% block content %}
 <div class="page-header">
-  <div class="page-header__title">{% icon "box-seam" %}<h1 style="font-size: var(--text-xl);">{{ ingrediente }}</h1></div>
+  <div class="page-header__title">{% icon "box-seam" %}<h1 style="font-size: var(--text-xl);">{{ ingrediente }}</h1><span class="badge badge--neutral">{{ ingrediente.get_tipo_display }}</span></div>
   <div class="page-header__actions">
     <a href="{% url 'fornecedores:comparar_fornecedores' ingrediente.pk %}" class="btn btn--outline">{% icon "bar-chart-line" class="icon-sm" %}Comparar Fornecedores</a>
     <a href="{% url 'estoque:ingrediente_update' ingrediente.pk %}" class="btn btn--outline">{% icon "pencil" class="icon-sm" %}Editar</a>

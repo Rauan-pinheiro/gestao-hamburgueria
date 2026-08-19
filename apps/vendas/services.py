@@ -116,10 +116,12 @@ def _lancar_itens(venda, itens, usuario, motivo_baixa):
         item_cardapio = entrada['item_cardapio']
         quantidade = entrada['quantidade']
         formacao = getattr(item_cardapio, 'formacao_preco', None)
-        receita = getattr(item_cardapio, 'receita', None)
 
         preco_unitario = formacao.preco_praticado if formacao else Decimal('0')
-        custo_unitario = receita.custo_por_porcao() if receita else Decimal('0')
+        # Custo delega inteiramente para ItemCardapio.custo_unitario() (apps/cardapio/models.py)
+        # — já sabe a fórmula certa por tipo (produzido/revenda/combo), sem a venda precisar
+        # saber a diferença.
+        custo_unitario = item_cardapio.custo_unitario()
 
         adicionais_resolvidos = _resolver_adicionais(item_cardapio, entrada.get('adicionais_ids') or [], quantidade)
         subtotal_adicionais_item = sum((a['subtotal'] for a in adicionais_resolvidos), Decimal('0'))
@@ -144,19 +146,22 @@ def _lancar_itens(venda, itens, usuario, motivo_baixa):
         total_adicionais += item_venda.subtotal_adicionais
         custo_total += item_venda.custo_subtotal + item_venda.custo_subtotal_adicionais
 
-        if receita:
-            for item_receita in receita.itens.select_related('ingrediente').all():
-                movimentacao = MovimentacaoEstoque(
-                    ingrediente=item_receita.ingrediente,
-                    tipo='SAIDA',
-                    quantidade=item_receita.quantidade * quantidade,
-                    motivo=motivo_baixa,
-                    venda=venda,
-                    usuario=usuario,
-                )
-                # permitir_negativo=True: decisão de negócio — o caixa nunca trava por falta de
-                # estoque, apenas o alerta fica visível depois na tela do ingrediente.
-                movimentacao.save(permitir_negativo=True)
+        # ItemCardapio.itens_para_baixa_estoque() já devolve a lista certa por tipo: itens da
+        # receita (produzido), o próprio produto vinculado (revenda) ou a baixa recursiva de
+        # cada componente (combo) — ver apps/cardapio/models.py. Uma movimentação por
+        # ingrediente, igual ao comportamento de sempre para produtos produzidos.
+        for ingrediente, quantidade_a_baixar in item_cardapio.itens_para_baixa_estoque(quantidade):
+            movimentacao = MovimentacaoEstoque(
+                ingrediente=ingrediente,
+                tipo='SAIDA',
+                quantidade=quantidade_a_baixar,
+                motivo=motivo_baixa,
+                venda=venda,
+                usuario=usuario,
+            )
+            # permitir_negativo=True: decisão de negócio — o caixa nunca trava por falta de
+            # estoque, apenas o alerta fica visível depois na tela do ingrediente.
+            movimentacao.save(permitir_negativo=True)
 
         # Baixa do ingrediente de CADA adicional escolhido, em cima da baixa da receita acima —
         # nunca a substitui. Ex.: lanche com bacon na receita (0,026 kg) + 1 bacon adicional

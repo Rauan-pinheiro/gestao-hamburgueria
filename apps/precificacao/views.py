@@ -66,10 +66,12 @@ class PrecificacaoCalculadoraMixin:
         item_cardapio = None
         item_cardapio_id = self.request.GET.get('item_cardapio') or (self.object.item_cardapio_id if self.object else None)
         if item_cardapio_id:
-            item_cardapio = ItemCardapio.objects.filter(pk=item_cardapio_id).select_related('receita').first()
-        custo_por_porcao = 0
-        if item_cardapio and getattr(item_cardapio, 'receita', None):
-            custo_por_porcao = item_cardapio.receita.custo_por_porcao()
+            item_cardapio = ItemCardapio.objects.filter(pk=item_cardapio_id).select_related(
+                'receita', 'produto_revenda'
+            ).prefetch_related('componentes__componente').first()
+        # ItemCardapio.custo_unitario() já sabe a fórmula certa por tipo (produzido/revenda/
+        # combo — ver apps/cardapio/models.py) — a calculadora nunca decide isso sozinha.
+        custo_por_porcao = item_cardapio.custo_unitario() if item_cardapio else 0
 
         ctx['custo_por_porcao'] = custo_por_porcao
         ctx['percentual_imposto_padrao'] = config.percentual_imposto_padrao
@@ -135,9 +137,16 @@ def recalcular_preco(request, pk):
     return redirect('precificacao:formacaopreco_detail', pk=pk)
 
 
+_ERRO_ORIGEM_CUSTO_POR_TIPO = {
+    'produzido': 'Este item ainda não tem ficha técnica cadastrada.',
+    'revenda': 'Este item ainda não tem um produto de revenda vinculado.',
+    'combo': 'Este combo ainda não tem nenhum componente cadastrado.',
+}
+
+
 def api_custo_item(request, item_cardapio_id):
     item = get_object_or_404(ItemCardapio, pk=item_cardapio_id)
-    receita = getattr(item, 'receita', None)
-    if not receita:
-        return JsonResponse({'ok': False, 'erro': 'Este item ainda não tem ficha técnica cadastrada.'})
-    return JsonResponse({'ok': True, 'custo_por_porcao': str(receita.custo_por_porcao()), 'nome': item.nome})
+    if not item.tem_origem_de_custo():
+        erro = _ERRO_ORIGEM_CUSTO_POR_TIPO.get(item.tipo, 'Este item ainda não tem custo cadastrado.')
+        return JsonResponse({'ok': False, 'erro': erro})
+    return JsonResponse({'ok': True, 'custo_por_porcao': str(item.custo_unitario()), 'nome': item.nome})

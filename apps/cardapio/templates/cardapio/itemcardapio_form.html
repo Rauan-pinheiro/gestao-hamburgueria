@@ -1,8 +1,123 @@
 {% extends 'base.html' %}
+{% load crispy_forms_tags %}
 {% load ds_icons %}
 {% block title %}{% if object %}Editar{% else %}Novo{% endif %} Item do Cardápio{% endblock %}
 {% block content %}
 <div class="page-header"><div class="page-header__title">{% icon "menu-button-wide" %}<h1 style="font-size: var(--text-xl);">{% if object %}Editar{% else %}Novo{% endif %} Item do Cardápio</h1></div></div>
-{% url 'cardapio:itemcardapio_list' as cancel_url %}
-{% include 'partials/_form_card.html' with cancel_url=cancel_url multipart=True %}
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="card mb-4 max-w-lg"><div class="card__body">
+    {{ form|crispy }}
+  </div></div>
+
+  <div class="card mb-4" id="card-combo-componentes">
+    <div class="card__header">
+      <strong>Componentes do combo</strong>
+      <span class="text-muted text-sm">Custo estimado: <strong id="custo-combo-estimado">R$ 0,00</strong></span>
+    </div>
+    <div class="card__body">
+      <p class="text-sm text-muted mb-3">
+        Quais itens do cardápio (já produzidos ou de revenda) compõem este combo, e quantas
+        unidades de cada. O preço do combo é definido normalmente em "Preço de Venda" — não é
+        a soma automática dos componentes.
+      </p>
+      {{ componente_formset.management_form }}
+      {% if componente_formset.non_form_errors %}
+        <div class="alert alert--danger mb-3">{{ componente_formset.non_form_errors }}</div>
+      {% endif %}
+      <div class="table-wrap">
+        <table class="table table--formset" id="componentes-formset-table">
+          <thead><tr><th>Item</th><th>Quantidade</th><th>Remover</th></tr></thead>
+          <tbody>
+            {% for item_form in componente_formset %}
+            <tr class="formset-row">
+              {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+              <td>{{ item_form.componente }}{{ item_form.componente.errors }}</td>
+              <td>{{ item_form.quantidade }}{{ item_form.quantidade.errors }}</td>
+              <td class="text-center">
+                {% if item_form.instance.pk %}
+                  <label class="field-check">
+                    <input type="checkbox" class="field-check__input" name="{{ item_form.DELETE.html_name }}" id="{{ item_form.DELETE.id_for_label }}">
+                    <span class="field-check__box">{% icon "check" class="icon-xs" %}</span>
+                  </label>
+                {% else %}
+                  <button type="button" class="btn btn-icon btn-icon--sm remove-row">{% icon "x-lg" class="icon-sm" %}</button>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <button type="button" id="add-componente" class="btn btn--sm btn--outline-primary mt-3">{% icon "plus-lg" class="icon-sm" %}Adicionar item ao combo</button>
+    </div>
+  </div>
+
+  <template id="template-linha-componente">
+    <tr class="formset-row">
+      {% for hidden in componente_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+      <td>{{ componente_formset.empty_form.componente }}{{ componente_formset.empty_form.componente.errors }}</td>
+      <td>{{ componente_formset.empty_form.quantidade }}{{ componente_formset.empty_form.quantidade.errors }}</td>
+      <td class="text-center">
+        <button type="button" class="btn btn-icon btn-icon--sm remove-row">{% icon "x-lg" class="icon-sm" %}</button>
+      </td>
+    </tr>
+  </template>
+
+  <div class="btn-group">
+    <button type="submit" class="btn btn--primary">{% icon "check" class="icon-sm" %}Salvar</button>
+    <a href="{% url 'cardapio:itemcardapio_list' %}" class="btn btn--outline">Cancelar</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const tipoSelect = document.getElementById('id_tipo');
+  const grupoProdutoRevenda = document.getElementById('div_id_produto_revenda');
+  const cardCombo = document.getElementById('card-combo-componentes');
+  if (!tipoSelect) return;
+
+  // A interface só mostra o campo relevante para o tipo escolhido — "o que você está
+  // cadastrando" (produzido usa Ficha Técnica, gerenciada em outra tela depois de salvar;
+  // revenda vincula direto um Ingrediente tipo=revenda; combo lista os componentes abaixo).
+  function atualizarVisibilidade() {
+    const tipo = tipoSelect.value;
+    if (grupoProdutoRevenda) grupoProdutoRevenda.classList.toggle('hidden', tipo !== 'revenda');
+    if (cardCombo) cardCombo.classList.toggle('hidden', tipo !== 'combo');
+  }
+
+  tipoSelect.addEventListener('change', atualizarVisibilidade);
+  atualizarVisibilidade();
+
+  // --- Formset de componentes do combo (mesmo padrão de apps/receitas/templates/receitas/receita_form.html) ---
+  const totalForms = document.getElementById('id_componentes-TOTAL_FORMS');
+  const tbody = document.querySelector('#componentes-formset-table tbody');
+  const addBtn = document.getElementById('add-componente');
+  const template = document.getElementById('template-linha-componente');
+  if (!totalForms || !tbody || !addBtn || !template) return;
+
+  addBtn.addEventListener('click', function () {
+    const idx = parseInt(totalForms.value, 10);
+    const html = template.innerHTML.replace(/__prefix__/g, idx);
+    const linhaTemp = document.createElement('tbody');
+    linhaTemp.innerHTML = html.trim();
+    const newRow = linhaTemp.firstElementChild;
+    tbody.appendChild(newRow);
+    totalForms.value = idx + 1;
+    if (window.initSelectBusca) window.initSelectBusca(newRow);
+  });
+
+  tbody.addEventListener('click', function (e) {
+    const btn = e.target.closest('.remove-row');
+    if (!btn) return;
+    const row = btn.closest('.formset-row');
+    if (tbody.querySelectorAll('.formset-row').length > 1) {
+      row.remove();
+    }
+  });
+});
+</script>
 {% endblock %}

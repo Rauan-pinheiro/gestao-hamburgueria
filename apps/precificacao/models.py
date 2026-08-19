@@ -41,8 +41,7 @@ class FormacaoPreco(TimestampedModel):
         return i, t
 
     def recalcular(self, salvar=True):
-        receita = getattr(self.item_cardapio, 'receita', None)
-        custo = receita.custo_por_porcao() if receita else Decimal('0')
+        custo = self.custo_por_porcao()
         i, t = self._taxas()
         m = self.margem_lucro_desejada_percentual / 100
         mp = m + (self.margem_premium_extra_percentual / 100)
@@ -69,8 +68,14 @@ class FormacaoPreco(TimestampedModel):
             return Decimal('0')
 
     def custo_por_porcao(self):
-        receita = getattr(self.item_cardapio, 'receita', None)
-        return receita.custo_por_porcao() if receita else Decimal('0')
+        """
+        Custo (R$) de uma unidade/porção do item — delega inteiramente para
+        `ItemCardapio.custo_unitario()` (apps/cardapio/models.py), que já sabe a fórmula
+        certa por tipo: produzido (ingredientes + indiretos, via Receita), revenda (só
+        custo de aquisição, nunca gás/energia/mão de obra) ou combo (soma dos
+        componentes). Precificação nunca decide isso sozinha — só usa o número pronto.
+        """
+        return self.item_cardapio.custo_unitario()
 
     def lucro_bruto_unitario(self):
         return self.preco_praticado - self.custo_por_porcao()

@@ -31,6 +31,9 @@ class IngredienteListView(LoginRequiredMixin, ListView):
         categoria = self.request.GET.get('categoria')
         if categoria:
             qs = qs.filter(categoria_id=categoria)
+        tipo = self.request.GET.get('tipo')
+        if tipo:
+            qs = qs.filter(tipo=tipo)
         if self.request.GET.get('abaixo_minimo') == '1':
             qs = qs.filter(estoque_atual__lte=F('estoque_minimo'))
         return qs
@@ -38,6 +41,7 @@ class IngredienteListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['categorias'] = CategoriaIngrediente.objects.filter(ativo=True)
+        ctx['tipos'] = Ingrediente.TIPO_CHOICES
         return ctx
 
 

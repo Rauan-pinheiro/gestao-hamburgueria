@@ -9,7 +9,7 @@ from apps.estoque.models import Ingrediente
 from apps.fornecedores.models import Fornecedor, ProdutoFornecedor
 from apps.usuarios.models import Usuario
 
-from .forms import ItemReceitaForm, ReceitaForm, ReceitaProducaoForm
+from .forms import ItemReceitaForm, ItemReceitaProducaoForm, ReceitaForm, ReceitaProducaoForm
 from .models import ItemReceita, ItemReceitaProducao, Receita, ReceitaProducao
 
 
@@ -39,7 +39,7 @@ class ReceitaFormSetLinhaDinamicaTests(TestCase):
     def setUp(self):
         self.usuario = Usuario.objects.create_user(username='operador', password='senha-teste-123')
         self.client.force_login(self.usuario)
-        self.item = ItemCardapio.objects.create(nome='X-Teste', tipo='simples')
+        self.item = ItemCardapio.objects.create(nome='X-Teste', tipo='produzido')
         Ingrediente.objects.create(nome='Ingrediente Teste', unidade_medida='g')
 
     def test_template_da_linha_dinamica_usa_empty_form_com_busca_ativada(self):
@@ -66,7 +66,7 @@ class CustoIngredienteIntegracaoTests(TestCase):
     def setUp(self):
         self.ingrediente = Ingrediente.objects.create(nome='Carne 150g', unidade_medida='g')
         self.fornecedor = Fornecedor.objects.create(nome='Distribuidora Teste')
-        self.item_cardapio = ItemCardapio.objects.create(nome='X-Teste', tipo='simples')
+        self.item_cardapio = ItemCardapio.objects.create(nome='X-Teste', tipo='produzido')
         self.receita = Receita.objects.create(nome='Ficha X-Teste', item_cardapio=self.item_cardapio)
         self.item_receita = ItemReceita.objects.create(
             receita=self.receita, ingrediente=self.ingrediente, quantidade=Decimal('150'))
@@ -125,7 +125,7 @@ class CustoComConversaoDeUnidadeTests(TestCase):
 
     def setUp(self):
         self.fornecedor = Fornecedor.objects.create(nome='Silmara casa de frutas')
-        self.item_cardapio = ItemCardapio.objects.create(nome='X-Teste', tipo='simples')
+        self.item_cardapio = ItemCardapio.objects.create(nome='X-Teste', tipo='produzido')
         self.receita = Receita.objects.create(nome='Ficha X-Teste', item_cardapio=self.item_cardapio)
 
     def test_ingrediente_em_kg_converte_quantidade_para_grama_antes_de_multiplicar(self):
@@ -177,7 +177,7 @@ class CustoComRendimentoPorPorcaoTests(TestCase):
 
     def setUp(self):
         self.fornecedor = Fornecedor.objects.create(nome='Silmara casa de frutas')
-        self.item_cardapio = ItemCardapio.objects.create(nome='X-Teste', tipo='simples')
+        self.item_cardapio = ItemCardapio.objects.create(nome='X-Teste', tipo='produzido')
         self.receita = Receita.objects.create(nome='Ficha X-Teste', item_cardapio=self.item_cardapio)
 
     def test_rendimento_divide_o_custo_da_unidade_comprada_pelas_porcoes(self):
@@ -416,3 +416,48 @@ class ExclusividadeCompradoOuProduzidoTests(TestCase):
         self.assertNotIn(tomate_comprado.pk, queryset_pks)
         self.assertNotIn(molho.pk, queryset_pks)
         self.assertIn(alface_disponivel.pk, queryset_pks)
+
+
+class IngredienteDeRevendaForaDaProducaoTests(TestCase):
+    """
+    Um Ingrediente `tipo='revenda'` (comprado pronto para vender inteiro, ex.: Coca-Cola)
+    nunca pode aparecer dentro de ficha técnica, receita de produção ou como o próprio
+    ingrediente produzido por uma receita de produção — ele só se conecta ao sistema via
+    `ItemCardapio.produto_revenda` (ver apps/cardapio/models.py), pulando o conceito de
+    ficha técnica inteiramente.
+    """
+
+    def setUp(self):
+        self.coca = Ingrediente.objects.create(nome='Coca-Cola lata', unidade_medida='un', tipo='revenda')
+        self.item_cardapio = ItemCardapio.objects.create(nome='X-Teste', tipo='produzido')
+        self.receita = Receita.objects.create(nome='Ficha X-Teste', item_cardapio=self.item_cardapio)
+
+    def test_ficha_tecnica_rejeita_ingrediente_de_revenda(self):
+        item_receita = ItemReceita(receita=self.receita, ingrediente=self.coca, quantidade=Decimal('1'))
+        with self.assertRaises(ValidationError):
+            item_receita.full_clean()
+
+    def test_receita_de_producao_rejeita_ingrediente_de_revenda_como_insumo(self):
+        molho = Ingrediente.objects.create(nome='Molho da casa', unidade_medida='l')
+        receita_producao = ReceitaProducao.objects.create(
+            nome='Molho da casa', ingrediente_produzido=molho, rendimento_quantidade=Decimal('1'))
+        item = ItemReceitaProducao(receita_producao=receita_producao, ingrediente=self.coca, quantidade=Decimal('1'))
+        with self.assertRaises(ValidationError):
+            item.full_clean()
+
+    def test_ingrediente_de_revenda_nao_pode_ter_receita_de_producao(self):
+        receita_producao = ReceitaProducao(nome='Coca-Cola', ingrediente_produzido=self.coca, rendimento_quantidade=Decimal('1'))
+        with self.assertRaises(ValidationError):
+            receita_producao.full_clean()
+
+    def test_form_de_ficha_tecnica_nao_oferece_ingrediente_de_revenda(self):
+        form = ItemReceitaForm()
+        self.assertNotIn(self.coca.pk, form.fields['ingrediente'].queryset.values_list('pk', flat=True))
+
+    def test_form_de_receita_de_producao_nao_oferece_ingrediente_de_revenda_como_insumo(self):
+        form = ItemReceitaProducaoForm()
+        self.assertNotIn(self.coca.pk, form.fields['ingrediente'].queryset.values_list('pk', flat=True))
+
+    def test_form_de_receita_de_producao_nao_oferece_revenda_como_ingrediente_produzido(self):
+        form = ReceitaProducaoForm()
+        self.assertNotIn(self.coca.pk, form.fields['ingrediente_produzido'].queryset.values_list('pk', flat=True))

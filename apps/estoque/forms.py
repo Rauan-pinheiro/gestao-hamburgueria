@@ -21,9 +21,14 @@ class IngredienteForm(forms.ModelForm):
     class Meta:
         model = Ingrediente
         fields = [
-            'nome', 'categoria', 'unidade_medida', 'estoque_minimo', 'estoque_ideal',
+            'nome', 'tipo', 'categoria', 'unidade_medida', 'estoque_minimo', 'estoque_ideal',
             'localizacao', 'validade_padrao_dias', 'fornecedor_preferencial', 'rendimento_unidades', 'ativo',
         ]
+        help_texts = {
+            'tipo': 'Matéria-prima: usada em fichas técnicas, receitas de produção e adicionais. '
+                    'Produto de revenda: comprado pronto e vendido inteiro (ex.: Coca-Cola) — vinculado '
+                    'direto a um item do cardápio do tipo "Revenda", sem ficha técnica.',
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -40,7 +45,7 @@ class IngredienteForm(forms.ModelForm):
             del self.fields['estoque_inicial']
         else:
             self.order_fields([
-                'nome', 'categoria', 'unidade_medida', 'estoque_inicial', 'estoque_minimo',
+                'nome', 'tipo', 'categoria', 'unidade_medida', 'estoque_inicial', 'estoque_minimo',
                 'estoque_ideal', 'localizacao', 'validade_padrao_dias', 'fornecedor_preferencial',
                 'rendimento_unidades', 'ativo',
             ])
