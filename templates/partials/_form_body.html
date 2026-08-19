@@ -1,0 +1,20 @@
+{% load crispy_forms_tags %}
+{% comment %}
+Corpo de um form: se o form definir `self.secoes` no `__init__` (lista de
+`(titulo, [bound_field, ...])`), renderiza campo a campo agrupado em seções visuais
+(ver static/css/components/forms.css `.form-section-title`) — cada campo ainda passa
+por `hamburgueria/field.html` via `as_crispy_field`, então label/erro/help-text ficam
+idênticos ao `{{ form|crispy }}` de sempre. Sem `secoes`, cai no `{{ form|crispy }}`
+de sempre — nenhum form existente muda de comportamento.
+
+Uso: {% include 'partials/_form_body.html' %} (form já precisa estar no contexto)
+{% endcomment %}
+{% if form.secoes %}
+{% include 'hamburgueria/errors.html' %}
+{% for titulo, campos in form.secoes %}
+<div class="form-section-title">{{ titulo }}</div>
+{% for campo in campos %}{{ campo|as_crispy_field }}{% endfor %}
+{% endfor %}
+{% else %}
+{{ form|crispy }}
+{% endif %}

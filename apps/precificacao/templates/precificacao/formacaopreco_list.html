@@ -1,13 +1,15 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load ds_icons %}
 {% block title %}Precificação{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/precificacao.css' %}">{% endblock %}
 {% block content %}
 <div class="page-header">
   <div class="page-header__title">
     {% icon "tags" %}
     <div>
       <h1 style="font-size: var(--text-xl);">Formação de Preços</h1>
-      <p class="text-muted text-sm">Aqui você define o preço de venda de cada item. Verde = preço saudável, amarelo = margem baixa, vermelho = abaixo do custo.</p>
+      <p class="text-muted text-sm">Organizado por categoria. <span class="badge badge--success badge--sm">Preço saudável</span> <span class="badge badge--warning badge--sm">Margem baixa</span> <span class="badge badge--danger badge--sm">Abaixo do custo</span></p>
     </div>
   </div>
   <div class="page-header__actions">
@@ -15,37 +17,52 @@
   </div>
 </div>
 
-<div class="card">
-  <div class="table-wrap">
-    <table class="table">
-      <thead><tr><th>Item</th><th>Custo/porção</th><th>Mínimo</th><th>Ideal</th><th>Premium</th><th>Praticado</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-        {% for f in formacoes %}
-        <tr>
-          <td><a href="{% url 'precificacao:formacaopreco_detail' f.pk %}">{{ f.item_cardapio }}</a></td>
-          <td>R$ {{ f.custo_por_porcao|floatformat:2 }}</td>
-          <td>R$ {{ f.preco_minimo }}</td>
-          <td>R$ {{ f.preco_ideal }}</td>
-          <td>R$ {{ f.preco_premium }}</td>
-          <td><strong>R$ {{ f.preco_praticado }}</strong></td>
-          <td><span class="badge badge--{{ f.status_margem }}">{{ f.status_margem_label }}</span></td>
-          <td class="table__actions">
-            <a href="{% url 'precificacao:formacaopreco_update' f.pk %}" class="btn btn-icon btn-icon--sm" data-tooltip="Editar">{% icon "pencil" class="icon-sm" %}</a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="8">
-          <div class="empty-state">
-            {% icon "tags" %}
-            <span class="empty-state__title">Nenhuma precificação cadastrada ainda.</span>
-            <span class="empty-state__subtitle">Depois de ter uma ficha técnica, defina aqui o preço de venda do item.</span>
-            <a href="{% url 'precificacao:formacaopreco_create' %}" class="btn btn--primary btn--sm mt-3">{% icon "plus-lg" class="icon-sm" %}Definir primeiro preço</a>
+{% if grupos %}
+<div class="accordion" data-accordion>
+  {% for grupo in grupos %}
+  <div class="accordion__item{% if forloop.first or grupo.tem_alerta %} is-open{% endif %}" data-accordion-item>
+    <button type="button" class="accordion__trigger" data-accordion-trigger>
+      <span class="categoria-trigger__info">
+        {% if grupo.tem_alerta %}<span class="status-dot status-dot--danger" data-tooltip="Tem item abaixo do preço mínimo nesta categoria"></span>{% endif %}
+        <strong>{{ grupo.categoria.nome|default:'Sem categoria' }}</strong>
+        <span class="chip">{{ grupo.formacoes|length }} {{ grupo.formacoes|length|pluralize:"item,itens" }}</span>
+      </span>
+      {% icon "chevron-down" class="icon-sm" %}
+    </button>
+    <div class="accordion__panel"{% if not forloop.first and not grupo.tem_alerta %} hidden{% endif %} data-accordion-panel>
+      <div class="grid grid-auto-fit gap-3 mt-2">
+        {% for f in grupo.formacoes %}
+        <div class="price-card">
+          <div class="price-card__top">
+            {% include 'partials/_badge_tipo_item.html' with tipo=f.item_cardapio.tipo classe_extra='badge--sm' %}
+            <a href="{% url 'precificacao:formacaopreco_update' f.pk %}" class="btn-icon btn-icon--sm" data-tooltip="Editar preço">{% icon "pencil" class="icon-sm" %}</a>
           </div>
-        </td></tr>
+          <a href="{% url 'precificacao:formacaopreco_detail' f.pk %}" class="price-card__nome">{{ f.item_cardapio.nome }}</a>
+          <div class="price-card__preco">
+            <span class="price-card__valor">R$ {{ f.preco_praticado }}</span>
+            <span class="badge badge--{{ f.status_margem }}">{{ f.status_margem_label }}</span>
+          </div>
+          <dl class="price-card__detalhes">
+            <div><dt>Custo</dt><dd>R$ {{ f.custo_por_porcao|floatformat:2 }}</dd></div>
+            <div><dt>Mínimo</dt><dd>R$ {{ f.preco_minimo }}</dd></div>
+            <div><dt>Ideal</dt><dd>R$ {{ f.preco_ideal }}</dd></div>
+            <div><dt>Premium</dt><dd>R$ {{ f.preco_premium }}</dd></div>
+          </dl>
+        </div>
         {% endfor %}
-      </tbody>
-    </table>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    {% icon "tags" %}
+    <span class="empty-state__title">Nenhuma precificação cadastrada ainda.</span>
+    <span class="empty-state__subtitle">Depois de ter uma ficha técnica, um produto de revenda vinculado ou os componentes de um combo, defina aqui o preço de venda do item.</span>
+    <a href="{% url 'precificacao:formacaopreco_create' %}" class="btn btn--primary btn--sm mt-3">{% icon "plus-lg" class="icon-sm" %}Definir primeiro preço</a>
   </div>
 </div>
-{% include 'partials/_pagination.html' %}
+{% endif %}
 {% endblock %}

@@ -10,7 +10,7 @@ formulário tiver upload de arquivo.
   <div class="card__body">
     <form method="post"{% if multipart %} enctype="multipart/form-data"{% endif %}>
       {% csrf_token %}
-      {{ form|crispy }}
+      {% include 'partials/_form_body.html' %}
       <div class="btn-group mt-4">
         <button type="submit" class="btn btn--primary">{% icon "check" class="icon-sm" %}Salvar</button>
         <a href="{{ cancel_url }}" class="btn btn--outline">Cancelar</a>

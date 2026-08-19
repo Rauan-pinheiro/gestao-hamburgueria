@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db.models import F
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
@@ -21,15 +22,45 @@ logger = logging.getLogger('hamburgueria')
 
 
 class FormacaoPrecoListView(LoginRequiredMixin, ListView):
+    """
+    Sem paginação de propósito: a tela é organizada em seções colapsáveis por categoria
+    (mesma taxonomia do cardápio) em vez de tabela única — paginar cortaria uma categoria
+    no meio sem critério. O cardápio de uma hamburgueria real não chega a um volume que
+    justifique paginar aqui (dezenas de itens, não milhares).
+    """
     model = FormacaoPreco
     template_name = 'precificacao/formacaopreco_list.html'
     context_object_name = 'formacoes'
-    paginate_by = 20
 
     def get_queryset(self):
         return FormacaoPreco.objects.select_related(
-            'item_cardapio', 'item_cardapio__receita'
-        ).prefetch_related('item_cardapio__receita__itens__ingrediente')
+            'item_cardapio', 'item_cardapio__categoria', 'item_cardapio__receita'
+        ).prefetch_related('item_cardapio__receita__itens__ingrediente').order_by(
+            F('item_cardapio__categoria__ordem').asc(nulls_last=True),
+            'item_cardapio__categoria__nome', 'item_cardapio__nome',
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        # Agrupa em Python (não com `regroup` do template) porque também precisamos saber,
+        # por grupo, se algum item está com status 'vermelho' (abaixo do custo) — isso decide
+        # se o grupo já abre expandido, para o dono não precisar clicar em cada categoria só
+        # para descobrir onde tem problema.
+        grupos = []
+        grupo_atual = None
+        categoria_atual_pk = object()  # sentinela: nunca bate com o primeiro pk real ou None
+        for formacao in ctx['formacoes']:
+            categoria = formacao.item_cardapio.categoria
+            categoria_pk = categoria.pk if categoria else None
+            if categoria_pk != categoria_atual_pk:
+                categoria_atual_pk = categoria_pk
+                grupo_atual = {'categoria': categoria, 'formacoes': [], 'tem_alerta': False}
+                grupos.append(grupo_atual)
+            grupo_atual['formacoes'].append(formacao)
+            if formacao.status_margem() == 'vermelho':
+                grupo_atual['tem_alerta'] = True
+        ctx['grupos'] = grupos
+        return ctx
 
 
 class FormacaoPrecoDetailView(LoginRequiredMixin, DetailView):

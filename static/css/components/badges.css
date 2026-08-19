@@ -19,9 +19,19 @@
   .badge--danger { background: var(--color-danger-soft); color: var(--color-danger); }
   .badge--info { background: var(--color-info-soft); color: var(--color-info); }
   .badge--primary { background: var(--color-primary-soft); color: var(--color-primary); }
+  /* --color-secondary (dourado) é claro demais como texto sobre fundo claro — usa a
+     variante -strong para o mesmo contraste que as outras cores soft/strong já têm. */
+  .badge--secondary { background: var(--color-secondary-soft); color: var(--color-secondary-strong); }
   .badge--neutral { background: var(--color-surface-alt); color: var(--color-text-muted); border: 1px solid var(--color-border); }
   .badge--solid-success { background: var(--color-success); color: #fff; }
   .badge--solid-danger { background: var(--color-danger); color: #fff; }
+  .badge--sm { padding: .2rem .55rem; font-size: .68rem; }
+
+  /* Indicador circular discreto (ex.: sinalizar categoria/grupo colapsado que tem um
+     item precisando de atenção, sem precisar abrir o grupo para descobrir). */
+  .status-dot { display: inline-block; width: .5rem; height: .5rem; border-radius: var(--radius-full); flex-shrink: 0; }
+  .status-dot--danger { background: var(--color-danger); }
+  .status-dot--warning { background: var(--color-warning); }
 
   /* Aliases para `status_margem()` (apps/precificacao/models.py), que retorna
      literalmente 'verde'/'amarelo'/'vermelho' — mantidos aqui em vez de

@@ -59,6 +59,16 @@ class ItemCardapioForm(forms.ModelForm):
         self.fields['produto_revenda'].required = False
         ativar_busca(self, 'produto_revenda')
 
+        # `secoes` agrupa os 10 campos em vez de uma lista solta (ver
+        # templates/partials/_form_body.html) — "Tipo e origem do custo" fica isolado de
+        # propósito, é o par (tipo, produto_revenda) que o JS de itemcardapio_form.html
+        # mostra/esconde condicionalmente conforme o tipo escolhido (ver bloco extra_js).
+        self.secoes = [
+            ('Identificação', [self['nome'], self['categoria'], self['descricao'], self['foto']]),
+            ('Tipo e origem do custo', [self['tipo'], self['produto_revenda']]),
+            ('Exibição', [self['tempo_preparo_minutos'], self['destaque'], self['ordem'], self['ativo']]),
+        ]
+
 
 class AdicionalForm(forms.ModelForm):
     class Meta:

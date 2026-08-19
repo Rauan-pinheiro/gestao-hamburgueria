@@ -1,0 +1,63 @@
+/* Página: Formação de Preços — cards por item dentro de seções colapsáveis por
+   categoria. Hierarquiza preço praticado + status de margem (o que importa decidir)
+   sobre o breakdown de custo (mínimo/ideal/premium/custo — detalhe de apoio). */
+@layer pages {
+
+  .price-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-4) var(--space-5);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--dur-base) var(--ease), transform var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease);
+  }
+  .price-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+  }
+
+  .price-card__top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+
+  .price-card__nome {
+    display: block;
+    margin-top: var(--space-3);
+    color: var(--color-text);
+    font-weight: 600;
+    font-size: var(--text-sm);
+  }
+  .price-card__nome:hover { color: var(--color-primary); }
+
+  .price-card__preco {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+  }
+  .price-card__valor {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    letter-spacing: -.01em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .price-card__detalhes {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: .3rem var(--space-3);
+    margin: var(--space-3) 0 0;
+    padding-top: var(--space-3);
+    border-top: 1px dashed var(--color-border);
+  }
+  .price-card__detalhes div { display: flex; justify-content: space-between; gap: var(--space-2); }
+  .price-card__detalhes dt { color: var(--color-text-muted); font-size: var(--text-xs); }
+  .price-card__detalhes dd { margin: 0; font-size: var(--text-xs); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Cabeçalho de cada grupo (categoria) dentro do accordion */
+  .categoria-trigger__info { display: flex; align-items: center; gap: var(--space-2); }
+}

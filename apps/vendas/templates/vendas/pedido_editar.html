@@ -42,33 +42,7 @@
 
     <div class="grid grid-auto-fit gap-3" id="catalogo">
       {% for item in itens_cardapio %}
-      {% with preco=item.formacao_preco.preco_praticado|default:'0' %}
-      <div class="item-catalogo" data-nome="{{ item.nome|lower }}" data-categoria-id="{{ item.categoria_id|default:'' }}">
-        <div class="card card--full{% if preco == '0' %} card--accent-primary{% endif %}">
-          <div class="card__body flex flex-col">
-            <h3 class="font-semibold mb-1" style="font-size: var(--text-sm);">{{ item.nome }}</h3>
-            <small class="text-muted mb-2">{{ item.categoria|default:'Sem categoria' }}</small>
-            {% if not item.tem_origem_de_custo %}
-            <span class="badge badge--neutral mb-2" style="align-self:flex-start;" title="Item sem ficha técnica/produto de revenda/componentes (depende do tipo): a venda não baixará estoque.">
-              {% icon "journal-x" class="icon-xs" %}Sem origem de custo/estoque
-            </span>
-            {% endif %}
-            <div class="mt-auto">
-              {% if preco == '0' %}
-                <strong class="text-warning flex items-center gap-1">{% icon "exclamation-triangle" class="icon-xs" %}Preço não definido</strong>
-              {% else %}
-                <strong>R$ {{ preco }}</strong>
-              {% endif %}
-              <button type="button" class="btn btn--primary btn--sm btn--block mt-2 add-item"
-                data-id="{{ item.pk }}" data-nome="{{ item.nome }}"
-                data-preco="{{ preco }}">
-                {% icon "plus-lg" class="icon-sm" %}Adicionar
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      {% endwith %}
+      {% include 'partials/_catalogo_item.html' with item=item %}
       {% empty %}
       <div class="empty-state" style="grid-column:1/-1;">
         {% icon "menu-card" %}

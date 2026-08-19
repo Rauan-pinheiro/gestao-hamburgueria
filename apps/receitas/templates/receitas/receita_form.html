@@ -8,7 +8,7 @@
 <form method="post">
   {% csrf_token %}
   <div class="card mb-4"><div class="card__body">
-    {{ form|crispy }}
+    {% include 'partials/_form_body.html' %}
   </div></div>
 
   <div class="card mb-4">

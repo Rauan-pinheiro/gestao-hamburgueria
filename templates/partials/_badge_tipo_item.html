@@ -1,0 +1,20 @@
+{% load ds_icons %}
+{% comment %}
+Badge de tipo de ItemCardapio (produzido/revenda/combo) — vocabulário visual único,
+reaproveitado em toda tela que precise identificar o tipo de um item (Precificação,
+Nova Venda, listagem/detalhe de Cardápio). Cor e ícone combinados criam uma identidade
+reconhecível: laranja+ficha técnica (produzido), azul+caixa (revenda, "vem de fora"),
+dourado+grade (combo, "composto"). Deliberadamente NÃO usa --color-success/warning/danger
+— essas já têm significado fixo de status de margem (ver FormacaoPreco.status_margem())
+e apareceriam ao lado deste badge nas mesmas telas, competindo pela mesma cor.
+
+Uso: {% include 'partials/_badge_tipo_item.html' with tipo=item.tipo %}
+Aceita `classe_extra` opcional (ex.: 'badge--sm') para variar o tamanho por contexto.
+{% endcomment %}
+{% if tipo == 'produzido' %}
+<span class="badge badge--primary {{ classe_extra }}">{% icon "journal-text" class="icon-xs" %}Produzido</span>
+{% elif tipo == 'revenda' %}
+<span class="badge badge--info {{ classe_extra }}">{% icon "box-seam" class="icon-xs" %}Revenda</span>
+{% elif tipo == 'combo' %}
+<span class="badge badge--secondary {{ classe_extra }}">{% icon "grid" class="icon-xs" %}Combo</span>
+{% endif %}

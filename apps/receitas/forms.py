@@ -61,6 +61,19 @@ class ReceitaForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         ativar_busca(self, 'item_cardapio')
 
+        # `secoes` agrupa os campos deste card de "dados básicos" (ver
+        # templates/partials/_form_body.html) — a lista de ingredientes é a seção separada
+        # renderizada logo abaixo em receita_form.html (ItemReceitaFormSet), já é o
+        # tratamento de "seção própria pra parte longa do form" que a ficha técnica precisa.
+        self.secoes = [
+            ('Identificação', [self['nome'], self['item_cardapio']]),
+            ('Rendimento e preparo', [
+                self['rendimento_quantidade'], self['rendimento_unidade'],
+                self['tempo_preparo_minutos'], self['modo_preparo'],
+            ]),
+            ('Custo e status', [self['custo_embalagem_especifico'], self['ativo']]),
+        ]
+
 
 class ItemReceitaForm(forms.ModelForm):
     class Meta:

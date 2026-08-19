@@ -5,7 +5,10 @@
 <div class="page-header">
   <div class="page-header__title">{% icon "menu-button-wide" %}
     <div>
-      <h1 style="font-size: var(--text-xl);">{{ item }}</h1>
+      <h1 class="flex items-center gap-2" style="font-size: var(--text-xl);">
+        {{ item }}
+        {% include 'partials/_badge_tipo_item.html' with tipo=item.tipo %}
+      </h1>
       <p class="text-muted text-sm">Este é o painel completo do item: dados básicos, ficha técnica (custo) e preço de venda.</p>
     </div>
   </div>
@@ -60,7 +63,7 @@
       <div class="card__body">
         <dl class="grid grid-cols-2 gap-2 text-sm mb-0">
           <dt class="text-muted">Categoria</dt><dd>{{ item.categoria|default:'Sem categoria' }}</dd>
-          <dt class="text-muted">Tipo</dt><dd>{{ item.get_tipo_display }}</dd>
+          <dt class="text-muted">Tipo</dt><dd>{% include 'partials/_badge_tipo_item.html' with tipo=item.tipo classe_extra='badge--sm' %}</dd>
           <dt class="text-muted">Tempo de preparo</dt><dd>{{ item.tempo_preparo_minutos }} min</dd>
           <dt class="text-muted">Status</dt><dd>{% if item.ativo %}<span class="badge badge--success">Ativo</span>{% else %}<span class="badge badge--neutral">Inativo</span>{% endif %}</dd>
         </dl>

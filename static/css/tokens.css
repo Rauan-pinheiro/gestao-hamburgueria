@@ -38,6 +38,7 @@
     --color-primary-contrast: #FFFFFF;
     --color-secondary: var(--brand-gold);
     --color-secondary-strong: var(--brand-gold-strong);
+    --color-secondary-soft: color-mix(in srgb, var(--brand-gold) 16%, transparent);
     --color-secondary-contrast: #2B1D00;
 
     --color-success: #23895B;
@@ -143,6 +144,7 @@
     --color-overlay: rgba(0, 0, 0, .6);
 
     --color-primary-soft: color-mix(in srgb, var(--brand-orange) 22%, transparent);
+    --color-secondary-soft: color-mix(in srgb, var(--brand-gold) 22%, transparent);
     --color-success-soft: color-mix(in srgb, #23895B 22%, transparent);
     --color-warning-soft: color-mix(in srgb, #F0A202 24%, transparent);
     --color-danger-soft: color-mix(in srgb, #D8434A 22%, transparent);
@@ -168,6 +170,7 @@
       --color-overlay: rgba(0, 0, 0, .6);
 
       --color-primary-soft: color-mix(in srgb, var(--brand-orange) 22%, transparent);
+      --color-secondary-soft: color-mix(in srgb, var(--brand-gold) 22%, transparent);
       --color-success-soft: color-mix(in srgb, #23895B 22%, transparent);
       --color-warning-soft: color-mix(in srgb, #F0A202 24%, transparent);
       --color-danger-soft: color-mix(in srgb, #D8434A 22%, transparent);

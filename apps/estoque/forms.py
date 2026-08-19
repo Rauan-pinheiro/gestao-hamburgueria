@@ -39,16 +39,27 @@ class IngredienteForm(forms.ModelForm):
         self.fields['rendimento_unidades'].widget.attrs['class'] = (
             self.fields['rendimento_unidades'].widget.attrs.get('class', '') + ' js-campo-rendimento'
         ).strip()
+        campos_estoque = ['unidade_medida']
         if self.instance.pk:
             # Edição: o estoque já existe e só pode ser alterado via movimentação
             # auditada (tela de detalhe do ingrediente), nunca sobrescrito aqui.
             del self.fields['estoque_inicial']
         else:
-            self.order_fields([
-                'nome', 'tipo', 'categoria', 'unidade_medida', 'estoque_inicial', 'estoque_minimo',
-                'estoque_ideal', 'localizacao', 'validade_padrao_dias', 'fornecedor_preferencial',
-                'rendimento_unidades', 'ativo',
-            ])
+            campos_estoque.append('estoque_inicial')
+        campos_estoque += ['estoque_minimo', 'estoque_ideal', 'rendimento_unidades']
+
+        # `secoes` agrupa os 11 campos visualmente em vez de uma lista solta única (ver
+        # templates/partials/_form_body.html, que troca `{{ form|crispy }}` por isso quando
+        # o atributo existe). Não dá pra usar o Layout do próprio crispy-forms aqui: o pack
+        # "hamburgueria" só implementa o filtro `|crispy` (uni_form.html simples, itera
+        # `form` direto), e só a tag `{% crispy %}` — que este projeto não usa — processa
+        # `helper.layout`.
+        self.secoes = [
+            ('Identificação', [self['nome'], self['tipo'], self['categoria']]),
+            ('Medida e estoque', [self[nome] for nome in campos_estoque]),
+            ('Fornecimento e validade', [self['fornecedor_preferencial'], self['validade_padrao_dias'], self['localizacao']]),
+            ('Status', [self['ativo']]),
+        ]
 
 
 class MovimentacaoEstoqueForm(forms.ModelForm):
