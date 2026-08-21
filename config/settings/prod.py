@@ -15,6 +15,11 @@ ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS')
 DATABASES = {
     'default': env.db('DATABASE_URL')
 }
+# Sem strict mode o MySQL pode truncar/aceitar valores inválidos silenciosamente em vez de
+# levantar erro (mysql.W002) — inaceitável com dados financeiros/estoque reais.
+DATABASES['default']['OPTIONS'] = {
+    'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+}
 
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')  # noqa: F405
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
