@@ -4,6 +4,7 @@ __pycache__/
 db.sqlite3*
 *.sql
 *.dump
+dados_producao*.json
 .env
 media/
 staticfiles/
