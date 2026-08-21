@@ -84,7 +84,7 @@ conversando com o próprio Django via `fetch()`.
                  │ ORM
                  ▼
       ┌───────────────────┐
-      │  Banco de dados     │  SQLite (dev) / PostgreSQL (prod)
+      │  Banco de dados     │  SQLite (dev) / MySQL (prod)
       └───────────────────┘
 ```
 
@@ -134,7 +134,7 @@ gestao-hamburgueria/
 │   ├── settings/
 │   │   ├── base.py         # Comum a todos os ambientes
 │   │   ├── dev.py          # SQLite, django-debug-toolbar
-│   │   └── prod.py         # PostgreSQL, Whitenoise, cookies seguros, HSTS
+│   │   └── prod.py         # MySQL, Whitenoise, cookies seguros, HSTS
 │   ├── urls.py              # Inclui as urls de cada app
 │   ├── asgi.py / wsgi.py
 │
@@ -225,7 +225,7 @@ comitado — está no `.gitignore`). Modelo em `.env.example`, sem valores reais
 | `DJANGO_SECRET_KEY` | Sim em produção (`prod.py` recusa subir sem uma chave real — ver `ImproperlyConfigured` em `config/settings/prod.py`) | Chave secreta do Django |
 | `DJANGO_DEBUG` | Não (default `True` em dev, `False` em prod) | Modo debug |
 | `DJANGO_ALLOWED_HOSTS` | Sim em produção | Lista separada por vírgula dos hosts permitidos |
-| `DATABASE_URL` | Não em dev (usa SQLite se ausente); Sim em produção | String de conexão (`postgres://usuario:senha@host:5432/banco`) |
+| `DATABASE_URL` | Não em dev (usa SQLite se ausente); Sim em produção | String de conexão (`mysql://usuario:senha@host:3306/banco`) |
 | `DJANGO_SECURE_SSL_REDIRECT` | Não (default `True` em prod) | Força redirect HTTP→HTTPS em produção |
 | `DJANGO_SECURE_HSTS_SECONDS` | Não (default `3600` em prod) | Duração do HSTS |
 
@@ -241,10 +241,14 @@ credencial neste README nem em `.env.example` — sempre placeholders.
 
 - **Desenvolvimento**: SQLite (`db.sqlite3`, na raiz do projeto, fora do controle de
   versão). Usado automaticamente quando `DATABASE_URL` não está definida em `.env`.
-- **Produção**: PostgreSQL, via `DATABASE_URL` (`config/settings/prod.py` exige essa
-  variável — não tem fallback). `psycopg[binary]` já está em `requirements/prod.txt`.
-  **PENDENTE DE PRODUÇÃO**: hoje não existe nenhum banco PostgreSQL provisionado; só
-  foi feita a preparação de código/configuração para quando existir (ver TODO #2).
+- **Produção**: MySQL, via `DATABASE_URL` (`config/settings/prod.py` exige essa
+  variável — não tem fallback; `django-environ` reconhece o esquema `mysql://` nativamente,
+  nenhum código extra necessário). `mysqlclient` já está em `requirements/prod.txt`.
+  Escolhido em vez de PostgreSQL porque a conta PythonAnywhere usada no deploy (criada
+  antes de 15/01/2026) tem MySQL disponível de graça, enquanto PostgreSQL lá é um add-on
+  pago — ver decisão completa e comparação técnica na auditoria de deploy.
+  **PENDENTE DE PRODUÇÃO**: hoje não existe nenhum banco MySQL provisionado; só foi
+  feita a preparação de código/configuração para quando existir (ver TODO #2).
 
 **Migrations**:
 ```bash
@@ -254,10 +258,12 @@ python manage.py makemigrations --check --dry-run   # falha se algo não foi ger
                                                        # (rodar antes de cada PR/deploy)
 ```
 
-**Backup/restauração**: em SQLite (dev), basta copiar o arquivo `db.sqlite3` com o
-servidor parado. Em PostgreSQL (produção), usar `pg_dump`/`pg_restore` — **PENDENTE DE
-PRODUÇÃO**: ainda não existe rotina de backup automatizada nem local definido para
-guardar os backups (ver TODO #2).
+**Backup/restauração**: em SQLite (dev), usar a API de backup do próprio SQLite (ex.:
+`sqlite3.connect(origem).backup(destino)`, que gera uma cópia consistente mesmo com o
+servidor rodando — evitar copiar o arquivo `.sqlite3` cru enquanto há escrita em
+andamento). Em MySQL (produção), usar `mysqldump`/`mysql` para restaurar —
+**PENDENTE DE PRODUÇÃO**: ainda não existe rotina de backup automatizada nem local
+definido para guardar os backups (ver TODO #2).
 
 **Principais relacionamentos** (visão simplificada — todo detalhe está nos próprios
 `models.py`):
@@ -492,9 +498,9 @@ abaixo sem infraestrutura real ainda provisionada está marcado):
 
 | Item | Status |
 | --- | --- |
-| Settings de produção (`config/settings/prod.py`: PostgreSQL, Whitenoise, cookies seguros, HSTS) | ✅ Pronto no código |
-| `requirements/prod.txt` (`psycopg[binary]`, `gunicorn`, `whitenoise`) | ✅ Pronto |
-| Banco PostgreSQL real provisionado | 🔴 **PENDENTE DE PRODUÇÃO** |
+| Settings de produção (`config/settings/prod.py`: MySQL, Whitenoise, cookies seguros, HSTS) | ✅ Pronto no código |
+| `requirements/prod.txt` (`mysqlclient`, `gunicorn`, `whitenoise`) | ✅ Pronto |
+| Banco MySQL real provisionado | 🔴 **PENDENTE DE PRODUÇÃO** |
 | `DJANGO_SECRET_KEY` de produção gerada e guardada com segurança | 🔴 **PENDENTE DE PRODUÇÃO** (hoje só existe o placeholder do `.env.example`) |
 | Domínio + HTTPS (certificado) | 🔴 **PENDENTE DE PRODUÇÃO** |
 | `CSRF_TRUSTED_ORIGINS` (depende do domínio acima) | 🔴 **PENDENTE DE PRODUÇÃO** |
@@ -575,8 +581,8 @@ hardware disponível) nem depende de `pywin32`/Windows para rodar.
 - **Atualizar dependências**: editar `requirements/base.txt` (ou `dev.txt`/`prod.txt`
   conforme o ambiente), depois `pip install -r requirements/dev.txt` localmente.
   Rodar a suíte de testes completa depois de qualquer atualização.
-- **Backup/restauração**: ver seção 6 (SQLite = copiar arquivo; PostgreSQL = pendente
-  de definição, ver seção 11).
+- **Backup/restauração**: ver seção 6 (SQLite = API de backup do próprio SQLite; MySQL =
+  pendente de definição, ver seção 11).
 - **Verificar logs**: `logs/aplicacao.log` (INFO+) e `logs/erros.log` (ERROR+),
   rotação automática (`RotatingFileHandler`, 5MB × 5 arquivos — ver `LOGGING` em
   `config/settings/base.py`). O logger de negócio do projeto é `logging.getLogger
@@ -655,8 +661,8 @@ ambiente.
 
 - [x] Separar configurações de desenvolvimento e produção (`config/settings/dev.py` / `prod.py`).
 - [x] Configurar variáveis de ambiente (`django-environ` + `.env`, modelo em `.env.example`).
-- [x] Preparar suporte a PostgreSQL em produção (`DATABASE_URL`, `psycopg[binary]` já em `requirements/prod.txt`).
-- [ ] Provisionar o banco PostgreSQL real (hoje só existe SQLite em desenvolvimento) e migrar os dados atuais para lá.
+- [x] Preparar suporte a MySQL em produção (`DATABASE_URL`, `mysqlclient` já em `requirements/prod.txt`).
+- [ ] Provisionar o banco MySQL real (hoje só existe SQLite em desenvolvimento) e migrar os dados atuais para lá.
 - [ ] Configurar arquivos estáticos e uploads para produção — Whitenoise já está nos requirements (falta ativar/testar `collectstatic`); `MEDIA_ROOT` local não é adequado em produção, avaliar storage externo (ex.: S3) para fotos de itens do cardápio/usuários.
 - [ ] Gerar e guardar com segurança um `DJANGO_SECRET_KEY` real de produção (hoje só existe o placeholder em `.env.example`).
 - [ ] Definir onde e como a aplicação vai rodar (servidor, processo `gunicorn`, proxy reverso).
@@ -669,7 +675,7 @@ ambiente.
 - [ ] Caso valha a pena, criar:
   - [ ] `Dockerfile` do backend (o projeto não tem frontend separado — é Django com templates renderizados no servidor).
   - [ ] `docker-compose.yml`.
-  - [ ] Configuração do banco de dados (PostgreSQL).
+  - [ ] Configuração do banco de dados (MySQL).
   - [ ] Volumes persistentes (banco, media).
   - [ ] Documentação completa de como rodar o projeto via Docker.
 

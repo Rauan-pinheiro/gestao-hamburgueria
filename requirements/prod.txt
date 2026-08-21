@@ -1,4 +1,4 @@
 -r base.txt
-psycopg[binary]
+mysqlclient
 gunicorn
 whitenoise
