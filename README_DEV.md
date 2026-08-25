@@ -603,10 +603,12 @@ Tarefa agendada (Tasks do PythonAnywhere, diária)
 - **Comando**: `apps/core/management/commands/backup_mysql.py`. Só funciona com
   `DJANGO_SETTINGS_MODULE=config.settings.prod` (precisa de `DATABASES` real e das
   variáveis `DROPBOX_*`) — falha alto e claro se alguma faltar, não tenta rodar parcial.
-- **Tarefa agendada**: aba "Tasks" do painel PythonAnywhere, diária,
+- **Tarefa agendada**: aba "Tasks" do painel PythonAnywhere, diária, `07:00 UTC`,
   `export DJANGO_SETTINGS_MODULE=config.settings.prod && cd /home/devflow/gestao-hamburgueria && venv/bin/python manage.py backup_mysql`.
   Contas gratuitas antigas (como esta) ainda têm acesso a 1 tarefa diária — confirmado
   em produção em 25/08/2026, não é garantido continuar disponível pra contas novas.
+  **Expira em 28 dias e precisa ser recriada manualmente** — ver "Limitações conhecidas"
+  abaixo, é o item mais importante desta seção inteira.
 - **Credenciais do Dropbox** (`DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`,
   `DROPBOX_REFRESH_TOKEN`): só no `.env` de produção, nunca no git. Vêm de um app
   Dropbox dedicado (tipo "Scoped access" + "App folder", **não** "Full Dropbox" —
@@ -646,13 +648,38 @@ gunzip -c backups/producao_AAAAMMDD_HHMMSS.sql.gz | mysql -h <host> -u devflow -
 separado/de teste. Um backup nunca restaurado é só uma suposição de que funciona, não
 uma garantia.
 
-#### Limitação conhecida
+#### Limitações conhecidas
 
-Contas gratuitas do PythonAnywhere não têm SMTP de saída liberado — não existe alerta
-automático se o backup de um dia falhar (a falha fica só no log,
-`logging.getLogger('hamburgueria.backup')`, ver `logs/erros.log`). Mitigação:
-checar a pasta do Dropbox periodicamente (ex.: mensal) pra confirmar que os arquivos
-continuam chegando todo dia.
+- 🔴 **A tarefa agendada expira sozinha — não é "configura uma vez e esquece".**
+  Contas gratuitas do PythonAnywhere têm tarefas agendadas com prazo de validade
+  (confirmado na prática: criada em 25/08/2026, "Termo" mostrado como `2026-09-22` —
+  exatos 28 dias depois; contas pagas "nunca expiram", segundo o texto do próprio
+  painel). Passado esse prazo, a tarefa **para de rodar silenciosamente** — não gera
+  erro, não aparece em log nenhum, simplesmente não é mais executada. Isso não estava
+  previsto no plano original desta rotina de backup — só foi descoberto depois de criar
+  a tarefa de verdade e reparar na coluna "Termo".
+  **Mitigação**: não existe solução automática confirmada para contas gratuitas — a
+  única forma de garantir continuidade é **entrar na aba Tasks a cada ~4 semanas e
+  recriar a tarefa antes do prazo vencer** (recomendação: configurar um lembrete
+  pessoal, fora do sistema — celular/calendário — para uns dias antes de cada
+  vencimento; a próxima recriação precisa acontecer **antes de 22/09/2026**).
+  Se algum dia isso incomodar, vale investigar se a API do PythonAnywhere permite
+  renovar a tarefa programaticamente (não verificado ainda).
+- 🟡 **Sem alerta automático de falha de upload.** Contas gratuitas do PythonAnywhere
+  não têm SMTP de saída liberado — se o backup de um dia falhar (ex.: Dropbox fora do
+  ar, token expirado), a falha fica só no log (`logging.getLogger('hamburgueria.backup')`,
+  ver `logs/erros.log`), sem avisar ninguém ativamente. Mitigação: checar a pasta do
+  Dropbox periodicamente (ex.: mensal) pra confirmar que os arquivos continuam
+  chegando todo dia — a mesma checagem manual serve pra pegar as duas limitações
+  acima de uma vez.
+
+#### Validado em produção (25/08/2026)
+
+Pipeline completo testado de ponta a ponta: dump gerado, enviado ao Dropbox com
+sucesso, e **restaurado de verdade** num banco separado (`devflow$teste_restauracao`,
+criado só para o teste e apagado depois) — contagens de todas as tabelas de negócio
+conferidas e batendo exatamente com produção. Não é só "o comando não deu erro", é
+prova de que o backup restaura de fato.
 - **Verificar logs**: `logs/aplicacao.log` (INFO+) e `logs/erros.log` (ERROR+),
   rotação automática (`RotatingFileHandler`, 5MB × 5 arquivos — ver `LOGGING` em
   `config/settings/base.py`). O logger de negócio do projeto é `logging.getLogger
