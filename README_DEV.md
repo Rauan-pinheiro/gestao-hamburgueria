@@ -507,7 +507,7 @@ abaixo sem infraestrutura real ainda provisionada está marcado):
 | Servidor de aplicação (`gunicorn`) + proxy reverso | 🔴 **PENDENTE DE PRODUÇÃO** — nenhum processo/servidor definido ainda |
 | Estáticos via Whitenoise (`collectstatic`) | 🟡 Configurado, não testado em produção real |
 | Armazenamento de `media/` (fotos de item/usuário) — local não é adequado em produção | 🔴 **PENDENTE DE PRODUÇÃO** (avaliar storage externo, ex. S3) |
-| Backup do banco | 🔴 **PENDENTE DE PRODUÇÃO** — sem rotina definida |
+| Backup do banco | 🟢 Automatizado (diário, `mysqldump` + Dropbox) — ver seção 14 |
 | Docker | 🔴 Não decidido ainda se vale a pena (ver TODO #3) |
 
 Quando essas pendências forem resolvidas, o processo real de deploy deve ser
@@ -581,8 +581,78 @@ hardware disponível) nem depende de `pywin32`/Windows para rodar.
 - **Atualizar dependências**: editar `requirements/base.txt` (ou `dev.txt`/`prod.txt`
   conforme o ambiente), depois `pip install -r requirements/dev.txt` localmente.
   Rodar a suíte de testes completa depois de qualquer atualização.
-- **Backup/restauração**: ver seção 6 (SQLite = API de backup do próprio SQLite; MySQL =
-  pendente de definição, ver seção 11).
+- **Backup/restauração**: SQLite (dev) = API de backup do próprio SQLite. MySQL
+  (produção) = automatizado via `management command` + tarefa agendada do
+  PythonAnywhere, ver "Backup do banco de produção (MySQL)" logo abaixo.
+
+### Backup do banco de produção (MySQL)
+
+Diário, automatizado, com cópia fora do PythonAnywhere (proteção contra "algo
+aconteceu com a conta inteira", não só erro dentro do próprio sistema):
+
+```
+Tarefa agendada (Tasks do PythonAnywhere, diária)
+  → python manage.py backup_mysql
+    → mysqldump (--single-transaction, consistente mesmo com o sistema em uso)
+    → comprime em .gz
+    → envia para uma pasta dedicada no Dropbox (via API, token renovado a cada execução)
+    → apaga cópias locais com mais de 14 dias (backups/*.sql.gz — a cópia "de
+      verdade" contra desastre é a do Dropbox, que não é rotacionada)
+```
+
+- **Comando**: `apps/core/management/commands/backup_mysql.py`. Só funciona com
+  `DJANGO_SETTINGS_MODULE=config.settings.prod` (precisa de `DATABASES` real e das
+  variáveis `DROPBOX_*`) — falha alto e claro se alguma faltar, não tenta rodar parcial.
+- **Tarefa agendada**: aba "Tasks" do painel PythonAnywhere, diária,
+  `export DJANGO_SETTINGS_MODULE=config.settings.prod && cd /home/devflow/gestao-hamburgueria && venv/bin/python manage.py backup_mysql`.
+  Contas gratuitas antigas (como esta) ainda têm acesso a 1 tarefa diária — confirmado
+  em produção em 25/08/2026, não é garantido continuar disponível pra contas novas.
+- **Credenciais do Dropbox** (`DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`,
+  `DROPBOX_REFRESH_TOKEN`): só no `.env` de produção, nunca no git. Vêm de um app
+  Dropbox dedicado (tipo "Scoped access" + "App folder", **não** "Full Dropbox" —
+  restringe o alcance do token a uma pasta só).
+
+#### Gerar um novo refresh token (só necessário se recriar o app Dropbox, ou trocar de conta)
+
+O botão simples "generate access token" do Dropbox dá um token que expira em ~4h —
+inviável para uma tarefa diária desatendida. É preciso um **refresh token** (não
+expira), obtido uma vez via OAuth:
+
+1. No app Dropbox (developers.dropbox.com/apps → seu app → aba "Permissions"),
+   ativar `files.content.write` (e `files.content.read` se quiser) e clicar "Submit".
+2. Abrir no navegador, logado na conta Dropbox de destino:
+   `https://www.dropbox.com/oauth2/authorize?client_id=<APP_KEY>&token_access_type=offline&response_type=code`
+   — autorizar, copiar o código mostrado na tela.
+3. Trocar o código pelo refresh token (rodar localmente, só precisa de internet):
+   ```bash
+   curl https://api.dropboxapi.com/oauth2/token \
+     -d code=<CODIGO_DO_PASSO_2> \
+     -d grant_type=authorization_code \
+     -d client_id=<APP_KEY> \
+     -d client_secret=<APP_SECRET>
+   ```
+   A resposta JSON traz `refresh_token`. Guardar os 3 valores (`APP_KEY`, `APP_SECRET`,
+   `refresh_token`) direto no `.env` de produção via editor no console do PythonAnywhere
+   (`nano .env`) — nunca colar essas credenciais em chat/ticket/lugar que não seja o
+   próprio arquivo.
+
+#### Restaurar um backup
+
+```bash
+gunzip -c backups/producao_AAAAMMDD_HHMMSS.sql.gz | mysql -h <host> -u devflow -p 'devflow$producao'
+```
+(ou baixar o `.gz` do Dropbox primeiro, se a cópia local já tiver sido rotacionada).
+**Nunca testar isso apontando para o banco de produção real** — usar um banco
+separado/de teste. Um backup nunca restaurado é só uma suposição de que funciona, não
+uma garantia.
+
+#### Limitação conhecida
+
+Contas gratuitas do PythonAnywhere não têm SMTP de saída liberado — não existe alerta
+automático se o backup de um dia falhar (a falha fica só no log,
+`logging.getLogger('hamburgueria.backup')`, ver `logs/erros.log`). Mitigação:
+checar a pasta do Dropbox periodicamente (ex.: mensal) pra confirmar que os arquivos
+continuam chegando todo dia.
 - **Verificar logs**: `logs/aplicacao.log` (INFO+) e `logs/erros.log` (ERROR+),
   rotação automática (`RotatingFileHandler`, 5MB × 5 arquivos — ver `LOGGING` em
   `config/settings/base.py`). O logger de negócio do projeto é `logging.getLogger

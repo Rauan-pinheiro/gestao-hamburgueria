@@ -38,3 +38,10 @@ CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = env.int('DJANGO_SECURE_HSTS_SECONDS', default=3600)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+
+# Backup diário do banco (management command backup_mysql, ver README_DEV.md) — só
+# usado por esse comando específico, por isso default=None em vez de falhar o boot
+# inteiro do site como o SECRET_KEY: o comando valida e falha alto na hora de rodar.
+DROPBOX_APP_KEY = env('DROPBOX_APP_KEY', default=None)
+DROPBOX_APP_SECRET = env('DROPBOX_APP_SECRET', default=None)
+DROPBOX_REFRESH_TOKEN = env('DROPBOX_REFRESH_TOKEN', default=None)

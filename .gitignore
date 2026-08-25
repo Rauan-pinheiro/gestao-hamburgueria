@@ -8,6 +8,7 @@ dados_producao*.json
 .env
 media/
 staticfiles/
+backups/
 logs/*.log*
 .vscode/
 .idea/

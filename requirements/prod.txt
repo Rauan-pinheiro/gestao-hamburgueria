@@ -2,3 +2,4 @@
 mysqlclient
 gunicorn
 whitenoise
+requests
