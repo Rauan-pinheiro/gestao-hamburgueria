@@ -650,21 +650,26 @@ uma garantia.
 
 #### Limitações conhecidas
 
-- 🔴 **A tarefa agendada expira sozinha — não é "configura uma vez e esquece".**
-  Contas gratuitas do PythonAnywhere têm tarefas agendadas com prazo de validade
-  (confirmado na prática: criada em 25/08/2026, "Termo" mostrado como `2026-09-22` —
-  exatos 28 dias depois; contas pagas "nunca expiram", segundo o texto do próprio
-  painel). Passado esse prazo, a tarefa **para de rodar silenciosamente** — não gera
-  erro, não aparece em log nenhum, simplesmente não é mais executada. Isso não estava
+- 🟡 **A tarefa agendada expira a cada 4 semanas — mas o PythonAnywhere avisa por
+  e-mail antes, e nada é perdido se passar do prazo.** Contas gratuitas do
+  PythonAnywhere têm tarefas agendadas com prazo de validade (confirmado na prática:
+  criada em 25/08/2026, "Termo" mostrado como `2026-09-22` — exatos 28 dias depois;
+  contas pagas "nunca expiram", segundo o texto do próprio painel). Isso não estava
   previsto no plano original desta rotina de backup — só foi descoberto depois de criar
-  a tarefa de verdade e reparar na coluna "Termo".
-  **Mitigação**: não existe solução automática confirmada para contas gratuitas — a
-  única forma de garantir continuidade é **entrar na aba Tasks a cada ~4 semanas e
-  recriar a tarefa antes do prazo vencer** (recomendação: configurar um lembrete
-  pessoal, fora do sistema — celular/calendário — para uns dias antes de cada
-  vencimento; a próxima recriação precisa acontecer **antes de 22/09/2026**).
-  Se algum dia isso incomodar, vale investigar se a API do PythonAnywhere permite
-  renovar a tarefa programaticamente (não verificado ainda).
+  a tarefa de verdade e reparar na coluna "Termo". Investigado depois
+  ([blog.pythonanywhere.com/129](https://blog.pythonanywhere.com/129)): o PythonAnywhere
+  **manda um e-mail automático de aviso a cada 4 semanas**, com um link de renovação de
+  um clique (renova por mais 4 semanas, sem precisar reconfigurar nada). E mesmo se o
+  prazo passar sem renovar, **nada é apagado** — arquivos, configuração da tarefa e logs
+  continuam intactos, só ficam pausados; reativar é login + um clique, não recriar do
+  zero. Não encontrei documentação oficial de uma API para Scheduled Tasks (a página
+  oficial de ajuda não menciona nenhuma), nem evidência de que criar a tarefa via API
+  (existe um pacote não-oficial `pythonanywhere` com alguma gestão programática) evite
+  esse teto de 4 semanas — parece ser restrição de conta, não de interface.
+  **Mitigação combinada com a renovação mensal do web app**: renovar a tarefa junto
+  com o clique mensal já necessário pra manter o web app ativo (decisão do usuário,
+  25/08/2026) — cobre a cadência com folga, e o e-mail da PythonAnywhere funciona como
+  reforço caso esqueça.
 - 🟡 **Sem alerta automático de falha de upload.** Contas gratuitas do PythonAnywhere
   não têm SMTP de saída liberado — se o backup de um dia falhar (ex.: Dropbox fora do
   ar, token expirado), a falha fica só no log (`logging.getLogger('hamburgueria.backup')`,
