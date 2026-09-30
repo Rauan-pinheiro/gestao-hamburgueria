@@ -12,7 +12,7 @@ from django.views.generic import DetailView, ListView
 
 from apps.cardapio.models import CategoriaCardapio, ItemCardapio
 from apps.cardapio.services import mapa_adicionais_por_item
-from apps.core.models import FormaPagamento
+from apps.core.models import ConfiguracaoGeral, FormaPagamento
 
 from .models import Venda
 from .services import (
@@ -40,6 +40,11 @@ class VendaListView(LoginRequiredMixin, ListView):
         if canal:
             qs = qs.filter(canal=canal)
         return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['data_inicio_operacao'] = ConfiguracaoGeral.get_solo().data_inicio_operacao
+        return ctx
 
 
 class PedidoAbertoListView(LoginRequiredMixin, ListView):

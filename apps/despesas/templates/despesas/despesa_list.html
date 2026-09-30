@@ -109,6 +109,7 @@
             {% else %}
               <span class="badge badge--warning">Pendente</span>
             {% endif %}
+            {% if data_inicio_operacao and d.data_vencimento < data_inicio_operacao %}<span class="badge badge--neutral">Arquivado</span>{% endif %}
           </td>
           <td class="table__actions">
             {% if d.status == 'PENDENTE' %}

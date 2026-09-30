@@ -26,6 +26,23 @@ class DespesaQuerySet(models.QuerySet):
         return self.filter(
             status='PENDENTE', data_vencimento__gte=hoje, data_vencimento__lte=hoje + timedelta(days=dias))
 
+    def pos_corte(self, campo='data_vencimento'):
+        """
+        Exclui despesas anteriores à `ConfiguracaoGeral.data_inicio_operacao` — mesmo
+        mecanismo de `Venda.objects.pos_corte()`, usado pelos relatórios agregados. `campo`
+        existe porque o app já usa dois campos de data diferentes pra "período" da despesa,
+        cada um fazendo sentido no seu contexto (`data_vencimento`: o que está previsto no
+        período; `data_pagamento`: o que efetivamente saiu do caixa no período) — o corte
+        aplica sempre sobre o MESMO campo que cada view já usa pra bucketar por período, nunca
+        inventa um terceiro critério. Sem corte configurado, não filtra nada.
+        """
+        from apps.core.models import ConfiguracaoGeral
+
+        corte = ConfiguracaoGeral.get_solo().data_inicio_operacao
+        if not corte:
+            return self
+        return self.filter(**{f'{campo}__gte': corte})
+
 
 class Despesa(TimestampedModel):
     CATEGORIA_CHOICES = [

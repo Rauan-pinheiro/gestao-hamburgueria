@@ -11,6 +11,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, ListView, UpdateView
 
+from apps.core.models import ConfiguracaoGeral
 from apps.core.views import SafeDeleteView
 
 from .forms import DespesaForm
@@ -66,7 +67,7 @@ class DespesaListView(LoginRequiredMixin, ListView):
         ctx = super().get_context_data(**kwargs)
         hoje = timezone.localdate()
         inicio_mes, fim_mes = primeiro_e_ultimo_dia_mes(hoje)
-        despesas_mes = Despesa.objects.filter(data_vencimento__gte=inicio_mes, data_vencimento__lte=fim_mes)
+        despesas_mes = Despesa.objects.pos_corte().filter(data_vencimento__gte=inicio_mes, data_vencimento__lte=fim_mes)
 
         ctx['categorias'] = Despesa.CATEGORIA_CHOICES
         ctx['total_mes'] = _soma(despesas_mes)
@@ -75,6 +76,7 @@ class DespesaListView(LoginRequiredMixin, ListView):
         ctx['total_atrasado'] = _soma(Despesa.objects.atrasadas())
         ctx['qtd_atrasadas'] = Despesa.objects.atrasadas().count()
         ctx['proximos_vencimentos'] = Despesa.objects.vencendo_em(7).order_by('data_vencimento')[:8]
+        ctx['data_inicio_operacao'] = ConfiguracaoGeral.get_solo().data_inicio_operacao
         return ctx
 
 
@@ -141,7 +143,7 @@ def despesa_gerar_proxima_ocorrencia(request, pk):
 def relatorio(request):
     hoje = timezone.localdate()
     gastos_por_categoria = (
-        Despesa.objects.filter(status='PAGO')
+        Despesa.objects.pos_corte().filter(status='PAGO')
         .values('categoria')
         .annotate(total=Sum('valor'))
         .order_by('-total')
@@ -161,7 +163,7 @@ def relatorio(request):
 @login_required
 def api_gastos_por_categoria(request):
     dados = (
-        Despesa.objects.filter(status='PAGO')
+        Despesa.objects.pos_corte().filter(status='PAGO')
         .values('categoria')
         .annotate(total=Sum('valor'))
         .order_by('-total')
@@ -186,10 +188,16 @@ def api_comparativo_mensal(request):
         referencia = hoje.replace(year=ano, month=mes, day=1)
         inicio, fim = primeiro_e_ultimo_dia_mes(referencia)
 
-        vendas_mes = Venda.objects.filter(status='concluida', data_hora__date__gte=inicio, data_hora__date__lte=fim)
+        vendas_mes = (
+            Venda.objects.filter(status='concluida', data_hora__date__gte=inicio, data_hora__date__lte=fim)
+            .pos_corte()
+        )
         faturamento_mes = vendas_mes.aggregate(total=Coalesce(Sum('valor_total'), _zero()))['total']
         lucro_operacional_mes = vendas_mes.aggregate(total=Coalesce(Sum('lucro_liquido'), _zero()))['total']
-        despesa_mes = _soma(Despesa.objects.filter(status='PAGO', data_pagamento__gte=inicio, data_pagamento__lte=fim))
+        despesa_mes = _soma(
+            Despesa.objects.pos_corte(campo='data_pagamento')
+            .filter(status='PAGO', data_pagamento__gte=inicio, data_pagamento__lte=fim)
+        )
 
         labels.append(f'{mes:02d}/{ano}')
         faturamentos.append(float(faturamento_mes))

@@ -5,6 +5,22 @@ from django.db import models
 from django.utils import timezone
 
 
+class VendaQuerySet(models.QuerySet):
+    def pos_corte(self):
+        """
+        Exclui vendas anteriores à `ConfiguracaoGeral.data_inicio_operacao` — usado pelo
+        dashboard e pelos relatórios agregados (faturamento, lucro, mais vendidos etc.) para
+        "arquivar" vendas de uma operação anterior sem apagar nada do banco. Sem corte
+        configurado (`data_inicio_operacao` vazio), não filtra nada — comportamento de sempre.
+        """
+        from apps.core.models import ConfiguracaoGeral
+
+        corte = ConfiguracaoGeral.get_solo().data_inicio_operacao
+        if not corte:
+            return self
+        return self.filter(data_hora__date__gte=corte)
+
+
 class Venda(models.Model):
     CANAL_CHOICES = [
         ('balcao', 'Balcão'),
@@ -53,6 +69,8 @@ class Venda(models.Model):
     comissao_total = models.DecimalField('Comissão/taxa total (R$)', max_digits=10, decimal_places=2, default=0, editable=False)
     lucro_bruto = models.DecimalField('Lucro bruto (R$)', max_digits=10, decimal_places=2, default=0, editable=False)
     lucro_liquido = models.DecimalField('Lucro líquido (R$)', max_digits=10, decimal_places=2, default=0, editable=False)
+
+    objects = VendaQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'Venda'

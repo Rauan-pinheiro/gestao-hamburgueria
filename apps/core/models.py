@@ -44,6 +44,12 @@ class ConfiguracaoGeral(TimestampedModel):
     meta_faturamento_mensal = models.DecimalField(
         'Meta de faturamento mensal (R$)', max_digits=10, decimal_places=2, default=0,
         validators=[MinValueValidator(0)])
+    data_inicio_operacao = models.DateField(
+        'Data de início da operação', null=True, blank=True,
+        help_text='Vendas e despesas com data anterior a esta deixam de contar no dashboard e nos '
+                   'relatórios agregados (faturamento, lucro, comparativo mensal etc.) — continuam no '
+                   'banco e nas listagens normalmente, só somem dos números. Deixe em branco para não '
+                   'aplicar nenhum corte (comportamento de sempre, todo o histórico conta).')
 
     class Meta:
         verbose_name = 'Configuração Geral'

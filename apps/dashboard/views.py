@@ -25,7 +25,7 @@ def index(request):
     inicio_semana = hoje - timedelta(days=hoje.weekday())
     inicio_mes = hoje.replace(day=1)
 
-    vendas_concluidas = Venda.objects.filter(status='concluida')
+    vendas_concluidas = Venda.objects.filter(status='concluida').pos_corte()
 
     vendas_hoje = vendas_concluidas.filter(data_hora__date=hoje)
     vendas_semana = vendas_concluidas.filter(data_hora__date__gte=inicio_semana)
@@ -59,7 +59,8 @@ def index(request):
     )
 
     despesas_pagas_mes = (
-        Despesa.objects.filter(status='PAGO', data_pagamento__gte=inicio_mes, data_pagamento__lte=hoje)
+        Despesa.objects.pos_corte(campo='data_pagamento')
+        .filter(status='PAGO', data_pagamento__gte=inicio_mes, data_pagamento__lte=hoje)
         .aggregate(total=Coalesce(Sum('valor'), _zero()))['total']
     )
     lucro_real_mes = lucro_mes - despesas_pagas_mes
@@ -92,7 +93,7 @@ def api_vendas_por_dia(request):
     dias = 14
     inicio = timezone.localtime().date() - timedelta(days=dias - 1)
     dados = (
-        Venda.objects.filter(status='concluida', data_hora__date__gte=inicio)
+        Venda.objects.filter(status='concluida', data_hora__date__gte=inicio).pos_corte()
         .annotate(dia=TruncDate('data_hora'))
         .values('dia')
         .annotate(total=Sum('valor_total'), lucro=Sum('lucro_liquido'))
@@ -114,7 +115,7 @@ def api_vendas_por_dia(request):
 @login_required
 def api_top_produtos(request):
     dados = (
-        ItemVenda.objects.filter(venda__status='concluida')
+        ItemVenda.objects.filter(venda__in=Venda.objects.filter(status='concluida').pos_corte())
         .values('item_cardapio__nome')
         .annotate(total=Sum('quantidade'))
         .order_by('-total')[:5]
@@ -128,7 +129,7 @@ def api_top_produtos(request):
 @login_required
 def api_formas_pagamento(request):
     dados = (
-        Venda.objects.filter(status='concluida')
+        Venda.objects.filter(status='concluida').pos_corte()
         .values('forma_pagamento__nome')
         .annotate(total=Sum('valor_total'))
         .order_by('-total')

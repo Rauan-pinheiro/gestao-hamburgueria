@@ -1,12 +1,14 @@
 import json
+from datetime import date, datetime
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.cardapio.models import Adicional, CategoriaCardapio, ComboComponente, ItemCardapio
-from apps.core.models import FormaPagamento
+from apps.core.models import ConfiguracaoGeral, FormaPagamento
 from apps.estoque.models import Ingrediente, MovimentacaoEstoque
 from apps.precificacao.models import FormacaoPreco
 from apps.receitas.models import ItemReceita, Receita
@@ -894,3 +896,45 @@ class VendaDeComboTests(TestCase):
         self.coca_ingrediente.refresh_from_db()
         self.assertEqual(self.pao.estoque_atual, Decimal('1000'))
         self.assertEqual(self.coca_ingrediente.estoque_atual, Decimal('10'))
+
+
+class VendaPosCorteTests(TestCase):
+    """
+    Mecanismo de arquivamento por data (Fase 2): vendas anteriores a
+    ConfiguracaoGeral.data_inicio_operacao somem de Venda.objects.pos_corte() (usado pelo
+    dashboard/relatórios), mas continuam no banco normalmente — nada é apagado.
+    """
+
+    def setUp(self):
+        self.usuario = Usuario.objects.create_user(username='operador', password='senha-teste-123')
+        self.forma_pagamento = FormaPagamento.objects.create(nome='Dinheiro Teste', taxa_percentual=Decimal('0'))
+        self.categoria = CategoriaCardapio.objects.create(nome='Lanches', ordem=1)
+        self.item = ItemCardapio.objects.create(nome='X-Bacon', categoria=self.categoria)
+
+        self.venda_antiga = registrar_venda(
+            forma_pagamento=self.forma_pagamento, canal='balcao', usuario=self.usuario,
+            itens=[{'item_cardapio': self.item, 'quantidade': 1}],
+        )
+        self.venda_antiga.data_hora = timezone.make_aware(datetime(2026, 1, 1, 12, 0))
+        self.venda_antiga.save(update_fields=['data_hora'])
+
+        self.venda_nova = registrar_venda(
+            forma_pagamento=self.forma_pagamento, canal='balcao', usuario=self.usuario,
+            itens=[{'item_cardapio': self.item, 'quantidade': 1}],
+        )
+        self.venda_nova.data_hora = timezone.make_aware(datetime(2026, 6, 1, 12, 0))
+        self.venda_nova.save(update_fields=['data_hora'])
+
+    def test_sem_corte_configurado_pos_corte_nao_filtra_nada(self):
+        self.assertEqual(Venda.objects.pos_corte().count(), 2)
+
+    def test_com_corte_configurado_exclui_venda_anterior(self):
+        ConfiguracaoGeral.objects.update_or_create(pk=1, defaults={'data_inicio_operacao': date(2026, 3, 1)})
+        ids = set(Venda.objects.pos_corte().values_list('pk', flat=True))
+        self.assertNotIn(self.venda_antiga.pk, ids)
+        self.assertIn(self.venda_nova.pk, ids)
+
+    def test_venda_anterior_ao_corte_continua_no_banco(self):
+        ConfiguracaoGeral.objects.update_or_create(pk=1, defaults={'data_inicio_operacao': date(2026, 3, 1)})
+        # consulta direta (sem pos_corte) ainda encontra normalmente — nada foi apagado
+        self.assertTrue(Venda.objects.filter(pk=self.venda_antiga.pk).exists())
