@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from apps.cardapio.models import Adicional, CategoriaCardapio, ComboComponente, ItemCardapio
 from apps.core.models import FormaPagamento
-from apps.estoque.models import Ingrediente
+from apps.estoque.models import Ingrediente, MovimentacaoEstoque
 from apps.precificacao.models import FormacaoPreco
 from apps.receitas.models import ItemReceita, Receita
 from apps.usuarios.models import Usuario
@@ -522,6 +522,28 @@ class CancelarPedidoAbertoTests(PedidoAbertoTestsBase):
         self.assertRedirects(response, f'/vendas/{self.venda.pk}/')
         self.venda.refresh_from_db()
         self.assertEqual(self.venda.status, 'cancelada')
+
+    def test_cancelar_pedido_com_ingrediente_ja_negativo_nao_e_bloqueado(self):
+        """
+        Regressão: mesmo com o ingrediente já bem negativo por causa de outra movimentação
+        (nada a ver com este pedido), o estorno do cancelamento tem que funcionar — ele só
+        está devolvendo estoque (ENTRADA), nunca é a causa do saldo ficar negativo. Antes da
+        correção, `MovimentacaoEstoque.save()` bloqueava esse ENTRADA sempre que o saldo
+        resultante continuasse negativo, travando o cancelamento pra sempre.
+        """
+        MovimentacaoEstoque(
+            ingrediente=self.ingrediente, tipo='SAIDA', quantidade=Decimal('150'),
+            motivo='Baixa avulsa simulando o cenário real do bug', usuario=self.usuario,
+        ).save(permitir_negativo=True)
+        self.ingrediente.refresh_from_db()
+        self.assertLess(self.ingrediente.estoque_atual, 0)  # pré-condição do teste
+
+        cancelar_venda(venda=self.venda, usuario=self.usuario)  # não pode levantar ValidationError
+
+        self.venda.refresh_from_db()
+        self.assertEqual(self.venda.status, 'cancelada')
+        self.ingrediente.refresh_from_db()
+        self.assertEqual(self.ingrediente.estoque_atual, Decimal('-50'))  # 100 - 3 (abertura) - 150 + 3 (estorno)
 
 
 class RegrasDeTransicaoDeStatusTests(PedidoAbertoTestsBase):

@@ -197,6 +197,15 @@ def _estornar_saidas_de_estoque(venda, usuario, motivo):
     atualizados). Nunca apaga uma movimentação — `MovimentacaoEstoque` é imutável por design
     (ver models.py) — só lança o estorno como nova movimentação, preservando a trilha de
     auditoria completa.
+
+    `permitir_negativo=True`: um estorno é sempre um ENTRADA (só aumenta o saldo) — ele nunca é
+    a causa de um saldo ficar negativo, só pode falhar em zerar completamente um saldo que já
+    estava negativo por causa de OUTRAS movimentações daquele ingrediente. Bloquear isso pela
+    mesma trava pensada para ajuste manual (`MovimentacaoEstoque.save()`, ver models.py) deixava
+    cancelamento/edição de pedido permanentemente impossíveis sempre que o ingrediente estivesse
+    com saldo negativo — exatamente o cenário que o estorno deveria resolver. O ajuste manual
+    comum (tela de Estoque, `apps.estoque.views.movimentar_estoque`) não passa por esta função e
+    continua bloqueado normalmente.
     """
     saldo_por_ingrediente = {}
     for movimentacao in venda.movimentacoes_estoque.select_related('ingrediente').all():
@@ -212,7 +221,7 @@ def _estornar_saidas_de_estoque(venda, usuario, motivo):
         estorno = MovimentacaoEstoque(
             ingrediente=ingrediente, tipo='ENTRADA', quantidade=saldo, motivo=motivo, venda=venda, usuario=usuario,
         )
-        estorno.save()
+        estorno.save(permitir_negativo=True)
 
 
 @transaction.atomic
