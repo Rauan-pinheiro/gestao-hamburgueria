@@ -1,25 +1,27 @@
 """
-PROPOSTA — AINDA NÃO EXECUTADO (nem em dry-run). Ver conversa com o Claude Code de 30/09/2026,
-Fase 3 do reset de estoque/vendas/despesas.
+Reset de estoque — início de nova operação (ver conversa com o Claude Code de 30/09/2026,
+Fase 3 do reset de estoque/vendas/despesas).
 
 Pra cada Ingrediente com estoque_atual != 0, lança uma movimentação que traz o saldo pra
 exatamente 0, com motivo padronizado e usuário identificável (nunca None):
   - saldo NEGATIVO -> AJUSTE (sempre soma), quantidade = abs(saldo) -> saldo + abs(saldo) = 0.
-  - saldo POSITIVO -> INVENTARIO (saldo absoluto novo), quantidade = 0.
-
-ATENÇÃO — bloqueio conhecido, ainda sem decisão: `MovimentacaoEstoque.quantidade` exige
-`> 0` (MinValueValidator) pra QUALQUER tipo, inclusive INVENTARIO — então hoje um ingrediente
-com saldo POSITIVO não pode ser processado por este comando (full_clean() rejeita
-quantidade=0). Esses casos são só reportados como BLOQUEADO, nunca gravados, até essa
-validação ser resolvida (ver mensagem que acompanha este arquivo — opção A: pequeno fix no
-model permitindo quantidade=0 só para INVENTARIO; opção B: usar PERDA em vez de INVENTARIO
-pra saldo positivo, sem mexer no model).
+  - saldo POSITIVO -> INVENTARIO (saldo absoluto novo), quantidade = 0 — só é possível desde o
+    fix em MovimentacaoEstoque.clean() (commit e7f5318), que passou a permitir quantidade=0
+    especificamente para INVENTARIO (saldo contado fisicamente pode ser zero de verdade).
 
 Nenhuma MovimentacaoEstoque é apagada ou editada — é imutável por design (ver
 apps/estoque/models.py). Isso só lança movimentações novas, igual qualquer outra correção.
 
+Em vez de assumir de antemão o que o model vai aceitar ou rejeitar, este comando sempre TENTA
+gravar de verdade (`MovimentacaoEstoque.save()`, que roda `full_clean()` internamente) — em
+modo simulação, essa tentativa acontece dentro de uma transação sempre revertida (mesmo padrão
+de `diagnostico_bugs_estoque.py`), então o resultado impresso é sempre o comportamento REAL do
+model no momento em que o comando roda, nunca uma suposição hardcoded que pode ficar
+desatualizada se o model mudar depois.
+
 SEGURANÇA:
-  - Por padrão (nenhuma flag), roda em modo SIMULAÇÃO — só imprime o que faria, nada é salvo.
+  - Por padrão (nenhuma flag), roda em modo SIMULAÇÃO — tenta gravar de verdade, mas dentro de
+    uma transação sempre revertida no final. Nada é salvo.
   - --confirmar é obrigatório pra gravar de verdade.
   - --dry-run força simulação mesmo se --confirmar também for passado (nunca executa) — proteção
     redundante contra rodar --confirmar sem querer.
@@ -42,8 +44,13 @@ from apps.estoque.models import Ingrediente, MovimentacaoEstoque
 from apps.usuarios.models import Usuario
 
 
+class _ForcarRollback(Exception):
+    """Exceção de controle só para garantir que uma tentativa em modo simulação nunca seja gravada."""
+    pass
+
+
 class Command(BaseCommand):
-    help = 'Reset de estoque: traz o saldo de todos os ingredientes pra 0, via movimentação auditável. Proposta — ver docstring.'
+    help = 'Reset de estoque: traz o saldo de todos os ingredientes pra 0, via movimentação auditável.'
 
     def add_arguments(self, parser):
         parser.add_argument('--usuario', required=True, help='Username de quem está autorizando o reset (obrigatório).')
@@ -69,7 +76,7 @@ class Command(BaseCommand):
         self.stdout.write(f'Usuário: {usuario} | Motivo: "{motivo}"\n')
 
         ingredientes = list(Ingrediente.objects.all().order_by('nome'))
-        pulados = negativos = positivos = bloqueados = 0
+        pulados = negativos = positivos = gravados = bloqueados = 0
 
         for ing in ingredientes:
             saldo = ing.estoque_atual
@@ -84,34 +91,37 @@ class Command(BaseCommand):
                 tipo, quantidade = 'INVENTARIO', Decimal('0')
                 positivos += 1
 
-            self.stdout.write(
-                f'{ing.nome}: saldo atual={saldo} {ing.unidade_medida} -> {tipo} de {quantidade} -> saldo final=0'
-            )
+            descricao = f'{ing.nome}: saldo atual={saldo} {ing.unidade_medida} -> {tipo} de {quantidade} -> saldo final=0'
 
-            if tipo == 'INVENTARIO' and quantidade == 0:
-                bloqueados += 1
-                self.stdout.write(self.style.ERROR(
-                    '  BLOQUEADO: MovimentacaoEstoque.quantidade exige > 0 hoje (MinValueValidator) — '
-                    'INVENTARIO com quantidade=0 seria rejeitado pelo full_clean(). Este ingrediente NÃO '
-                    'foi processado (nem em simulação seria possível gravar como está).'
-                ))
-                continue
-
-            if executar:
+            try:
                 with transaction.atomic():
                     MovimentacaoEstoque(
                         ingrediente=ing, tipo=tipo, quantidade=quantidade,
                         motivo=motivo, usuario=usuario,
                     ).save()
+                    if not executar:
+                        raise _ForcarRollback()
+            except _ForcarRollback:
+                self.stdout.write(f'{descricao} [SIMULADO OK]')
+            except Exception as exc:
+                bloqueados += 1
+                self.stdout.write(self.style.ERROR(f'{descricao} -> BLOQUEADO: {exc}'))
+            else:
+                gravados += 1
+                self.stdout.write(f'{descricao} [GRAVADO]')
 
         self.stdout.write(
             f'\nResumo: {len(ingredientes)} ingredientes | {pulados} já em 0 (pulados) | '
-            f'{negativos} negativos -> AJUSTE | {positivos} positivos -> INVENTARIO '
-            f'({bloqueados} bloqueados pela validação de quantidade)'
+            f'{negativos} negativos (AJUSTE) | {positivos} positivos (INVENTARIO) | '
+            f'{bloqueados} bloqueados | {gravados} gravados de verdade'
         )
         if not executar:
             self.stdout.write(self.style.WARNING(
                 '\nNada foi salvo (modo simulação). Rode com --confirmar (sem --dry-run) para executar de verdade.'
             ))
+        elif bloqueados:
+            self.stdout.write(self.style.ERROR(
+                f'\nReset PARCIAL — {gravados} gravados, {bloqueados} bloqueados (ver erros acima).'
+            ))
         else:
-            self.stdout.write(self.style.SUCCESS(f'\nReset concluído — {negativos} ingredientes ajustados para 0.'))
+            self.stdout.write(self.style.SUCCESS(f'\nReset concluído — {gravados} ingredientes ajustados para 0.'))
