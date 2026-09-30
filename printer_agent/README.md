@@ -7,7 +7,7 @@ ligado à impressora pode imprimir nela.
 
 ```
 Navegador (tela de venda) → Django (dados do pedido)
-                          → este agente, no PC Windows do balcão (http://127.0.0.1:9123)
+                          → este agente, no PC Windows do balcão (https://127.0.0.1:9123)
                           → spooler do Windows
                           → impressora térmica
 ```
@@ -31,7 +31,18 @@ Navegador (tela de venda) → Django (dados do pedido)
 
 ```bash
 cd printer_agent
-pip install pywin32
+pip install -r requirements.txt
+python gerar_certificado.py
+```
+
+O `gerar_certificado.py` cria `cert.pem`/`key.pem` **nesta máquina** (chave própria
+deste PC, não compartilhada com outros balcões) — válidos por 10 anos. Ver "Certificado
+HTTPS" abaixo para o próximo passo obrigatório antes de continuar: instalar `cert.pem`
+como confiável no Windows. Sem isso o navegador vai recusar a conexão com o agente.
+
+Com o certificado instalado como confiável, roda o agente:
+
+```bash
 python agent.py
 ```
 
@@ -59,8 +70,9 @@ Controle" → "Dispositivos e Impressoras":
 
 Rode `python agent.py` de novo depois de editar o `config.json` e deixe a janela
 aberta durante o expediente. Para descobrir o nome exato da sua impressora sem abrir o
-Painel de Controle, acesse `http://127.0.0.1:9123/status` no navegador com o agente
-rodando — ele lista todas as impressoras que o Windows reconhece.
+Painel de Controle, acesse `https://127.0.0.1:9123/status` no navegador com o agente
+rodando — ele lista todas as impressoras que o Windows reconhece (e também mostra a
+validade do certificado, ver abaixo).
 
 ## Rodar em segundo plano automaticamente
 
@@ -83,19 +95,49 @@ rodado uma vez pelo responsável técnico.
 - Não expõe nenhuma credencial nem dado do sistema Django além do que já é necessário
   para montar o recibo (nome de itens/adicionais e valores da própria venda).
 
-## Limitação conhecida: HTTPS (conteúdo misto)
+## Certificado HTTPS
 
-Hoje o sistema Django ainda roda em HTTP (ver `README_DEV.md` do projeto principal),
-então o navegador consegue chamar `http://127.0.0.1:9123` sem problema. **Quando o
-sistema migrar para HTTPS**, navegadores modernos passam a bloquear por padrão uma
-página HTTPS chamando um endereço HTTP (mixed content) — inclusive `127.0.0.1`. Nesse
-momento será necessário um dos seguintes ajustes (ainda não implementados, registrar
-como pendência em `README_DEV.md` quando o HTTPS for ativado):
+O sistema Django é servido em HTTPS (`https://devflow.pythonanywhere.com`) — por isso
+este agente também precisa falar HTTPS em `127.0.0.1`, senão o navegador bloqueia a
+chamada por padrão (mixed content), mesmo sendo loopback.
 
-- Gerar um certificado local confiável (self-signed, instalado como confiável no
-  Windows do balcão) e fazer este agente servir HTTPS (`https://127.0.0.1:9123`); ou
-- Manter a tela de "Nova Venda"/impressão acessada por um endereço HTTP interno da
-  rede local, separado do domínio público em HTTPS.
+### Gerar e instalar (uma vez por PC de balcão)
+
+1. `python gerar_certificado.py` — cria `cert.pem`/`key.pem` nesta máquina, válidos
+   por 10 anos. **A chave privada (`key.pem`) nunca deve ser copiada para outro
+   computador nem enviada a ninguém** — já está no `.gitignore` do projeto.
+2. Instalar `cert.pem` como confiável no Windows **desta mesma máquina**, via
+   PowerShell/Prompt de Comando como Administrador:
+   ```
+   certutil -addstore -f Root cert.pem
+   ```
+   (alternativa em GUI: clique duplo em `cert.pem` → "Instalar Certificado..." →
+   "Máquina Local" → "Colocar todos os certificados no repositório a seguir" →
+   "Autoridades de Certificação Raiz Confiáveis").
+3. Reiniciar o agente (`python agent.py`) — a partir daqui ele serve
+   `https://127.0.0.1:9123` normalmente, sem aviso de site não confiável.
+
+Por que 10 anos de validade é seguro aqui: essa regra de validade curta (~398 dias) que
+navegadores modernos aplicam vale só para certificados emitidos por autoridades
+certificadoras publicamente confiáveis — não para uma raiz que você mesmo instala como
+confiável nesta máquina.
+
+### Monitoramento de expiração (3 camadas, pra não descobrir vencido no meio do expediente)
+
+1. **Log a cada inicialização do agente**: se faltarem 90 dias ou menos para o
+   certificado vencer, o log (`agente.log` e a janela do console, se estiver aberta)
+   mostra um aviso — e reaparece em todo boot subsequente, não é um alerta único que dá
+   pra perder.
+2. **`/status`**: a resposta inclui `certificado.expira_em` e
+   `certificado.dias_restantes` — visível em qualquer checagem manual de rotina.
+3. **Falha já é graciosa por padrão, mesmo sem as duas camadas acima**: se o
+   certificado expirar sem ninguém notar, o botão "Imprimir pedido" mostra erro
+   amigável — a venda já foi registrada normalmente, e dá pra reimprimir depois pela
+   tela de detalhe da venda. Não é perda de dado, é inconveniência recuperável.
+
+Quando for gerar um certificado novo (vencimento próximo, ou troca de máquina), repita
+os 3 passos acima — `gerar_certificado.py` pede confirmação antes de sobrescrever um
+certificado existente.
 
 ## Testes
 
@@ -104,7 +146,9 @@ cd printer_agent
 python -m unittest
 ```
 
-Os testes cobrem apenas `formatador.py` (função pura, sem dependência de Windows nem
-de impressora física) — pedido simples, pedido com adicionais, vários produtos, nomes
-longos, larguras de 58mm/80mm. Testar a impressão numa impressora física de verdade
-fica a cargo de quem tiver o hardware disponível.
+Os testes cobrem `formatador.py` (pedido simples, pedido com adicionais, vários
+produtos, nomes longos, larguras de 58mm/80mm) e `certificado.py` (cálculo de dias
+restantes/aviso de expiração) — funções puras, sem dependência de Windows nem de
+impressora física, sem tocar no `cert.pem`/`key.pem` reais desta máquina. Testar a
+impressão numa impressora física de verdade fica a cargo de quem tiver o hardware
+disponível.

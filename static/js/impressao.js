@@ -14,19 +14,25 @@
  * mesmo computador. Sem o agente rodando, a impressão falha com uma mensagem amigável
  * — a venda já foi registrada de qualquer forma, o pedido nunca é perdido.
  *
- * Aviso de conteúdo misto (mixed content): se este site for servido em HTTPS, o
- * navegador pode bloquear a chamada para http://127.0.0.1 (o agente local ainda não
- * fala HTTPS). Enquanto o projeto estiver em HTTP (ver README_DEV.md), funciona
- * normalmente. Ver printer_agent/README.md para o plano de migração quando o site
- * passar a usar HTTPS.
+ * Mixed content HTTP/HTTPS: este site é servido em HTTPS, então o agente local precisa
+ * falar HTTPS também (senão o navegador bloqueia a chamada por padrão, mesmo sendo
+ * 127.0.0.1) — ver printer_agent/README.md para o certificado local autoassinado que
+ * resolve isso.
  */
 (function () {
-  const URL_PADRAO = 'http://127.0.0.1:9123';
+  const URL_PADRAO = 'https://127.0.0.1:9123';
+  // Default de antes da migração pra HTTPS — se alguém tiver isso salvo no
+  // localStorage (não customizou nada, só herdou o default antigo), trata como se não
+  // tivesse nada salvo em vez de tentar usar um endereço que não existe mais.
+  const URL_PADRAO_ANTIGA = 'http://127.0.0.1:9123';
   const TIMEOUT_MS = 8000;
 
   function urlAgente() {
     const salva = localStorage.getItem('impressora_agente_url');
-    return (salva || URL_PADRAO).replace(/\/+$/, '');
+    if (!salva || salva.replace(/\/+$/, '') === URL_PADRAO_ANTIGA) {
+      return URL_PADRAO;
+    }
+    return salva.replace(/\/+$/, '');
   }
 
   function definirUrlAgente(url) {

@@ -269,7 +269,7 @@
   const configurarImpressoraBtn = document.getElementById('btn-configurar-impressora');
   if (configurarImpressoraBtn) {
     configurarImpressoraBtn.addEventListener('click', function () {
-      const atual = window.Impressao ? window.Impressao.urlAgente() : 'http://127.0.0.1:9123';
+      const atual = window.Impressao ? window.Impressao.urlAgente() : 'https://127.0.0.1:9123';
       const nova = window.prompt(
         'Endereço do agente de impressão local (rodando no PC Windows do balcão):', atual);
       if (nova && window.Impressao) window.Impressao.definirUrlAgente(nova.trim());

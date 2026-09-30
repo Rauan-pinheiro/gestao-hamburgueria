@@ -29,6 +29,13 @@ Como usar (resumo — detalhes em README.md):
 
 Segurança: o agente só escuta em 127.0.0.1 (loopback) — não é alcançável por outros
 computadores da rede nem da internet, só pelo navegador rodando neste mesmo PC.
+
+HTTPS: o agente serve https://127.0.0.1:<porta> usando um certificado autoassinado
+próprio desta máquina (ver certificado.py e gerar_certificado.py) — necessário porque
+o sistema Django é servido em HTTPS e navegadores bloqueiam por padrão uma chamada
+HTTPS → HTTP (mixed content), mesmo para 127.0.0.1. Rode "python gerar_certificado.py"
+uma vez nesta máquina antes do primeiro uso; veja README.md para o passo de instalar o
+certificado como confiável no Windows.
 """
 import json
 import logging
@@ -36,6 +43,7 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from certificado import CertificadoAusente, criar_contexto_ssl, informacoes_certificado
 from formatador import LARGURA_58MM, montar_bytes_impressao
 
 DIR_AGENTE = Path(__file__).resolve().parent
@@ -109,14 +117,24 @@ class ImprimirHandler(BaseHTTPRequestHandler):
         from impressora_windows import ImpressoraError, listar_impressoras
         try:
             impressoras = listar_impressoras()
-            self._responder_json(200, {
+            payload = {
                 'ok': True,
                 'agente': 'online',
                 'impressora_configurada': self.config.get('impressora') or None,
                 'impressoras_disponiveis': impressoras,
-            })
+            }
         except ImpressoraError as exc:
-            self._responder_json(200, {'ok': False, 'agente': 'online', 'erro': str(exc)})
+            payload = {'ok': False, 'agente': 'online', 'erro': str(exc)}
+
+        # Camada 2 de monitoramento do certificado (ver README.md): exposto aqui pra
+        # qualquer checagem manual/rotina já ver isso sem esforço extra.
+        try:
+            payload['certificado'] = informacoes_certificado()
+        except Exception:
+            logger.exception('Falha ao ler informações do certificado para /status')
+            payload['certificado'] = None
+
+        self._responder_json(200, payload)
 
     def do_POST(self):
         if self.path.rstrip('/') != '/imprimir':
@@ -169,9 +187,27 @@ def main():
     config = carregar_config()
     ImprimirHandler.config = config
     porta = int(config.get('porta', 9123))
+
+    try:
+        contexto_ssl = criar_contexto_ssl()
+    except CertificadoAusente as exc:
+        logger.error(str(exc))
+        sys.exit(1)
+
+    # Camada 1 de monitoramento do certificado (ver README.md): reaparece em todo boot
+    # do agente enquanto faltar pouco tempo pra expirar, não só uma vez.
+    info_cert = informacoes_certificado()
+    log_cert = logger.warning if info_cert['proximo_de_expirar'] else logger.info
+    log_cert(
+        'Certificado HTTPS válido até %s (%s dias restantes).',
+        info_cert['expira_em'], info_cert['dias_restantes'],
+    )
+
     servidor = ThreadingHTTPServer(('127.0.0.1', porta), ImprimirHandler)
+    servidor.socket = contexto_ssl.wrap_socket(servidor.socket, server_side=True)
+
     logger.info(
-        'Agente de impressão pronto em http://127.0.0.1:%s (impressora configurada: %s)',
+        'Agente de impressão pronto em https://127.0.0.1:%s (impressora configurada: %s)',
         porta, config.get('impressora') or '(nenhuma — edite config.json)',
     )
     try:
