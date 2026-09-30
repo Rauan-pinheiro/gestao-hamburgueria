@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from .forms import IngredienteForm
@@ -85,3 +86,33 @@ class IngredienteTipoTests(TestCase):
     def test_ingrediente_pode_ser_cadastrado_como_revenda(self):
         ingrediente = Ingrediente.objects.create(nome='Coca-Cola lata', unidade_medida='un', tipo='revenda')
         self.assertEqual(ingrediente.tipo, 'revenda')
+
+
+class MovimentacaoEstoqueQuantidadeZeroTests(TestCase):
+    """
+    INVENTARIO é o único tipo em que `quantidade` é o saldo ABSOLUTO novo, não uma variação
+    (ver MovimentacaoEstoque.save()) — um saldo contado fisicamente pode legitimamente ser
+    zero (o ingrediente pode ter acabado de verdade). Para os outros tipos, `quantidade` é
+    sempre uma variação, e uma variação de zero não é uma movimentação de verdade — continua
+    bloqueado. Ver MovimentacaoEstoque.clean().
+    """
+
+    def setUp(self):
+        self.ingrediente = Ingrediente.objects.create(nome='Pão brioche', unidade_medida='un')
+        MovimentacaoEstoque(ingrediente=self.ingrediente, tipo='ENTRADA', quantidade=Decimal('50')).save()
+        self.ingrediente.refresh_from_db()
+
+    def test_inventario_com_quantidade_zero_e_permitido(self):
+        MovimentacaoEstoque(ingrediente=self.ingrediente, tipo='INVENTARIO', quantidade=Decimal('0')).save()
+        self.ingrediente.refresh_from_db()
+        self.assertEqual(self.ingrediente.estoque_atual, Decimal('0'))
+
+    def test_outros_tipos_com_quantidade_zero_continuam_rejeitados(self):
+        for tipo in ('ENTRADA', 'SAIDA', 'AJUSTE', 'PERDA', 'QUEBRA'):
+            with self.subTest(tipo=tipo):
+                with self.assertRaises(ValidationError):
+                    MovimentacaoEstoque(ingrediente=self.ingrediente, tipo=tipo, quantidade=Decimal('0')).save()
+
+    def test_quantidade_negativa_continua_rejeitada_mesmo_para_inventario(self):
+        with self.assertRaises(ValidationError):
+            MovimentacaoEstoque(ingrediente=self.ingrediente, tipo='INVENTARIO', quantidade=Decimal('-5')).save()

@@ -221,9 +221,12 @@ class MovimentacaoEstoque(models.Model):
     ingrediente = models.ForeignKey(
         Ingrediente, on_delete=models.PROTECT, related_name='movimentacoes', verbose_name='Ingrediente')
     tipo = models.CharField('Tipo', max_length=12, choices=TIPO_CHOICES)
+    # Chão em 0 (nunca negativo) pra todos os tipos — a regra "> 0" de verdade (que não vale pra
+    # INVENTARIO, ver clean() abaixo) fica de fora daqui porque um Validator de campo não enxerga
+    # o valor de `tipo` do mesmo registro.
     quantidade = models.DecimalField(
         'Quantidade', max_digits=10, decimal_places=3,
-        validators=[MinValueValidator(Decimal('0.001'), message='A quantidade deve ser maior que zero.')])
+        validators=[MinValueValidator(Decimal('0'), message='A quantidade não pode ser negativa.')])
     quantidade_anterior = models.DecimalField('Estoque anterior', max_digits=10, decimal_places=3, editable=False)
     quantidade_posterior = models.DecimalField('Estoque posterior', max_digits=10, decimal_places=3, editable=False)
     lote = models.CharField('Lote', max_length=60, blank=True)
@@ -244,6 +247,18 @@ class MovimentacaoEstoque(models.Model):
 
     def __str__(self):
         return f'{self.get_tipo_display()} — {self.ingrediente} ({self.quantidade})'
+
+    def clean(self):
+        """
+        INVENTARIO é o único tipo em que `quantidade` é o saldo ABSOLUTO novo, não uma
+        variação (ver save() abaixo) — e um saldo contado fisicamente pode legitimamente ser
+        zero (o ingrediente pode ter acabado de verdade). Para todos os outros tipos,
+        `quantidade` é sempre uma variação, e uma variação de zero não tem sentido (não é uma
+        movimentação de verdade) — daí a regra "> 0" ficar aqui em vez de no Validator do
+        campo, que não tem acesso a `self.tipo`.
+        """
+        if self.tipo != 'INVENTARIO' and self.quantidade is not None and self.quantidade <= 0:
+            raise ValidationError({'quantidade': 'A quantidade deve ser maior que zero.'})
 
     def save(self, *args, permitir_negativo=False, **kwargs):
         """
