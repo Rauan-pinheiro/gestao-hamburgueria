@@ -118,11 +118,15 @@ class Command(BaseCommand):
         self.stdout.write('ETAPA 2 — Consumo esperado (ficha técnica ATUAL aplicada às vendas reais) vs SAÍDA real')
         self.stdout.write('-' * 100)
         self.stdout.write(
-            'ATENÇÃO — leitura correta desta seção: "esperado" é recalculado com a ficha técnica de HOJE.\n'
-            'Se ela foi editada depois de vendas antigas, pode divergir do real sem ser bug (o real reflete\n'
-            'a ficha técnica de cada momento). Grandes discrepâncias (ordens de magnitude, ex. ~1000x ou\n'
-            '~0.001x) são o sinal forte de erro de unidade — pequenas divergências podem ser só deriva\n'
-            'histórica de edições de ficha técnica.\n'
+            'ATENÇÃO — leitura correta desta seção:\n'
+            '1) "esperado" é recalculado com a ficha técnica de HOJE. Se ela foi editada depois de vendas\n'
+            '   antigas, pode divergir do real sem ser bug (o real reflete a ficha técnica de cada momento).\n'
+            '2) "SAÍDA" é dividida em duas colunas: a de VENDA (baixa automática, tem venda_id) e a MANUAL\n'
+            '   (lançada direto na tela de Estoque, sem venda vinculada — ex.: perda registrada como "Saída"\n'
+            '   em vez de "Perda", correção de contagem, teste de cadastro). Só a de VENDA deve ser comparada\n'
+            '   com "esperado" — a manual é atividade legítima separada, não indica bug de ficha técnica.\n'
+            '3) Grandes discrepâncias (ordens de magnitude, ex. ~1000x ou ~0.001x) entre esperado e SAÍDA-venda\n'
+            '   são o sinal forte de erro de unidade — pequenas divergências podem ser só deriva histórica.\n'
         )
 
         esperado_por_ingrediente = defaultdict(Decimal)
@@ -149,14 +153,20 @@ class Command(BaseCommand):
                 'não é possível recalcular a ficha técnica atual deles, excluídos desta comparação)\n'
             )
 
-        real_por_ingrediente = {
+        saida_venda_por_ingrediente = {
             row['ingrediente']: row['total']
-            for row in MovimentacaoEstoque.objects.filter(tipo='SAIDA').values('ingrediente').annotate(
-                total=Sum('quantidade')
-            )
+            for row in MovimentacaoEstoque.objects.filter(
+                tipo='SAIDA', venda__isnull=False
+            ).values('ingrediente').annotate(total=Sum('quantidade'))
+        }
+        saida_manual_por_ingrediente = {
+            row['ingrediente']: row['total']
+            for row in MovimentacaoEstoque.objects.filter(
+                tipo='SAIDA', venda__isnull=True
+            ).values('ingrediente').annotate(total=Sum('quantidade'))
         }
 
-        todos_ids = set(esperado_por_ingrediente) | set(real_por_ingrediente)
+        todos_ids = set(esperado_por_ingrediente) | set(saida_venda_por_ingrediente) | set(saida_manual_por_ingrediente)
         ingredientes_por_id = {i.pk: i for i in Ingrediente.objects.filter(pk__in=todos_ids)}
 
         linhas = []
@@ -165,12 +175,13 @@ class Command(BaseCommand):
             if not ing:
                 continue
             esperado = esperado_por_ingrediente.get(ing_id, Decimal('0'))
-            real = real_por_ingrediente.get(ing_id, Decimal('0'))
-            razao = (real / esperado) if esperado else None
-            linhas.append((ing, esperado, real, razao))
+            saida_venda = saida_venda_por_ingrediente.get(ing_id, Decimal('0'))
+            saida_manual = saida_manual_por_ingrediente.get(ing_id, Decimal('0'))
+            razao = (saida_venda / esperado) if esperado else None
+            linhas.append((ing, esperado, saida_venda, saida_manual, razao))
 
         def distancia_de_um(linha):
-            razao = linha[3]
+            razao = linha[4]
             if razao is None:
                 return (1, 0)  # sem "esperado" pra comparar: manda pro fim da lista
             desvio = razao if razao >= 1 else (1 / razao)
@@ -178,13 +189,13 @@ class Command(BaseCommand):
 
         linhas.sort(key=distancia_de_um)
 
-        for ing, esperado, real, razao in linhas:
+        for ing, esperado, saida_venda, saida_manual, razao in linhas:
             sinalizar = razao is not None and (razao >= 10 or razao <= Decimal('0.1'))
-            marca = '  <<< DISCREPÂNCIA DE ORDEM DE GRANDEZA' if sinalizar else ''
+            marca = '  <<< DISCREPÂNCIA DE ORDEM DE GRANDEZA (venda)' if sinalizar else ''
             razao_str = f'{razao:.4f}' if razao is not None else '— (esperado=0)'
             self.stdout.write(
-                f'{ing.nome} ({ing.unidade_medida}): esperado={esperado} | real(SAÍDA acumulada)={real} | '
-                f'razão real/esperado={razao_str}{marca}'
+                f'{ing.nome} ({ing.unidade_medida}): esperado={esperado} | SAÍDA-venda={saida_venda} | '
+                f'SAÍDA-manual={saida_manual} | razão (SAÍDA-venda/esperado)={razao_str}{marca}'
             )
 
     # ------------------------------------------------------------------ Etapa 3
@@ -230,9 +241,44 @@ class Command(BaseCommand):
         for ing in negativos:
             desde = self._desde_quando_negativo(ing)
             desde_str = desde.strftime('%Y-%m-%d %H:%M') if desde else '(não foi possível determinar)'
+            episodios = self._episodios_negativos(ing)
             self.stdout.write(
-                f'  {ing.nome}: {ing.estoque_atual} {ing.unidade_medida} — negativo continuamente desde {desde_str}'
+                f'\n  {ing.nome}: {ing.estoque_atual} {ing.unidade_medida} — negativo continuamente desde {desde_str}'
             )
+            self.stdout.write(f'    Episódios de saldo negativo no histórico completo: {len(episodios)}')
+            if len(episodios) > 1:
+                self.stdout.write('    (mais de 1 episódio = já ficou negativo, foi corrigido manualmente e')
+                self.stdout.write('     ficou negativo de novo — possível sinal de problema recorrente, não pontual)')
+            for inicio, fim in episodios:
+                fim_str = fim.strftime('%Y-%m-%d %H:%M') if fim else 'ainda em aberto (é o saldo atual)'
+                self.stdout.write(f'      {inicio:%Y-%m-%d %H:%M} até {fim_str}')
+
+            self.stdout.write('    Composição de todas as movimentações já lançadas para este ingrediente:')
+            composicao = MovimentacaoEstoque.objects.filter(ingrediente=ing).values(
+                'tipo'
+            ).annotate(total=Sum('quantidade'))
+            saida_venda = MovimentacaoEstoque.objects.filter(
+                ingrediente=ing, tipo='SAIDA', venda__isnull=False
+            ).aggregate(total=Sum('quantidade'))['total'] or Decimal('0')
+            saida_manual = MovimentacaoEstoque.objects.filter(
+                ingrediente=ing, tipo='SAIDA', venda__isnull=True
+            ).aggregate(total=Sum('quantidade'))['total'] or Decimal('0')
+            for row in composicao:
+                if row['tipo'] == 'SAIDA':
+                    self.stdout.write(f'      SAIDA total={row["total"]} (venda={saida_venda}, manual={saida_manual})')
+                else:
+                    self.stdout.write(f'      {row["tipo"]}: total={row["total"]}')
+
+            manuais = MovimentacaoEstoque.objects.filter(
+                ingrediente=ing, venda__isnull=True
+            ).exclude(tipo='ENTRADA').order_by('data_movimentacao')
+            if manuais.exists():
+                self.stdout.write('    Movimentações manuais (sem venda vinculada, exceto ENTRADA de compra):')
+                for mov in manuais:
+                    self.stdout.write(
+                        f'      {mov.data_movimentacao:%Y-%m-%d %H:%M} {mov.tipo} {mov.quantidade} '
+                        f'— motivo: "{mov.motivo or "(vazio)"}" — usuário: {mov.usuario or "(nenhum)"}'
+                    )
 
         abertas_travadas = [v for v, _tb in falhas_cancelamento if v.status == 'aberto']
         concluidas_em_risco = [v for v, _tb in falhas_cancelamento if v.status == 'concluida']
@@ -257,3 +303,26 @@ class Command(BaseCommand):
             else:
                 inicio_streak = None
         return inicio_streak
+
+    @staticmethod
+    def _episodios_negativos(ingrediente):
+        """
+        Todos os intervalos (início, fim) em que o saldo ficou negativo no histórico completo —
+        não só o episódio atual. `fim=None` significa que o episódio nunca voltou a ficar
+        positivo (inclui o episódio atual, se o ingrediente está negativo agora). Mais de um
+        episódio indica que o saldo já foi corrigido manualmente (ENTRADA/AJUSTE/INVENTARIO) e
+        ficou negativo de novo depois — sinal de problema recorrente, não um evento isolado.
+        """
+        episodios = []
+        inicio = None
+        for mov in MovimentacaoEstoque.objects.filter(ingrediente=ingrediente).order_by('data_movimentacao'):
+            if mov.quantidade_posterior < 0:
+                if inicio is None:
+                    inicio = mov.data_movimentacao
+            else:
+                if inicio is not None:
+                    episodios.append((inicio, mov.data_movimentacao))
+                    inicio = None
+        if inicio is not None:
+            episodios.append((inicio, None))
+        return episodios
