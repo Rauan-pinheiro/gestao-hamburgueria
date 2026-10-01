@@ -402,7 +402,8 @@ horas, no caso de consumo no local).
 - **Cancelar pedido** (aberto ou já concluído): estorna o saldo de estoque ainda
   pendente daquela venda — mesma lógica de sempre (`cancelar_venda`), agora
   compartilhada com a edição de pedido através de `apps.vendas.services.
-  _estornar_saidas_de_estoque`.
+  _estornar_saidas_de_estoque`. O estorno é salvo com `permitir_negativo=True` — ele
+  nunca pode ser bloqueado por um saldo que já estava negativo antes (ver TODO #8).
 - **Nenhuma movimentação de estoque é apagada** — `MovimentacaoEstoque` é imutável por
   design (o próprio model impede editar uma já salva); editar ou cancelar um pedido
   sempre lança novas movimentações de estorno, preservando o histórico completo.
@@ -578,6 +579,19 @@ hardware disponível) nem depende de `pywin32`/Windows para rodar.
   linhas já existentes (ver `apps/vendas/migrations/0005_pedido_aberto.py` como
   exemplo: nova coluna de status não pode mudar o que já estava salvo).
 - **Aplicar migrations**: `python manage.py migrate`.
+- **Deploy em produção (PythonAnywhere) — checklist depois de cada `git pull`**
+  (lições de 01/10/2026, ver TODO #8):
+  1. `export DJANGO_SETTINGS_MODULE=config.settings.prod` e rodar
+     `venv/bin/python manage.py showmigrations` — conferir se sobrou algum `[ ]`.
+     **Sempre `migrate` sem nome de app** (ou conferir o `showmigrations` inteiro), nunca
+     só o app que parece relevante: a migration `core.0005_configuracaogeral_data_inicio_operacao`
+     ficou semanas sem aplicar porque só tinham rodado `migrate estoque`.
+  2. **Reload do web app** (painel PythonAnywhere → aba "Web" → botão Reload) sempre que
+     o deploy mudar código de view/model/service/template. O `git pull` só atualiza o
+     disco — o processo web continua rodando a versão antiga em memória até o Reload.
+     `manage.py shell`/management commands sempre pegam o código novo (processo novo a
+     cada execução), por isso funcionar no shell **não prova** que o site está atualizado.
+  3. Só então fazer o teste de fumaça no site ao vivo.
 - **Atualizar dependências**: editar `requirements/base.txt` (ou `dev.txt`/`prod.txt`
   conforme o ambiente), depois `pip install -r requirements/dev.txt` localmente.
   Rodar a suíte de testes completa depois de qualquer atualização.
@@ -669,7 +683,11 @@ uma garantia.
   **Mitigação combinada com a renovação mensal do web app**: renovar a tarefa junto
   com o clique mensal já necessário pra manter o web app ativo (decisão do usuário,
   25/08/2026) — cobre a cadência com folga, e o e-mail da PythonAnywhere funciona como
-  reforço caso esqueça.
+  reforço caso esqueça. **Não existe renovação automática.** Na prática isso já
+  falhou uma vez: a tarefa expirou em 22/09/2026 sem renovação e só foi notada em
+  01/10/2026 (backup manual rodado + tarefa renovada no mesmo dia). **Antes de qualquer
+  escrita real em produção, conferir a coluna "Termo" na aba Tasks** e rodar um backup
+  manual (`venv/bin/python manage.py backup_mysql`).
 - 🟡 **Sem alerta automático de falha de upload.** Contas gratuitas do PythonAnywhere
   não têm SMTP de saída liberado — se o backup de um dia falhar (ex.: Dropbox fora do
   ar, token expirado), a falha fica só no log (`logging.getLogger('hamburgueria.backup')`,
@@ -937,6 +955,129 @@ para o modelo final.
     cobre o caso real conhecido (alface/cebola comprada inteira, usada em porções);
     generalizar isso para qualquer conversão arbitrária fica para quando aparecer um
     caso que esse campo não cubra.
+
+### 8. Bugs de estoque/cancelamento + "zerar" a operação 🟢 concluído (01/10/2026)
+
+#### Sintomas (relatados em 30/09/2026, ~1 mês de uso real em produção)
+
+- Estoque ficando negativo rápido demais.
+- Impossível cancelar venda/pedido quando algum ingrediente envolvido estava com saldo
+  negativo.
+- Um pedido aberto específico (`20260826-011A3E`) travado — não dava pra cancelar nem
+  apagar.
+
+#### Diagnóstico
+
+Feito com `apps/core/management/commands/diagnostico_bugs_estoque.py` — **read-only**,
+rodado em produção dentro de uma transação com rollback forçado (inclusive a simulação
+de cancelamento, que chama o `cancelar_venda()` real num savepoint revertido logo em
+seguida). Nada foi gravado.
+
+- **Causa raiz do cancelamento travado**: `_estornar_saidas_de_estoque`
+  (`apps/vendas/services.py`) chamava `estorno.save()` sem `permitir_negativo=True`.
+  Com isso, `MovimentacaoEstoque.save()` bloqueava o estorno sempre que o saldo
+  resultante continuasse negativo — mesmo sendo uma `ENTRADA`, que só *aumenta* o saldo.
+  O estorno nunca era a causa do problema; ele só não conseguia zerar um saldo que já
+  estava negativo por outro motivo. Confirmado com traceback real de 6 falhas em
+  produção, todas no mesmo ingrediente (Tomate).
+- **Hipótese de erro de cadastro (unidade de medida errada, ficha técnica errada):
+  investigada e descartada.** Comparando o consumo esperado (ficha técnica atual ×
+  vendas reais) com o consumo real (separando `SAIDA` de venda de `SAIDA` manual), a
+  razão ficou entre 0,97 e 1,08 pra quase todos os ingredientes — nada da ordem de
+  grandeza de um erro de unidade. A etapa de checagem das fichas técnicas também não
+  apontou nada. **Unidades e fichas técnicas estavam cadastradas corretamente.**
+- **Origem das saídas manuais sem motivo** (25/08, 23h13–23h17, usuário admin): foi o
+  próprio usuário tentando contornar o bug de cancelamento — zerando o estoque à mão pra
+  destravar o cancelamento, que só funcionava com saldo ≥ 0. O usuário confirmou isso
+  diretamente; não é suposição.
+- **Decisão de negócio**: o estoque tinha ~1 mês de uso, o cardápio estava sendo
+  trocado e os números do dashboard estavam distorcidos pelos contornos manuais. Por
+  isso o usuário decidiu "zerar" a operação: reset total do estoque + arquivamento (não
+  deleção) do histórico de vendas e despesas.
+
+#### Correções de código (commits, nesta ordem)
+
+1. **Fix do cancelamento** — `apps/vendas/services.py`: `estorno.save()` →
+   `estorno.save(permitir_negativo=True)` em `_estornar_saidas_de_estoque`, usando o
+   mesmo mecanismo que a baixa de venda no PDV já usava. Reverter uma venda nunca mais é
+   bloqueado por saldo negativo pré-existente. Teste de regressão:
+   `CancelarPedidoAbertoTests.test_cancelar_pedido_com_ingrediente_ja_negativo_nao_e_bloqueado`
+   (`apps/vendas/tests.py`). **Validado em produção com dado real**: o cancelamento do
+   `20260826-011A3E` funcionou sem erro com o Tomate ainda negativo (saldo subiu de
+   -0,636 pra -0,556 pelo estorno).
+2. **Arquivamento por data** ("Opção B" — arquivar, nunca apagar) — novo campo
+   `ConfiguracaoGeral.data_inicio_operacao` (migration `core.0005`).
+   `Venda.objects.pos_corte()` filtra por `data_hora`;
+   `Despesa.objects.pos_corte(campo='data_vencimento')` é parametrizado porque o app já
+   usa `data_vencimento` em alguns pontos e `data_pagamento` em outros — cada view passa
+   o mesmo campo que já usava antes, sem inventar um terceiro critério. Aplicado nas
+   agregações do dashboard e de despesas. Nas listagens de vendas e despesas, o
+   registro anterior ao corte continua visível, com badge "Arquivado": ele só sai dos
+   agregados, não da lista.
+3. **`MovimentacaoEstoque`: `quantidade=0` permitido só para `tipo='INVENTARIO'`** — um
+   saldo contado fisicamente pode ser zero de verdade. Os outros tipos continuam
+   exigindo `> 0`. A regra saiu do `Validator` do campo e foi pro `clean()`, que tem
+   acesso a `self.tipo`.
+4. **`reset_estoque`** (`apps/core/management/commands/reset_estoque.py`) — zera o
+   saldo de todos os ingredientes (negativo → `AJUSTE` pra cima até 0; positivo →
+   `INVENTARIO` de 0). Simulação é o padrão; gravar exige `--confirmar`. A simulação
+   tenta gravar de verdade dentro de uma transação com rollback forçado, em vez de
+   presumir (hardcoded) o que o model vai aceitar ou rejeitar — reflete o comportamento
+   real do model a qualquer momento. Nada é apagado de `MovimentacaoEstoque`.
+
+#### Execução em produção (01/10/2026)
+
+1. Backup manual + renovação da tarefa agendada no PythonAnywhere (tinha expirado em
+   22/09 — ver seção 14, "Limitações conhecidas").
+2. Cancelamento real do pedido `20260826-011A3E` (teste final do fix, ver acima).
+3. `reset_estoque --usuario <username> --confirmar` — 13 ingredientes ajustados pra 0,
+   0 bloqueados.
+4. `ConfiguracaoGeral.data_inicio_operacao = 2026-10-01` (ativa o arquivamento).
+5. Teste de fumaça no dashboard: tudo zerado, cardápio intacto, vendas/despesas antigas
+   com badge "Arquivado".
+
+**Dois contratempos — lições operacionais** (já incorporadas ao checklist de deploy da
+seção 14):
+
+- A migration `core.0005_configuracaogeral_data_inicio_operacao` foi commitada e
+  pushada junto com o resto da Fase 2, mas ninguém rodou `migrate core` em produção até
+  a hora de usar o campo — só tinham rodado `migrate estoque` (pro fix do INVENTARIO).
+  **Lição**: depois de um `git pull` que traz migration nova, sempre rodar
+  `showmigrations` (ou `migrate` sem nome de app) antes de assumir que está tudo
+  aplicado.
+- Depois do deploy das mudanças de dashboard, o `git pull` atualizou o código no disco,
+  mas **o processo web do PythonAnywhere continuou rodando a versão antiga em memória**
+  até o Reload no painel (aba Web). Management commands sempre pegam o código atual; o
+  site ao vivo, não. **Lição**: depois de qualquer deploy que mude código de
+  view/lógica, dar Reload antes de considerar o teste de fumaça conclusivo.
+
+#### Escopo do "zerar" (decidido — não reabrir sem motivo novo)
+
+- **Estoque**: zerado de verdade (saldo), via movimentações auditáveis — nada apagado do
+  histórico de `MovimentacaoEstoque`.
+- **Vendas e despesas**: arquivadas pelo corte de data, nunca apagadas — continuam no
+  banco e nas listagens, só saem de agregados/relatórios/dashboard.
+- **Cardápio, ingredientes, adicionais**: mantidos como estavam, sem alteração.
+- **Fornecedores**: sem alteração.
+- O pedido `20260826-011A3E` foi cancelado de verdade (transição de status legítima). As
+  5 vendas concluídas que também estavam em risco de bloqueio (`20260825-53DF60`,
+  `20260825-C9FF66`, `20260825-0AEEB1`, `20260825-B6F2DE`, `20260826-1B64D6`) **não**
+  foram canceladas — aconteceram de verdade; só saem dos relatórios pelo corte de data.
+
+#### Backlog que ficou de fora (não corrigido ainda)
+
+- 🔴 `apps/core/signals.py`: falta `if kwargs.get('raw'): return` em `log_post_save` —
+  gera ruído de auditoria durante `loaddata`. Já diagnosticado, baixo risco, nunca
+  aplicado.
+- 🔴 `apps/vendas/templates/vendas/venda_list.html`: pedido com `status='aberto'` mostra
+  badge "Cancelada" (o template só testa `== 'concluida'` e joga todo o resto no
+  `else`). Achado nesta tarefa, fora do escopo.
+- 🟡 `printer_agent`: migração pra HTTPS com certificado autoassinado — código escrito e
+  testado localmente pelo agente, nunca revisado em detalhe pelo usuário. Sem impressora
+  real em uso ainda, não é urgente.
+- 🟡 `PASSWORD_SISTEMA`/senha fraca — pendente de confirmar se já foi tratado numa fase
+  anterior do deploy. (Em 01/10/2026 o nome `PASSWORD_SISTEMA` não aparece em nenhum
+  arquivo versionado do repositório, então não dá pra confirmar só pelo código.)
 
 ## Observações
 
