@@ -17,3 +17,6 @@ logs/*.log*
 # cada computador do balcão (nome da impressora, porta), não fazem parte do código.
 printer_agent/config.json
 printer_agent/agente.log
+
+# Configurações locais do Claude Code
+.claude/settings.local.json
